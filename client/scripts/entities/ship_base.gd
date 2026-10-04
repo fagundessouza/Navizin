@@ -21,10 +21,6 @@ extends Node2D
 ## Nível das velas. O valor é o sentido e a força do impulso.
 enum Sail { REVERSE = -1, STOPPED = 0, HALF = 1, FULL = 2 }
 
-## Vista do navio. Cada valor usa um sprite de `assets/sprites/ships/holandes_voador/dirs/`.
-## TOP (vista de cima, proa para cima) não é escolhido pelo rumo: fica disponível
-## para uso manual, como um modo de mapa.
-enum Direction { FRONT, BACK, SIDE_LEFT, SIDE_RIGHT, TOP, TOP_LEFT, TOP_RIGHT }
 
 ## Emitido ao pressionar uma tecla de habilidade. `skill_index` vai de 1 a 4.
 signal skill_triggered(skill_index: int)
@@ -41,32 +37,40 @@ const SIDE_STARBOARD: int = 1
 ## Força mínima de qualquer bordada. Um toque rápido ainda sai como tiro visível.
 const TAP_MIN_POWER: float = 0.3
 
-const TEX_FRONT: Texture2D = preload("res://assets/sprites/ships/holandes_voador/dirs/front.png")
-const TEX_BACK: Texture2D = preload("res://assets/sprites/ships/holandes_voador/dirs/back.png")
-const TEX_SIDE_LEFT: Texture2D = preload("res://assets/sprites/ships/holandes_voador/dirs/left.png")
-const TEX_SIDE_RIGHT: Texture2D = preload("res://assets/sprites/ships/holandes_voador/dirs/right.png")
-const TEX_TOP: Texture2D = preload("res://assets/sprites/ships/holandes_voador/dirs/top.png")
-const TEX_TOP_LEFT: Texture2D = preload("res://assets/sprites/ships/holandes_voador/dirs/top_left.png")
-const TEX_TOP_RIGHT: Texture2D = preload("res://assets/sprites/ships/holandes_voador/dirs/top_right.png")
+## Os 16 frames de direção, de 0° a 337.5°, em passos de 22.5°. Pares (índices
+## pares) vêm de `ficha_laterais_frontais`; ímpares, de `ficha_intermediarios`.
+const DIR16_TEXTURES: Array[Texture2D] = [
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_00.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_01.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_02.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_03.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_04.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_05.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_06.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_07.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_08.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_09.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_10.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_11.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_12.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_13.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_14.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_15.png"),
+]
 
-## Direções discretas do navio: 16, de 22.5° cada. As intermediárias ainda usam
-## a vista mais próxima entre as 8 vistas desenhadas; cada uma vira arte própria
-## quando for pintada.
+## Vistas de cima (fonte intermediária, índices ímpares): sem sombra deslocada,
+## para o casco não parecer duplicado.
+const DIR16_TOP_VIEW: Array[bool] = [
+	false, true, false, true, false, true, false, true,
+	false, true, false, true, false, true, false, true,
+]
+
+## Passo angular de cada direção, em graus.
+const DIR_STEP_DEG: float = 22.5
+
+## Número de direções discretas do navio.
 const DIRECTIONS: int = 16
 
-## Vista de cada múltiplo de 45°, a partir da direita, no sentido horário da tela.
-## Cada item é [direção, espelhar]. Espelhar nos dois eixos é girar 180°,
-## que reaproveita o sprite diagonal para as duas diagonais de cima.
-const SECTORS: Array = [
-	[Direction.SIDE_LEFT, false],
-	[Direction.TOP_LEFT, false],
-	[Direction.FRONT, false],
-	[Direction.TOP_RIGHT, false],
-	[Direction.SIDE_RIGHT, false],
-	[Direction.TOP_LEFT, true],
-	[Direction.BACK, false],
-	[Direction.TOP_RIGHT, true],
-]
 
 ## Quão rápido a vista acompanha o rumo real, em 1/s. Um valor menor deixa a
 ## virada mais lenta e pesada.
@@ -133,8 +137,8 @@ var angular_velocity: float = 0.0
 ## Impulso de recuo atual, em pixels por segundo.
 var knockback: Vector2 = Vector2.ZERO
 
-## Vista mostrada agora.
-var direction: Direction = Direction.SIDE_LEFT
+## Índice da direção mostrada agora, de 0 a 15.
+var direction: int = 0
 
 ## Estado de cada bateria, indexado por SIDE_PORT e SIDE_STARBOARD.
 var _charging: Dictionary = {SIDE_PORT: false, SIDE_STARBOARD: false}
@@ -405,41 +409,34 @@ func _target_speed() -> float:
 			return 0.0
 
 
-## Uma direção por vez, trocada num único quadro, sem mudar a opacidade. O rumo
-## mostrado segue o real com atraso (lerp_angle), e a direção é a mais próxima
-## entre as 16.
+## Uma direção por vez, de 16. A troca é instantânea: a opacidade fica sempre em
+## 100%, então não há fantasma durante a virada. O índice segue a fórmula
+## posmod(round(graus / 22.5), 16) do rumo global do nó.
 func _update_visual(delta: float) -> void:
 	_time += delta
-	_visual_heading = lerp_angle(_visual_heading, rotation, 1.0 - exp(-VISUAL_TURN_RATE * delta))
-
-	var index: int = _direction_index(_visual_heading)
+	var index: int = _direction_index(global_rotation)
 	if index != _shown_index:
 		_show_direction(index)
-
 	_apply_float()
 
 
-## Direção mais próxima do rumo, de 0 a 15, em passos de 22.5°.
+## Índice da direção para um rumo em radianos: 0 a 15, em passos de 22.5°.
 func _direction_index(angle: float) -> int:
-	return posmod(roundi(wrapf(angle, -PI, PI) / (TAU / DIRECTIONS)), DIRECTIONS)
+	return posmod(int(round(rad_to_deg(angle) / DIR_STEP_DEG)), DIRECTIONS)
 
 
-## Mostra a direção: vista do setor mais próximo, com espelhamento. A sombra some
-## nas vistas de cima, onde o casco já cobre a água.
+## Mostra a direção: um único sprite, opaco, sem espelhamento. Nas vistas de cima
+## a sombra some, porque o casco já cobre a água.
 func _show_direction(index: int) -> void:
 	_shown_index = index
-	var sector: int = posmod(roundi(index / 2.0), 8)
-	var entry: Array = SECTORS[sector]
-	direction = entry[0]
-	var tex: Texture2D = _texture_for(entry[0])
-	var diagonal: bool = entry[0] == Direction.TOP_LEFT or entry[0] == Direction.TOP_RIGHT
-	_sprite.texture = tex
-	_sprite.flip_h = entry[1]
-	_sprite.flip_v = entry[1]
+	direction = index
+	_sprite.texture = DIR16_TEXTURES[index]
+	_sprite.flip_h = false
+	_sprite.flip_v = false
 	_sprite.modulate.a = 1.0
-	_shadow.texture = null if diagonal else tex
-	_shadow.flip_h = entry[1]
-	_shadow.flip_v = entry[1]
+	_shadow.texture = null if DIR16_TOP_VIEW[index] else DIR16_TEXTURES[index]
+	_shadow.flip_h = false
+	_shadow.flip_v = false
 
 
 ## Balanço de flutuação: o navio sobe e desce, deriva de lado e balança. Mais
@@ -452,12 +449,11 @@ func _apply_float() -> void:
 	var drift: float = sin(_time * TAU / DRIFT_PERIOD) * DRIFT_AMPLITUDE * amp
 	var sway: float = sin(_time * TAU / SWAY_PERIOD) * SWAY_ANGLE * amp
 
-	_sprite.position = Vector2(drift, bob).rotated(-rotation)
-	_sprite.rotation = -rotation + sway
+	_sprite.position = Vector2(drift, bob)
+	_sprite.rotation = sway
 
-	var shadow_offset: Vector2 = (SHADOW_OFFSET + Vector2(0.0, -bob * 0.8)).rotated(-rotation)
-	_shadow.position = shadow_offset
-	_shadow.rotation = -rotation
+	_shadow.position = SHADOW_OFFSET + Vector2(0.0, -bob * 0.8)
+	_shadow.rotation = 0.0
 
 
 ## Mantém o navio dentro da área útil do mar. Ao bater na borda, para.
@@ -470,24 +466,6 @@ func _clamp_to_world() -> void:
 	)
 	speed = 0.0
 	knockback = Vector2.ZERO
-
-
-func _texture_for(dir: Direction) -> Texture2D:
-	match dir:
-		Direction.FRONT:
-			return TEX_FRONT
-		Direction.BACK:
-			return TEX_BACK
-		Direction.SIDE_LEFT:
-			return TEX_SIDE_LEFT
-		Direction.SIDE_RIGHT:
-			return TEX_SIDE_RIGHT
-		Direction.TOP:
-			return TEX_TOP
-		Direction.TOP_LEFT:
-			return TEX_TOP_LEFT
-		_:
-			return TEX_TOP_RIGHT
 
 
 func _update_charge(delta: float) -> void:
