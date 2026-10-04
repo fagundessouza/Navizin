@@ -549,27 +549,26 @@ func _update_shake(delta: float) -> void:
 
 
 func _setup_wake() -> void:
-	# Espuma sob a área do casco, na linha d'água: partículas macias, espalhadas
-	# pela largura e pelo comprimento do casco, que se dissipam sem formar fio.
+	# Respingo: gotas pequenas e brilhantes, sem textura de névoa, que saltam da
+	# linha d'água para os lados e para trás, e param logo.
 	var material := ParticleProcessMaterial.new()
 	material.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
-	# Metade de popa do casco: a espuma nasce atrás e é levada para trás.
-	material.emission_box_extents = Vector3(data.hull_half_length * 0.5, 9.0, 0.0)
-	material.spread = 60.0
+	material.emission_box_extents = Vector3(data.hull_half_length * 0.5, 3.0, 0.0)
+	material.spread = 75.0
 	material.gravity = Vector3.ZERO
-	material.initial_velocity_min = 0.5
-	material.initial_velocity_max = 3.0
-	material.damping_min = 16.0
-	material.damping_max = 24.0
-	material.scale_min = 0.25
-	material.scale_max = 0.5
-	material.color = Color(0.9, 0.98, 1.0, 0.4)
+	material.initial_velocity_min = 10.0
+	material.initial_velocity_max = 30.0
+	material.damping_min = 30.0
+	material.damping_max = 45.0
+	material.scale_min = 1.2
+	material.scale_max = 2.2
+	material.color = Color(0.95, 1.0, 1.0, 1.0)
 	_wake.process_material = material
-	_wake.texture = _puff
-	# No referencial do casco: a popa e a deriva seguem a proa, em qualquer rumo.
+	_wake.texture = null
+	# No referencial do casco: o respingo segue a popa e a proa em qualquer rumo.
 	_wake.local_coords = true
 	_wake.amount = 40
-	_wake.lifetime = 1.2
+	_wake.lifetime = 0.8
 	_wake.emitting = false
 
 
