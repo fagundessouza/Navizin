@@ -49,8 +49,10 @@ const TEX_TOP: Texture2D = preload("res://assets/sprites/ships/holandes_voador/d
 const TEX_TOP_LEFT: Texture2D = preload("res://assets/sprites/ships/holandes_voador/dirs/top_left.png")
 const TEX_TOP_RIGHT: Texture2D = preload("res://assets/sprites/ships/holandes_voador/dirs/top_right.png")
 
-## Opacidade nas diagonais do topo, para o convés não ficar coberto pelas velas.
-const DIAGONAL_OPACITY: float = 0.75
+## Direções discretas do navio: 16, de 22.5° cada. As intermediárias ainda usam
+## a vista mais próxima entre as 8 vistas desenhadas; cada uma vira arte própria
+## quando for pintada.
+const DIRECTIONS: int = 16
 
 ## Vista de cada múltiplo de 45°, a partir da direita, no sentido horário da tela.
 ## Cada item é [direção, espelhar]. Espelhar nos dois eixos é girar 180°,
@@ -65,9 +67,6 @@ const SECTORS: Array = [
 	[Direction.BACK, false],
 	[Direction.TOP_RIGHT, true],
 ]
-
-## Velocidade da troca de vista: escurece e clareia em cerca de 0.1 s cada.
-const DIP_SPEED: float = 9.0
 
 ## Quão rápido a vista acompanha o rumo real, em 1/s. Um valor menor deixa a
 ## virada mais lenta e pesada.
@@ -150,10 +149,8 @@ var _puff: GradientTexture2D
 
 ## Rumo mostrado na tela: segue o rumo real com atraso, então a virada parece pesada.
 var _visual_heading: float = 0.0
-## Vista exibida e a vista para a qual a troca está indo (-1 sem troca).
-var _shown_sector: int = -1
-var _swap_to: int = -1
-var _fade: float = 1.0
+## Direção exibida, de 0 a 15 em `DIRECTIONS`.
+var _shown_index: int = -1
 var _time: float = 0.0
 
 
@@ -167,7 +164,8 @@ func _ready() -> void:
 	_camera = get_node_or_null("Camera2D") as Camera2D
 	_visual_heading = rotation
 	_puff = _make_puff_texture()
-	_show_sector(_sector_for(rotation))
+	_shadow.modulate = Color(0.0, 0.0, 0.0, SHADOW_ALPHA)
+	_show_direction(_direction_index(rotation))
 	_setup_wake()
 	_setup_smoke(_smoke_port, SIDE_PORT)
 	_setup_smoke(_smoke_starboard, SIDE_STARBOARD)
@@ -407,52 +405,39 @@ func _target_speed() -> float:
 			return 0.0
 
 
-## Uma vista por vez. O rumo mostrado segue o real com atraso. Quando ele passa
-## para outra vista, a atual escurece, a nova aparece e a vista clareia de novo.
-## Assim não há duas direções visíveis ao mesmo tempo.
+## Uma direção por vez, trocada num único quadro, sem mudar a opacidade. O rumo
+## mostrado segue o real com atraso (lerp_angle), e a direção é a mais próxima
+## entre as 16.
 func _update_visual(delta: float) -> void:
 	_time += delta
 	_visual_heading = lerp_angle(_visual_heading, rotation, 1.0 - exp(-VISUAL_TURN_RATE * delta))
 
-	var wanted: int = _sector_for(_visual_heading)
-	if wanted != _shown_sector:
-		_swap_to = wanted
-	else:
-		_swap_to = -1
-
-	if _swap_to != -1:
-		_fade = move_toward(_fade, 0.0, DIP_SPEED * delta)
-		if _fade <= 0.0:
-			_show_sector(_swap_to)
-			_swap_to = -1
-	else:
-		_fade = move_toward(_fade, 1.0, DIP_SPEED * delta)
-
-	var entry: Array = SECTORS[_shown_sector]
-	_sprite.modulate.a = _fade * _opacity_for(entry[0])
-	# Na vista de cima a sombra deslocada desenharia uma segunda borda por baixo
-	# do casco translúcido, e a imagem pareceria duplicada. Ela some ali.
-	var shadow_weight: float = (_opacity_for(entry[0]) - DIAGONAL_OPACITY) / (1.0 - DIAGONAL_OPACITY)
-	_shadow.modulate.a = SHADOW_ALPHA * _fade * shadow_weight
-	direction = entry[0]
+	var index: int = _direction_index(_visual_heading)
+	if index != _shown_index:
+		_show_direction(index)
 
 	_apply_float()
 
 
-## Vista mais próxima do rumo, como índice em `SECTORS`.
-func _sector_for(angle: float) -> int:
-	return posmod(roundi(wrapf(angle, -PI, PI) / (PI / 4.0)), 8)
+## Direção mais próxima do rumo, de 0 a 15, em passos de 22.5°.
+func _direction_index(angle: float) -> int:
+	return posmod(roundi(wrapf(angle, -PI, PI) / (TAU / DIRECTIONS)), DIRECTIONS)
 
 
-## Mostra a vista do setor: textura, espelhamento e sombra.
-func _show_sector(sector: int) -> void:
-	_shown_sector = sector
+## Mostra a direção: vista do setor mais próximo, com espelhamento. A sombra some
+## nas vistas de cima, onde o casco já cobre a água.
+func _show_direction(index: int) -> void:
+	_shown_index = index
+	var sector: int = posmod(roundi(index / 2.0), 8)
 	var entry: Array = SECTORS[sector]
+	direction = entry[0]
 	var tex: Texture2D = _texture_for(entry[0])
+	var diagonal: bool = entry[0] == Direction.TOP_LEFT or entry[0] == Direction.TOP_RIGHT
 	_sprite.texture = tex
-	_shadow.texture = tex
 	_sprite.flip_h = entry[1]
 	_sprite.flip_v = entry[1]
+	_sprite.modulate.a = 1.0
+	_shadow.texture = null if diagonal else tex
 	_shadow.flip_h = entry[1]
 	_shadow.flip_v = entry[1]
 
@@ -485,11 +470,6 @@ func _clamp_to_world() -> void:
 	)
 	speed = 0.0
 	knockback = Vector2.ZERO
-
-
-func _opacity_for(dir: Direction) -> float:
-	var diagonal: bool = dir == Direction.TOP_LEFT or dir == Direction.TOP_RIGHT
-	return DIAGONAL_OPACITY if diagonal else 1.0
 
 
 func _texture_for(dir: Direction) -> Texture2D:
