@@ -50,7 +50,7 @@ const TEX_TOP_LEFT: Texture2D = preload("res://assets/sprites/ships/holandes_voa
 const TEX_TOP_RIGHT: Texture2D = preload("res://assets/sprites/ships/holandes_voador/dirs/top_right.png")
 
 ## Opacidade nas diagonais do topo, para o convés não ficar coberto pelas velas.
-const DIAGONAL_OPACITY: float = 0.5
+const DIAGONAL_OPACITY: float = 0.75
 
 ## Vista de cada múltiplo de 45°, a partir da direita, no sentido horário da tela.
 ## Cada item é [direção, espelhar]. Espelhar nos dois eixos é girar 180°,
@@ -430,7 +430,10 @@ func _update_visual(delta: float) -> void:
 
 	var entry: Array = SECTORS[_shown_sector]
 	_sprite.modulate.a = _fade * _opacity_for(entry[0])
-	_shadow.modulate.a = SHADOW_ALPHA * _fade
+	# Na vista de cima a sombra deslocada desenharia uma segunda borda por baixo
+	# do casco translúcido, e a imagem pareceria duplicada. Ela some ali.
+	var shadow_weight: float = (_opacity_for(entry[0]) - DIAGONAL_OPACITY) / (1.0 - DIAGONAL_OPACITY)
+	_shadow.modulate.a = SHADOW_ALPHA * _fade * shadow_weight
 	direction = entry[0]
 
 	_apply_float()
