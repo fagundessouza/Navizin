@@ -71,8 +71,8 @@ const DIR16_SLOTS: Array = [
 	[4, true, false],  # 7 (157.5°)
 	[4, true, false],  # 8 (180.0°)
 	[4, true, false],  # 9 (202.5°)
-	[3, true, true],  # 10 (225.0°)
-	[3, true, true],  # 11 (247.5°)
+	[5, false, true],  # 10 (225.0°)
+	[13, false, true],  # 11 (247.5°)
 	[8, false, false],  # 12 (270.0°)
 	[13, true, true],  # 13 (292.5°)
 	[5, true, true],  # 14 (315.0°)
@@ -292,7 +292,7 @@ func fire_broadside(power: float, side: int) -> void:
 		return
 	power = clampf(power, 0.0, 1.0)
 	var limits: Vector2 = _sector_limits(side)
-	var aim: float = _normal_local(side)
+	var aim: float = _aim_local(side)
 	var half_spread: float = lerpf(data.spread_min, data.spread_max, power)
 	var shot_speed: float = lerpf(data.projectile_speed_min, data.projectile_speed_max, power)
 	var guns: Array = _guns(side)
@@ -350,7 +350,14 @@ func _any_holding() -> bool:
 	return _any_charging() or _awaiting_release[SIDE_PORT] or _awaiting_release[SIDE_STARBOARD]
 
 
-## Lateral do bordo no referencial do casco: bombordo aponta para -Y, estibordo para +Y.
+## Lateral da direção mostrada, no referencial do casco. A mira usa o ângulo da
+## vista (índice × 22.5°), para ficar alinhada ao desenho e não ao rumo contínuo.
+func _aim_local(side: int) -> float:
+	var shown: float = deg_to_rad(float(_shown_index) * DIR_STEP_DEG)
+	return shown + _normal_local(side) - rotation
+
+
+## Lateral da direção mostrada, no referencial do casco.: bombordo aponta para -Y, estibordo para +Y.
 func _normal_local(side: int) -> float:
 	return -PI / 2.0 if side == SIDE_PORT else PI / 2.0
 
@@ -368,21 +375,18 @@ func _guns(side: int) -> Array:
 ## Trilhos paralelos perpendiculares ao bordo, um por canhão. Crescem com a carga.
 ## O trilho de alcance máximo fica como referência discreta.
 func _draw_rails(side: int, power: float) -> void:
-	var normal: Vector2 = Vector2(0.0, side)
+	var dir: Vector2 = Vector2.from_angle(_aim_local(side))
 	var length: float = lerpf(data.range_min, data.range_max, power)
 	var deck: Vector2 = DECK_OFFSET.rotated(-rotation)
 	for gun in _guns(side):
 		var start: Vector2 = (gun as Node2D).position + deck
-		_draw_rail(start, start + normal * data.range_max, RAIL_FAINT_COLOR)
-		_draw_rail(start, start + normal * length, RAIL_COLOR)
+		_draw_rail(start, start + dir * data.range_max, RAIL_FAINT_COLOR, dir)
+		_draw_rail(start, start + dir * length, RAIL_COLOR, dir)
 
 
-func _draw_rail(from: Vector2, to: Vector2, color: Color) -> void:
-	var w: float = RAIL_HALF_WIDTH
-	var points: PackedVector2Array = PackedVector2Array([
-		from + Vector2(-w, 0.0), from + Vector2(w, 0.0),
-		to + Vector2(w, 0.0), to + Vector2(-w, 0.0),
-	])
+func _draw_rail(from: Vector2, to: Vector2, color: Color, dir: Vector2) -> void:
+	var w: Vector2 = dir.orthogonal().normalized() * RAIL_HALF_WIDTH
+	var points: PackedVector2Array = PackedVector2Array([from - w, from + w, to + w, to - w])
 	draw_colored_polygon(points, color)
 
 
@@ -526,33 +530,40 @@ func _update_shake(delta: float) -> void:
 
 
 func _setup_wake() -> void:
+	# Espuma sob a área do casco, na linha d'água: partículas macias, espalhadas
+	# pela largura e pelo comprimento do casco, que se dissipam sem formar fio.
 	var material := ParticleProcessMaterial.new()
-	material.spread = 12.0
+	material.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	material.emission_box_extents = Vector3(data.hull_half_length * 0.9, 9.0, 0.0)
+	material.spread = 60.0
 	material.gravity = Vector3.ZERO
-	material.scale_min = 1.5
-	material.scale_max = 3.0
-	material.color = Color(0.85, 0.97, 1.0, 0.7)
+	material.initial_velocity_min = 2.0
+	material.initial_velocity_max = 8.0
+	material.damping_min = 8.0
+	material.damping_max = 14.0
+	material.scale_min = 1.6
+	material.scale_max = 3.2
+	material.color = Color(0.82, 0.95, 1.0, 0.32)
 	_wake.process_material = material
+	_wake.texture = _puff
 	_wake.local_coords = false
+	_wake.amount = 36
+	_wake.lifetime = 1.6
+	_wake.position = Vector2.ZERO
 	_wake.emitting = false
 
 
-## A esteira sai da popa, do lado oposto ao movimento. Com mais velocidade, a
-## espuma fica mais forte: mais impulso e mais opacidade.
+## A espuma acompanha a área do casco. Com mais velocidade, ela fica mais forte
+## e se espalha mais para trás, do lado oposto ao movimento.
 func _update_wake() -> void:
 	var stern_sign: float = -1.0 if speed >= 0.0 else 1.0
-	_wake.position = Vector2(stern_sign * data.hull_half_length, 0.0)
 	var fraction: float = clampf(absf(speed) / maxf(data.max_speed, 1.0), 0.0, 1.0)
 	var material := _wake.process_material as ParticleProcessMaterial
 	material.direction = Vector3(stern_sign, 0.0, 0.0)
-	material.initial_velocity_min = lerpf(2.0, 10.0, fraction)
-	material.initial_velocity_max = lerpf(6.0, 22.0, fraction)
-	_wake.modulate.a = fraction * 0.8
+	material.initial_velocity_min = lerpf(2.0, 8.0, fraction)
+	material.initial_velocity_max = lerpf(6.0, 18.0, fraction)
+	_wake.modulate.a = fraction * 0.9
 	_wake.emitting = fraction > 0.05
-
-	# Fumaça de cada bordo sai do convés, na altura do canhão.
-	_smoke_port.position = (DECK_OFFSET + Vector2(0.0, -GUN_LATERAL)).rotated(-rotation)
-	_smoke_starboard.position = (DECK_OFFSET + Vector2(0.0, GUN_LATERAL)).rotated(-rotation)
 
 
 func _setup_smoke(node: GPUParticles2D, side: int) -> void:
