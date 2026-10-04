@@ -8,6 +8,10 @@
 script = ExtResource("1_ship")
 data = ExtResource("2_data")
 
+[node name="Shadow" type="Sprite2D" parent="."]
+texture = ExtResource("3_sprite")
+texture_filter = 1
+
 [node name="Sprite2D" type="Sprite2D" parent="."]
 texture = ExtResource("3_sprite")
 texture_filter = 1
@@ -16,4 +20,10 @@ texture_filter = 1
 amount = 28
 lifetime = 1.1
 local_coords = false
+emitting = false
+
+[node name="SmokePort" type="GPUParticles2D" parent="."]
+emitting = false
+
+[node name="SmokeStarboard" type="GPUParticles2D" parent="."]
 emitting = false
