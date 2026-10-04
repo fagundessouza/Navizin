@@ -32,6 +32,16 @@ Commits, em ordem:
 - **Limite honesto:** a virada entre uma vista de lado e uma de cima ainda parece uma dupla exposição durante cerca de 0.4 s. Um giro de verdade pede quadros intermediários desenhados. Isso é próximo passo de arte.
 - **Testes:** suíte `test_v3` com 11 verificações passa (toque, Q+E juntos, atraso da vista, mistura, virada sem corte, balanço, mar com iluminação).
 
+## Rodada de correções (ghosting, canhões, cooldown, trilhos)
+- **Uma vista por vez:** a mistura entre vistas saiu. Ao mudar de setor, a vista atual escurece e a nova clareia (`DIP_SPEED` 9/s). Não há mais `SpriteBlend` nem `ShadowBlend`. A troca só acontece com a imagem quase apagada.
+- **Canhões:** `PortCannons` e `StarboardCannons` com três `Marker2D` cada (x = -30, 0, 30; y = ∓10). Os tiros e a fumaça saem do convés (`DECK_OFFSET` = (0, 22) em tela), e não do centro do sprite.
+- **Por que os tiros de bombordo cruzam as velas:** a física é de cima e a arte é de lado. O lado de bombordo aponta para cima na tela, por cima das velas. Os projéteis agora passam por trás do navio (`move_child`). A correção definitiva é arte de casco de cima ou de três quartos.
+- **Cooldown por bateria:** 2.5 s (`broadside_cooldown` em `ShipData`), independente para cada bordo. Bloqueia o início da carga e o disparo.
+- **Mira em trilhos:** faixas paralelas azuis translúcidas (`RAIL_COLOR`, alfa 0.35), perpendiculares ao bordo, uma por canhão, crescendo com a carga. Substituem o arco pontilhado. Limpam ao soltar.
+- **Disparo:** segurar só mira. Soltar dispara. Toque rápido ainda dispara a força mínima (`TAP_MIN_POWER` 0.3). Isso é um conflito com o pedido "só dispara ao soltar", que fica em aberto.
+- **Leme:** já suavizado com `lerp_angle` na vista (`VISUAL_TURN_RATE`) e com aceleração angular. Mantido.
+- **Testes:** suíte `test_v4` com 13 verificações passa (segurar sem disparar, Q+E juntos, cooldown por bateria, origem no convés, uma vista visível, troca sem corte, atraso da vista).
+
 ## Sprite do Holandês Voador
 - Fonte: `client/assets/sprites/ships/holandes_voador/holandes_voador_directions.png` (600×400). É uma folha 4×2 com 8 vistas e rótulos de texto. A vista "Fundo" foi removida.
 - Recortes finais em `client/assets/sprites/ships/holandes_voador/dirs/`: `front`, `back`, `left`, `right`, `top`, `top_left`, `top_right`. Todos em canvas 176×178, com pivô no centro.
