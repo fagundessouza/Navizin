@@ -40,22 +40,22 @@ const TAP_MIN_POWER: float = 0.3
 ## Os 16 frames de direção, de 0° a 337.5°, em passos de 22.5°. Pares (índices
 ## pares) vêm de `ficha_laterais_frontais`; ímpares, de `ficha_intermediarios`.
 const DIR16_TEXTURES: Array[Texture2D] = [
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_00.png"),
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_01.png"),
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_02.png"),
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_03.png"),
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_04.png"),
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_05.png"),
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_06.png"),
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_07.png"),
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_08.png"),
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_09.png"),
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_10.png"),
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_11.png"),
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_12.png"),
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_13.png"),
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_14.png"),
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_15.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_04.png"),  # direção 0 -> frame 4
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_01.png"),  # direção 1 -> frame 1
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_06.png"),  # direção 2 -> frame 6
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_03.png"),  # direção 3 -> frame 3
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_00.png"),  # direção 4 -> frame 0
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_05.png"),  # direção 5 -> frame 5
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_10.png"),  # direção 6 -> frame 10
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_07.png"),  # direção 7 -> frame 7
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_12.png"),  # direção 8 -> frame 12
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_09.png"),  # direção 9 -> frame 9
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_10.png"),  # direção 10 -> frame 10
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_11.png"),  # direção 11 -> frame 11
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_08.png"),  # direção 12 -> frame 8
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_13.png"),  # direção 13 -> frame 13
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_06.png"),  # direção 14 -> frame 6
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_15.png"),  # direção 15 -> frame 15
 ]
 
 ## Vistas de cima (fonte intermediária, índices ímpares): sem sombra deslocada,
@@ -449,11 +449,13 @@ func _apply_float() -> void:
 	var drift: float = sin(_time * TAU / DRIFT_PERIOD) * DRIFT_AMPLITUDE * amp
 	var sway: float = sin(_time * TAU / SWAY_PERIOD) * SWAY_ANGLE * amp
 
-	_sprite.position = Vector2(drift, bob)
-	_sprite.rotation = sway
+	# O sprite é filho do nó, que gira com o rumo. Ele é contra-rotacionado para
+	# mostrar o frame da direção como está; a orientação já está no frame.
+	_sprite.position = Vector2(drift, bob).rotated(-rotation)
+	_sprite.rotation = -rotation + sway
 
-	_shadow.position = SHADOW_OFFSET + Vector2(0.0, -bob * 0.8)
-	_shadow.rotation = 0.0
+	_shadow.position = (SHADOW_OFFSET + Vector2(0.0, -bob * 0.8)).rotated(-rotation)
+	_shadow.rotation = -rotation
 
 
 ## Mantém o navio dentro da área útil do mar. Ao bater na borda, para.
