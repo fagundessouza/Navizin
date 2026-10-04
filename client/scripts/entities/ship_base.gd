@@ -12,3 +12,16 @@ extends Node2D
 
 ## Frames por segundo da animação das velas.
 @export var animation_fps: float = 8.0
+
+@onready var _sprite: Sprite2D = $Sprite2D
+
+var _elapsed: float = 0.0
+
+
+func _ready() -> void:
+	_sprite.hframes = frame_count
+
+
+func _process(delta: float) -> void:
+	_elapsed += delta
+	_sprite.frame = int(_elapsed * animation_fps) % frame_count

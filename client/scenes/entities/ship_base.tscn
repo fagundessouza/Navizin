@@ -1,0 +1,11 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/entities/ship_base.gd" id="1_ship"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ships/holandes_voador/holandes_voador_sheet.png" id="2_sheet"]
+
+[node name="ShipBase" type="Node2D"]
+script = ExtResource("1_ship")
+ship_name = "Holandês Voador"
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_sheet")
