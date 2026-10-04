@@ -131,6 +131,13 @@ const DECK_OFFSET: Vector2 = Vector2(0.0, 22.0)
 
 ## Linha d'água, em coordenadas de tela: a espuma sai daqui, sob o casco.
 const WAKE_OFFSET: Vector2 = Vector2(0.0, 58.0)
+## Distância da popa ao ponto de emissão, em pixels de tela.
+const STERN_REACH: float = 40.0
+## Ajuste vertical da popa por frame: frames com a proa para baixo descem o ponto
+## de emissão até a borda inferior da popa; frames com a proa para cima sobem um pouco
+## para colar na base traseira.
+const STERN_DOWN_Y: float = -20.0
+const STERN_UP_Y: float = 10.0
 
 ## Sombra: deslocamento no mundo e opacidade base.
 const SHADOW_OFFSET: Vector2 = Vector2(6.0, 10.0)
@@ -183,6 +190,9 @@ var _cooldown: Dictionary = {SIDE_PORT: 0.0, SIDE_STARBOARD: 0.0}
 
 var _was_charging: bool = false
 var _kick: Vector2 = Vector2.ZERO
+## Offsets da popa por entrada de `DIR_ENTRIES`: base (tela) e vetor de ré.
+var _stern_base: Array[Vector2] = []
+var _stern_back: Array[Vector2] = []
 var _shake: float = 0.0
 var _camera: Camera2D = null
 var _puff: GradientTexture2D
@@ -202,6 +212,7 @@ func _ready() -> void:
 	# O sprite fica atrás do desenho do próprio navio (trilhos de mira).
 	_sprite.show_behind_parent = true
 	_camera = get_node_or_null("Camera2D") as Camera2D
+	_build_stern_table()
 	_visual_heading = rotation
 	_puff = _make_puff_texture()
 	_shadow.modulate = Color(0.0, 0.0, 0.0, SHADOW_ALPHA)
@@ -596,21 +607,47 @@ func _setup_wake() -> void:
 	_wake.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	# No referencial do casco: a popa e a deriva seguem a proa, em qualquer rumo.
 	_wake.local_coords = true
+	# Atrás do casco: a espuma fica abaixo do sprite do navio.
+	_wake.show_behind_parent = true
 	_wake.amount = 40
 	_wake.lifetime = 1.1
 	_wake.emitting = false
 
 
-## A espuma sai da popa, na linha d'água. A quantidade acompanha a velocidade:
-## parado, não emite.
+## Monta os offsets da popa para cada entrada de `DIR_ENTRIES`. A ré é o sentido
+## oposto à proa, na tela. Nas vistas laterais (proa para a direita ou esquerda) o
+## resultado é o mesmo offset de antes.
+func _build_stern_table() -> void:
+	_stern_base.clear()
+	_stern_back.clear()
+	for entry in DIR_ENTRIES:
+		var angle: float = deg_to_rad(float(entry[0]))
+		var bow_down: float = sin(angle)
+		var base: Vector2 = WAKE_OFFSET
+		if bow_down > 0.5:
+			base.y += STERN_DOWN_Y
+		elif bow_down < -0.5:
+			base.y += STERN_UP_Y
+		_stern_base.append(base)
+		_stern_back.append(Vector2.from_angle(angle + PI) * STERN_REACH)
+
+
+## A espuma sai da popa, na linha d'água. Usa o offset da direção mostrada, e a
+## deriva segue a ré do frame. A quantidade acompanha a velocidade: parado, não emite.
 func _update_wake() -> void:
-	var stern_sign: float = -1.0 if speed >= 0.0 else 1.0
+	var reversing: bool = speed < 0.0
 	var fraction: float = clampf(absf(speed) / maxf(data.max_speed, 1.0), 0.0, 1.0)
+	var back: Vector2 = _stern_back[_shown_index]
+	var base: Vector2 = _stern_base[_shown_index]
+	if reversing:
+		back = -back
+	var screen_pos: Vector2 = base + back
+	var local_back: Vector2 = back.rotated(-rotation).normalized()
 	var material := _wake.process_material as ParticleProcessMaterial
-	material.direction = Vector3(stern_sign, 0.0, 0.0)
+	material.direction = Vector3(local_back.x, local_back.y, 0.0)
 	material.initial_velocity_min = lerpf(0.5, 4.0, fraction)
 	material.initial_velocity_max = lerpf(3.0, 9.0, fraction)
-	_wake.position = WAKE_OFFSET.rotated(-rotation) + Vector2(stern_sign * data.hull_half_length * 0.8, 0.0)
+	_wake.position = screen_pos.rotated(-rotation)
 	_wake.amount_ratio = fraction
 	_wake.emitting = fraction > 0.02
 
