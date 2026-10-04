@@ -37,33 +37,47 @@ const SIDE_STARBOARD: int = 1
 ## Força mínima de qualquer bordada. Um toque rápido ainda sai como tiro visível.
 const TAP_MIN_POWER: float = 0.3
 
-## Frame de cada direção (0 a 15, de 22.5° em 22.5°): arquivo `dir16_NN.png` e
-## se é espelhado em 180°. Escolhido pela proa mais próxima do rumo. Girar 180°
-## só vale para vistas de cima; as laterais e de frente/costas ficam sem giro.
+## Os 16 frames de direção, arquivo `dir16_NN.png`, 00 a 15 da ficha.
 const DIR16_TEXTURES: Array[Texture2D] = [
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_04.png"),  # 0
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_04.png"),  # 1
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_06.png"),  # 2
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_03.png"),  # 3
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_00.png"),  # 4
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_13.png"),  # 5
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_10.png"),  # 6
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_10.png"),  # 7
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_12.png"),  # 8
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_12.png"),  # 9
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_03.png"),  # 10
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_03.png"),  # 11
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_08.png"),  # 12
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_13.png"),  # 13
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_05.png"),  # 14
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_04.png"),  # 15
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_00.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_01.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_02.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_03.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_04.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_05.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_06.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_07.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_08.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_09.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_10.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_11.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_12.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_13.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_14.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_15.png"),
 ]
 
-const DIR16_FLIP: Array[bool] = [false, false, false, false, false, false, false, false, false, false, true, true, false, true, true, false]
-
-## Vistas de cima (frames ímpares da segunda ficha): sem sombra deslocada, para o
-## casco não parecer duplicado.
-const DIR16_TOP_VIEW: Array[bool] = [false, false, false, true, false, true, false, false, false, false, true, true, false, true, true, false]
+## Direção (0 a 15) -> [frame, espelha na horizontal, espelha na vertical].
+## A metade esquerda é o reflexo da direita: o mesmo frame, espelhado na
+## horizontal, para que a proa siga o movimento nos dois lados.
+const DIR16_SLOTS: Array = [
+	[4, false, false],  # 0 (0.0°)
+	[4, false, false],  # 1 (22.5°)
+	[10, false, false],  # 2 (45.0°)
+	[3, false, false],  # 3 (67.5°)
+	[0, false, false],  # 4 (90.0°)
+	[3, true, false],  # 5 (112.5°)
+	[10, true, false],  # 6 (135.0°)
+	[4, true, false],  # 7 (157.5°)
+	[4, true, false],  # 8 (180.0°)
+	[4, true, false],  # 9 (202.5°)
+	[3, true, true],  # 10 (225.0°)
+	[3, true, true],  # 11 (247.5°)
+	[8, false, false],  # 12 (270.0°)
+	[13, true, true],  # 13 (292.5°)
+	[5, true, true],  # 14 (315.0°)
+	[4, false, false],  # 15 (337.5°)
+]
 
 ## Escala do sprite e da sombra: o navio fica 8% maior.
 const SPRITE_SCALE: float = 1.08
@@ -438,14 +452,18 @@ func _update_visual(delta: float) -> void:
 func _show_direction(index: int) -> void:
 	_shown_index = index
 	direction = index
-	_sprite.texture = DIR16_TEXTURES[index]
-	var flip: bool = DIR16_FLIP[index]
-	_sprite.flip_h = flip
-	_sprite.flip_v = flip
+	var slot: Array = DIR16_SLOTS[index]
+	var frame: int = slot[0]
+	var tex: Texture2D = DIR16_TEXTURES[frame]
+	_sprite.texture = tex
+	_sprite.flip_h = slot[1]
+	_sprite.flip_v = slot[2]
 	_sprite.modulate.a = 1.0
-	_shadow.texture = null if DIR16_TOP_VIEW[index] else DIR16_TEXTURES[index]
-	_shadow.flip_h = flip
-	_shadow.flip_v = flip
+	# Vistas de cima (frames ímpares) não levam sombra deslocada.
+	var top_view: bool = frame % 2 == 1
+	_shadow.texture = null if top_view else tex
+	_shadow.flip_h = slot[1]
+	_shadow.flip_v = slot[2]
 
 
 ## Balanço de flutuação: o navio sobe e desce, deriva de lado e balança. Mais
