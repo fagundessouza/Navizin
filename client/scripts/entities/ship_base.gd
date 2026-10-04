@@ -57,34 +57,38 @@ const DIR16_TEXTURES: Array[Texture2D] = [
 	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_15.png"),
 ]
 
-## Direção (0 a 15) -> [frame, espelha na horizontal, espelha na vertical].
-## A metade esquerda é o reflexo da direita: o mesmo frame, espelhado na
-## horizontal, para que a proa siga o movimento nos dois lados.
-const DIR16_SLOTS: Array = [
-	[4, false, false],  # 0 (0.0°)
-	[4, false, false],  # 1 (22.5°)
-	[10, false, false],  # 2 (45.0°)
-	[13, true, false],  # 3 (67.5°)
-	[0, false, false],  # 4 (90.0°)
-	[13, false, false],  # 5 (112.5°)
-	[10, true, false],  # 6 (135.0°)
-	[4, true, false],  # 7 (157.5°)
-	[4, true, false],  # 8 (180.0°)
-	[4, true, false],  # 9 (202.5°)
-	[5, false, true],  # 10 (225.0°)
-	[13, false, true],  # 11 (247.5°)
-	[8, false, false],  # 12 (270.0°)
-	[13, true, true],  # 13 (292.5°)
-	[5, true, true],  # 14 (315.0°)
-	[4, false, false],  # 15 (337.5°)
+## Direções mostradas: [ângulo em graus, frame, espelha na horizontal, espelha na
+## vertical]. Ordenadas pelo ângulo. Os 16 passos de 22.5° mais os intermediários
+## de 33.75°, 191.25° e 348.75°, que são os espelhos do primeiro frame lateral
+## depois de 6 e de 4.
+const DIR_ENTRIES: Array = [
+	[0, 4, false, false],  # 0°
+	[22.5, 4, false, false],  # 22.5°
+	[33.75, 4, false, true],  # 33.75°
+	[45, 10, false, false],  # 45°
+	[67.5, 13, true, false],  # 67.5°
+	[90, 0, false, false],  # 90°
+	[112.5, 13, false, false],  # 112.5°
+	[135, 10, true, false],  # 135°
+	[157.5, 4, true, false],  # 157.5°
+	[180, 4, true, false],  # 180°
+	[191.25, 4, true, true],  # 191.25°
+	[202.5, 4, true, false],  # 202.5°
+	[225, 5, false, true],  # 225°
+	[247.5, 13, false, true],  # 247.5°
+	[270, 8, false, false],  # 270°
+	[292.5, 13, true, true],  # 292.5°
+	[315, 5, true, true],  # 315°
+	[337.5, 4, false, false],  # 337.5°
+	[348.75, 4, false, false],  # 348.75°
 ]
 
 ## Escala do sprite e da sombra: o navio fica 8% maior.
 const SPRITE_SCALE: float = 1.08
 
-## Histerese da troca de frame, em passos de 22.5°: só troca depois de passar
-## da fronteira por este valor. Evita piscar quando o rumo fica parado perto dela.
-const FRAME_HYSTERESIS: float = 0.15
+## Histerese da troca de frame, em graus: só troca depois de passar da fronteira
+## por este valor. Evita piscar quando o rumo fica parado perto dela.
+const FRAME_HYSTERESIS_DEG: float = 3.0
 
 ## Zona morta do leme, em radianos (~1°): abaixo disso a proa para de girar.
 const STEER_DEADBAND: float = 0.02
@@ -180,7 +184,7 @@ var _puff: GradientTexture2D
 
 ## Rumo mostrado na tela: segue o rumo real com atraso, então a virada parece pesada.
 var _visual_heading: float = 0.0
-## Direção exibida, de 0 a 15 em `DIRECTIONS`.
+## Índice em `DIR_ENTRIES` da direção mostrada.
 var _shown_index: int = -1
 var _time: float = 0.0
 
@@ -198,7 +202,7 @@ func _ready() -> void:
 	_shadow.modulate = Color(0.0, 0.0, 0.0, SHADOW_ALPHA)
 	_sprite.scale = Vector2.ONE * SPRITE_SCALE
 	_shadow.scale = Vector2.ONE * SPRITE_SCALE
-	_show_direction(posmod(roundi(rad_to_deg(rotation) / DIR_STEP_DEG), DIRECTIONS))
+	_show_direction(_nearest_entry(rad_to_deg(rotation), -1))
 	_setup_wake()
 	_setup_smoke(_smoke_port, SIDE_PORT)
 	_setup_smoke(_smoke_starboard, SIDE_STARBOARD)
@@ -356,7 +360,7 @@ func _any_holding() -> bool:
 ## Lateral da direção mostrada, no referencial do casco. A mira usa o ângulo da
 ## vista (índice × 22.5°), para ficar alinhada ao desenho e não ao rumo contínuo.
 func _aim_local(side: int) -> float:
-	var shown: float = deg_to_rad(float(_shown_index) * DIR_STEP_DEG)
+	var shown: float = deg_to_rad(float(DIR_ENTRIES[_shown_index][0]))
 	return shown + _normal_local(side) - rotation
 
 
@@ -443,34 +447,48 @@ func _target_speed() -> float:
 ## quando o rumo passa da fronteira com folga (histerese), para não piscar.
 func _update_visual(delta: float) -> void:
 	_time += delta
-	var steps: float = rad_to_deg(global_rotation) / DIR_STEP_DEG
-	var index: int = posmod(roundi(steps), DIRECTIONS)
-	if _shown_index < 0:
-		_show_direction(index)
-	else:
-		var d: float = wrapf(steps - float(_shown_index) + DIRECTIONS / 2.0, 0.0, float(DIRECTIONS)) - DIRECTIONS / 2.0
-		if absf(d) > 0.5 + FRAME_HYSTERESIS:
-			_show_direction(index)
+	var deg: float = rad_to_deg(global_rotation)
+	_show_direction(_nearest_entry(deg, _shown_index))
 	_apply_float()
+
+
+## Entrada de `DIR_ENTRIES` mais próxima do rumo, em graus. Se `current` já é uma
+## entrada vizinha dentro da histerese, mantém a atual.
+func _nearest_entry(deg: float, current: int) -> int:
+	var best: int = 0
+	var best_dist: float = INF
+	for k in range(DIR_ENTRIES.size()):
+		var d: float = _circ_dist(deg, DIR_ENTRIES[k][0])
+		if d < best_dist:
+			best_dist = d
+			best = k
+	if current >= 0 and current != best:
+		var cur_dist: float = _circ_dist(deg, DIR_ENTRIES[current][0])
+		if cur_dist <= best_dist + FRAME_HYSTERESIS_DEG:
+			return current
+	return best
+
+
+func _circ_dist(a: float, b: float) -> float:
+	return absf(wrapf(a - b, -180.0, 180.0))
 
 
 ## Mostra a direção: um único sprite, opaco. Nas vistas de cima
 ## a sombra some, porque o casco já cobre a água.
 func _show_direction(index: int) -> void:
 	_shown_index = index
-	direction = index
-	var slot: Array = DIR16_SLOTS[index]
-	var frame: int = slot[0]
+	var entry: Array = DIR_ENTRIES[index]
+	var frame: int = entry[1]
 	var tex: Texture2D = DIR16_TEXTURES[frame]
 	_sprite.texture = tex
-	_sprite.flip_h = slot[1]
-	_sprite.flip_v = slot[2]
+	_sprite.flip_h = entry[2]
+	_sprite.flip_v = entry[3]
 	_sprite.modulate.a = 1.0
 	# Vistas de cima (frames ímpares) não levam sombra deslocada.
 	var top_view: bool = frame % 2 == 1
 	_shadow.texture = null if top_view else tex
-	_shadow.flip_h = slot[1]
-	_shadow.flip_v = slot[2]
+	_shadow.flip_h = entry[2]
+	_shadow.flip_v = entry[3]
 
 
 ## Balanço de flutuação: o navio sobe e desce, deriva de lado e balança. Mais
