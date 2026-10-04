@@ -4,13 +4,25 @@
 > Ao final de cada sessão ou marco, diga **"Salvar checkpoint"** para atualizá-lo.
 
 ## Módulo atual
-Issue #4 (movimentação do navio do jogador) implementada na branch `feature/issue-4-ship-movement`, aguardando revisão e merge em `dev`. Setup inicial, Kanban e primeira cena do cliente concluídos e validados no Godot 4.7.2.
+Issue #4 (movimentação do navio do jogador) implementada na branch `feature/issue-4-ship-movement`, com controle híbrido (mouse + teclado) no estilo MOBA/ARPG, aguardando revisão e merge em `dev`. Setup inicial, Kanban e primeira cena do cliente concluídos e validados no Godot 4.7.2.
 
 ## Branch de trabalho atual
 - `feature/issue-4-ship-movement`, criada a partir de `dev`. Commits locais, ainda sem push:
   - `ac3c353` feat(client): add ship movement with acceleration, drag and smooth turning
   - `a6436db` feat(client): make the map's ship player-controlled
+  - `b42e3f9` docs: update STATE checkpoint for issue #4 ship movement
+  - `6dfb99f` feat(client): add input actions for sails, skills and primary click
+  - `bef463f` feat(client): hybrid mouse aim, naval sail levels and skill signals
 - Ainda não há PR. Quando for revisado, faz merge em `dev` e a issue #4 fecha.
+
+## Controle do navio do jogador (estado atual)
+- **Mira:** a proa segue o ponteiro do mouse com `turn_speed` e suavização (`aim_responsiveness`, `turn_acceleration`). Zona morta de `aim_deadzone` px. `get_aim_vector()` expõe a mira.
+- **Velas:** `W`/`Cima` sobe, `S`/`Baixo` desce, com 4 níveis (ré, parado, meia, cheia). Velocidade com inércia: `acceleration` ao subir o alvo, `deceleration` ao soltar. Velocidades: `max_speed` 120, `half_speed` 60, `reverse_speed` 40.
+- **Habilidades:** teclas `1`–`4` emitem `skill_triggered(skill_index)`, com índice de 1 a 4. Ainda sem efeito: o sistema de habilidades não existe.
+- **Clique esquerdo:** emite `primary_action_triggered(target)` com a posição global do ponteiro. Preparação para ataque ou interação.
+- Ações de entrada registradas em `project.godot` (`[input]`): `sail_up`, `sail_down`, `skill_1`…`skill_4`.
+- **Câmera:** a suavização faz a posição do ponteiro no mundo mudar enquanto a câmera assenta. Não é bug, é o cursor visto pela câmera.
+- Teste headless: 21 verificações passam no Godot 4.7.2 (velas, inércia, mira, zona morta, sinais, NPC).
 
 ## Última ação executada
 - Primeiro commit em `develop`: `feat: initial repository structure, architecture docs and stack setup` (`7dd3b91`).
