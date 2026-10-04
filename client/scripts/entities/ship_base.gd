@@ -7,15 +7,13 @@ extends Node2D
 ## Os atributos vêm do recurso `ShipData`.
 ##
 ## Controle do jogador:
+## - A proa segue o ponteiro do mouse. O leme trava enquanto um tiro carrega.
 ## - W/S (ou setas) mudam o nível das velas.
-## - Q liga e desliga a mira de bombordo; E, a de estibordo. Mostrar a mira
-##   nunca dispara. Com a mira ligada, a proa fica travada e o mouse só ajusta
-##   o ângulo, em um arco de ±20° em torno da lateral.
-## - Botão esquerdo do mouse: segura para carregar a bateria ativa. A mira começa
-##   curta, perto do casco, e estende até o alcance máximo. Ao soltar, dispara.
-##   Não há disparo automático.
-## - As baterias de bombordo e estibordo têm cooldown independente.
-## - Sem mira ativa, a proa segue o ponteiro do mouse.
+## - Bombordo: tecla Q ou botão esquerdo. Estibordo: tecla E ou botão direito.
+##   Segurar entra em modo de mira e carrega a força. Soltar dispara aquele bordo.
+##   Q e E juntos mantêm os dois em mira. A carga cheia dispara sozinha.
+##   Cada bateria tem cooldown próprio.
+## - A mira fica presa ao semiplano do bordo escolhido, entre a proa e a popa.
 ## - Teclas 1 a 4 emitem `skill_triggered`. Ainda sem efeito.
 ##
 ## NPCs deixam `player_controlled` falso e recebem comandos de IA no futuro.
@@ -37,15 +35,11 @@ signal primary_action_triggered(target: Vector2)
 ## Emitido com o bordo (-1 bombordo, 1 estibordo) e a força (0 a 1).
 signal broadside_fired(side: int, power: float)
 
-const SIDE_NONE: int = 0
 const SIDE_PORT: int = -1
 const SIDE_STARBOARD: int = 1
 
-## Força mínima de um disparo. Um toque rápido ainda sai como tiro visível.
+## Força mínima de qualquer bordada. Um toque rápido ainda sai como tiro visível.
 const TAP_MIN_POWER: float = 0.3
-
-## Arco de ajuste da mira, em torno da lateral: ±20°, sem apontar para proa ou popa.
-const AIM_ARC: float = 0.35
 
 const TEX_FRONT: Texture2D = preload("res://assets/sprites/ships/holandes_voador/dirs/front.png")
 const TEX_BACK: Texture2D = preload("res://assets/sprites/ships/holandes_voador/dirs/back.png")
@@ -87,6 +81,10 @@ const DRIFT_PERIOD: float = 4.1
 const SWAY_ANGLE: float = 0.012
 const SWAY_PERIOD: float = 3.7
 
+## Margem junto da proa e da popa, em radianos (~8°). A mira nunca aponta direto
+## para a frente ou para trás.
+const SECTOR_MARGIN: float = 0.14
+
 ## Distância lateral dos canhões ao centro do casco, em pixels.
 const GUN_LATERAL: float = 10.0
 
@@ -98,8 +96,8 @@ const DECK_OFFSET: Vector2 = Vector2(0.0, 22.0)
 const SHADOW_OFFSET: Vector2 = Vector2(6.0, 10.0)
 const SHADOW_ALPHA: float = 0.3
 
-## Trilhos de mira em laranja-avermelhado: faixas paralelas translúcidas que
-## seguem a direção de tiro. Contrastam com o azul escuro do mar.
+## Trilhos de mira, no estilo de combate naval: faixas paralelas translúcidas
+## saindo perpendiculares à lateral ativa.
 const RAIL_COLOR: Color = Color(1.0, 0.45, 0.15, 0.35)
 const RAIL_FAINT_COLOR: Color = Color(1.0, 0.45, 0.15, 0.12)
 const RAIL_HALF_WIDTH: float = 3.0
@@ -107,14 +105,14 @@ const RAIL_HALF_WIDTH: float = 3.0
 ## Atributos do navio.
 @export var data: ShipData
 
+## Área útil do mar. O navio não sai dela.
+@export var world_bounds: Rect2 = Rect2(-4000.0, -4000.0, 8000.0, 8000.0)
+
 ## Se verdadeiro, lê o mouse e o teclado. NPCs deixam falso.
 @export var player_controlled: bool = false
 
 ## Vento e maré, em pixels por segundo. Definido pelo mapa.
 @export var ambient_flow: Vector2 = Vector2.ZERO
-
-## Área útil do mar. O navio não sai dela.
-@export var world_bounds: Rect2 = Rect2(-4000.0, -4000.0, 8000.0, 8000.0)
 
 @onready var _shadow: Sprite2D = $Shadow
 @onready var _sprite: Sprite2D = $Sprite2D
@@ -139,16 +137,13 @@ var knockback: Vector2 = Vector2.ZERO
 ## Vista mostrada agora.
 var direction: Direction = Direction.SIDE_LEFT
 
-## Bateria com mira ligada: SIDE_PORT, SIDE_STARBOARD, ou SIDE_NONE.
-var _active_side: int = SIDE_NONE
-## Carga em andamento: se o botão está segurado, de que bordo, e a força atual.
-var _holding: bool = false
-var _charge_side: int = SIDE_NONE
-var _power: float = 0.0
-## Tempo restante de cooldown de cada bateria, indexado por SIDE_PORT e SIDE_STARBOARD.
+## Estado de cada bateria, indexado por SIDE_PORT e SIDE_STARBOARD.
+var _charging: Dictionary = {SIDE_PORT: false, SIDE_STARBOARD: false}
+var _power: Dictionary = {SIDE_PORT: 0.0, SIDE_STARBOARD: 0.0}
+var _awaiting_release: Dictionary = {SIDE_PORT: false, SIDE_STARBOARD: false}
 var _cooldown: Dictionary = {SIDE_PORT: 0.0, SIDE_STARBOARD: 0.0}
 
-var _was_showing_aim: bool = false
+var _was_charging: bool = false
 var _shake: float = 0.0
 var _camera: Camera2D = null
 var _puff: GradientTexture2D
@@ -194,16 +189,17 @@ func _process(delta: float) -> void:
 	_update_charge(delta)
 	_update_cooldown(delta)
 	_update_shake(delta)
-	# Redesenha enquanto a mira está ligada, e no quadro em que ela desliga, para apagar os trilhos.
-	var showing: bool = _active_side != SIDE_NONE
-	if showing or _was_showing_aim:
+	# Redesenha durante a carga e também no quadro em que ela termina, para apagar os trilhos.
+	var charging: bool = _any_charging()
+	if charging or _was_charging:
 		queue_redraw()
-	_was_showing_aim = showing
+	_was_charging = charging
 
 
 func _draw() -> void:
-	if _active_side != SIDE_NONE:
-		_draw_rails(_active_side)
+	for side in [SIDE_PORT, SIDE_STARBOARD]:
+		if _charging[side]:
+			_draw_rails(side, _power[side])
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -219,16 +215,19 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event.is_action_pressed("skill_%d" % skill_index):
 			skill_triggered.emit(skill_index)
 
-	# Q e E só ligam ou desligam a mira. Nunca disparam.
 	if event.is_action_pressed("broadside_port"):
-		_toggle_aim(SIDE_PORT)
+		_press_charge(SIDE_PORT)
+	elif event.is_action_released("broadside_port"):
+		_release_charge(SIDE_PORT)
 	elif event.is_action_pressed("broadside_starboard"):
-		_toggle_aim(SIDE_STARBOARD)
-	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if event.pressed:
-			_begin_hold()
-		else:
-			_end_hold()
+		_press_charge(SIDE_STARBOARD)
+	elif event.is_action_released("broadside_starboard"):
+		_release_charge(SIDE_STARBOARD)
+	elif event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			_mouse_charge(event.pressed, SIDE_PORT)
+		elif event.button_index == MOUSE_BUTTON_RIGHT:
+			_mouse_charge(event.pressed, SIDE_STARBOARD)
 
 
 ## Direção da mira: do navio até o ponteiro, normalizada.
@@ -242,19 +241,14 @@ func get_aim_vector() -> Vector2:
 	return to_pointer.normalized()
 
 
-## Bateria com a mira ligada, ou SIDE_NONE.
-func active_side() -> int:
-	return _active_side
-
-
-## Se a bateria está com o botão segurado, carregando.
+## Se o bordo está em mira, carregando a força.
 func is_charging(side: int) -> bool:
-	return _holding and _charge_side == side
+	return _charging[side]
 
 
-## Força atual da carga, de 0.0 a 1.0.
-func charge_power() -> float:
-	return _power
+## Força atual da carga do bordo, de 0.0 a 1.0.
+func charge_power(side: int) -> float:
+	return _power[side]
 
 
 ## Segundos restantes até a bateria do bordo poder disparar de novo.
@@ -266,19 +260,17 @@ func cooldown_left(side: int) -> float:
 ## Cria `cannon_count` projéteis em sequência, saindo dos canhões do bordo.
 ## Não dispara se a bateria ainda está em cooldown.
 func fire_broadside(power: float, side: int) -> void:
-	if side == SIDE_NONE or _cooldown[side] > 0.0:
+	if _cooldown[side] > 0.0:
 		return
 	power = clampf(power, 0.0, 1.0)
-	var aim: float = _aim_local(side)
+	var limits: Vector2 = _sector_limits(side)
+	var aim: float = _broadside_angle(side)
 	var half_spread: float = lerpf(data.spread_min, data.spread_max, power)
 	var shot_speed: float = lerpf(data.projectile_speed_min, data.projectile_speed_max, power)
-	var normal: float = _normal_local(side)
 	var guns: Array = _guns(side)
 
 	for i in range(data.cannon_count):
-		# A dispersão fica dentro do arco de ±20°: nunca aponta para a proa ou a popa.
-		var local_angle: float = clampf(aim + randf_range(-half_spread, half_spread),
-			normal - AIM_ARC, normal + AIM_ARC)
+		var local_angle: float = clampf(aim + randf_range(-half_spread, half_spread), limits.x, limits.y)
 		var velocity: Vector2 = Vector2.from_angle(rotation + local_angle) * shot_speed
 		# Os canhões se revezam ao longo do casco.
 		var gun_index: int = i % guns.size()
@@ -297,42 +289,52 @@ func fire_broadside(power: float, side: int) -> void:
 	broadside_fired.emit(side, power)
 
 
-## Liga ou desliga a mira de uma bateria. Trocar de bordo muda a mira ativa.
-func _toggle_aim(side: int) -> void:
-	_active_side = SIDE_NONE if _active_side == side else side
-
-
-## Botão esquerdo pressionado: começa a carregar a bateria ativa, se pronta.
-func _begin_hold() -> void:
-	if _holding or _active_side == SIDE_NONE or _cooldown[_active_side] > 0.0:
+## Segurar entra em mira e começa a carregar. Não dispara.
+func _press_charge(side: int) -> void:
+	if _charging[side] or _awaiting_release[side] or _cooldown[side] > 0.0:
 		return
-	_holding = true
-	_charge_side = _active_side
-	_power = 0.0
+	_charging[side] = true
+	_power[side] = 0.0
 
 
-## Botão esquerdo solto: dispara a bateria que carregou, com a força acumulada.
-func _end_hold() -> void:
-	if not _holding:
-		return
-	fire_broadside(maxf(_power, TAP_MIN_POWER), _charge_side)
-	_holding = false
-	_charge_side = SIDE_NONE
-	_power = 0.0
+## Soltar dispara o bordo com a força acumulada, e só ele.
+func _release_charge(side: int) -> void:
+	if _charging[side]:
+		fire_broadside(maxf(_power[side], TAP_MIN_POWER), side)
+		_charging[side] = false
+		_power[side] = 0.0
+	_awaiting_release[side] = false
 
 
-## Normal do bordo no referencial do casco: bombordo aponta para -Y, estibordo para +Y.
-func _normal_local(side: int) -> float:
-	return -PI / 2.0 if side == SIDE_PORT else PI / 2.0
+func _mouse_charge(pressed: bool, side: int) -> void:
+	if pressed:
+		_press_charge(side)
+	else:
+		_release_charge(side)
 
 
-## Ângulo de tiro local do bordo: a lateral, desviada pelo cursor dentro de ±AIM_ARC.
-func _aim_local(side: int) -> float:
-	var normal: float = _normal_local(side)
+func _any_charging() -> bool:
+	return _charging[SIDE_PORT] or _charging[SIDE_STARBOARD]
+
+
+## Verdadeiro enquanto há carga ou um disparo automático aguardando soltar.
+func _any_holding() -> bool:
+	return _any_charging() or _awaiting_release[SIDE_PORT] or _awaiting_release[SIDE_STARBOARD]
+
+
+## Limites do ângulo de tiro (em relação à proa) para o bordo: só o semiplano dele.
+func _sector_limits(side: int) -> Vector2:
+	if side == SIDE_PORT:
+		return Vector2(-PI + SECTOR_MARGIN, -SECTOR_MARGIN)
+	return Vector2(SECTOR_MARGIN, PI - SECTOR_MARGIN)
+
+
+## Ângulo de tiro local do bordo: o cursor, preso ao semiplano desse lado.
+func _broadside_angle(side: int) -> float:
 	var to_pointer: Vector2 = get_global_mouse_position() - global_position
-	var pointer_local: float = wrapf(to_pointer.angle() - rotation, -PI, PI)
-	var offset: float = clampf(angle_difference(normal, pointer_local), -AIM_ARC, AIM_ARC)
-	return normal + offset
+	var local_angle: float = wrapf(to_pointer.angle() - rotation, -PI, PI)
+	var limits: Vector2 = _sector_limits(side)
+	return clampf(local_angle, limits.x, limits.y)
 
 
 ## Canhões de um bordo, na ordem em que são usados na bordada.
@@ -340,22 +342,24 @@ func _guns(side: int) -> Array:
 	return _port_cannons.get_children() if side == SIDE_PORT else _starboard_cannons.get_children()
 
 
-## Trilhos paralelos que seguem a direção de tiro, um por canhão.
-## Começam curtos perto do casco e se estendem com a carga. O alcance máximo
-## fica como referência discreta.
-func _draw_rails(side: int) -> void:
-	var dir: Vector2 = Vector2.from_angle(_aim_local(side))
-	var length: float = lerpf(data.range_min, data.range_max, _power) if is_charging(side) else data.range_min
+## Trilhos paralelos perpendiculares ao bordo, um por canhão. Crescem com a carga.
+## O trilho de alcance máximo fica como referência discreta.
+func _draw_rails(side: int, power: float) -> void:
+	var normal: Vector2 = Vector2(0.0, side)
+	var length: float = lerpf(data.range_min, data.range_max, power)
 	var deck: Vector2 = DECK_OFFSET.rotated(-rotation)
 	for gun in _guns(side):
 		var start: Vector2 = (gun as Node2D).position + deck
-		_draw_rail(start, start + dir * data.range_max, RAIL_FAINT_COLOR, dir)
-		_draw_rail(start, start + dir * length, RAIL_COLOR, dir)
+		_draw_rail(start, start + normal * data.range_max, RAIL_FAINT_COLOR)
+		_draw_rail(start, start + normal * length, RAIL_COLOR)
 
 
-func _draw_rail(from: Vector2, to: Vector2, color: Color, dir: Vector2) -> void:
-	var w: Vector2 = dir.orthogonal().normalized() * RAIL_HALF_WIDTH
-	var points: PackedVector2Array = PackedVector2Array([from - w, from + w, to + w, to - w])
+func _draw_rail(from: Vector2, to: Vector2, color: Color) -> void:
+	var w: float = RAIL_HALF_WIDTH
+	var points: PackedVector2Array = PackedVector2Array([
+		from + Vector2(-w, 0.0), from + Vector2(w, 0.0),
+		to + Vector2(w, 0.0), to + Vector2(-w, 0.0),
+	])
 	draw_colored_polygon(points, color)
 
 
@@ -365,16 +369,16 @@ func _spawn_cannonball(side: int, gun_index: int, velocity: Vector2) -> void:
 	ball.velocity = velocity
 	ball.lifetime = data.projectile_lifetime
 	get_parent().add_child(ball)
-	# Atrás do navio: na arte de lado, um tiro para bombordo sobe pelas velas
-	# e deve passar por trás delas, não por cima.
+	# Atrás do navio: na arte de lado, um tiro para bombordo sobe pelas velas e
+	# deve passar por trás delas, não por cima.
 	get_parent().move_child(ball, get_index())
 	ball.global_position = global_position + DECK_OFFSET + gun.position.rotated(rotation)
 
 
 func _update_steering(delta: float) -> void:
 	var steer: float = 0.0
-	# Com a mira ligada, a proa trava: o mouse só ajusta o ângulo de tiro.
-	var aim: Vector2 = Vector2.ZERO if _active_side != SIDE_NONE else get_aim_vector()
+	# Com um tiro carregado, o leme trava: a proa não pode mudar o semiplano do bordo.
+	var aim: Vector2 = Vector2.ZERO if _any_holding() else get_aim_vector()
 	if aim != Vector2.ZERO:
 		var error: float = angle_difference(rotation, aim.angle())
 		steer = clampf(error * data.aim_responsiveness, -1.0, 1.0)
@@ -402,18 +406,6 @@ func _target_speed() -> float:
 			return data.max_speed * factor
 		_:
 			return 0.0
-
-
-## Mantém o navio dentro da área útil do mar. Ao bater na borda, para.
-func _clamp_to_world() -> void:
-	if world_bounds.has_point(position):
-		return
-	position = Vector2(
-		clampf(position.x, world_bounds.position.x, world_bounds.end.x),
-		clampf(position.y, world_bounds.position.y, world_bounds.end.y)
-	)
-	speed = 0.0
-	knockback = Vector2.ZERO
 
 
 ## Uma vista por vez. O rumo mostrado segue o real com atraso. Quando ele passa
@@ -480,9 +472,17 @@ func _apply_float() -> void:
 	_shadow.position = shadow_offset
 	_shadow.rotation = -rotation
 
-	# Fumaça de cada bordo sai do convés, na altura do canhão.
-	_smoke_port.position = (DECK_OFFSET + Vector2(0.0, -GUN_LATERAL)).rotated(-rotation)
-	_smoke_starboard.position = (DECK_OFFSET + Vector2(0.0, GUN_LATERAL)).rotated(-rotation)
+
+## Mantém o navio dentro da área útil do mar. Ao bater na borda, para.
+func _clamp_to_world() -> void:
+	if world_bounds.has_point(position):
+		return
+	position = Vector2(
+		clampf(position.x, world_bounds.position.x, world_bounds.end.x),
+		clampf(position.y, world_bounds.position.y, world_bounds.end.y)
+	)
+	speed = 0.0
+	knockback = Vector2.ZERO
 
 
 func _opacity_for(dir: Direction) -> float:
@@ -508,10 +508,17 @@ func _texture_for(dir: Direction) -> Texture2D:
 			return TEX_TOP_RIGHT
 
 
-## Enquanto o botão está segurado, a força cresce até 1.0. Não dispara sozinha.
 func _update_charge(delta: float) -> void:
-	if _holding:
-		_power = minf(1.0, _power + delta / data.charge_time)
+	for side in [SIDE_PORT, SIDE_STARBOARD]:
+		if not _charging[side]:
+			continue
+		_power[side] = minf(1.0, _power[side] + delta / data.charge_time)
+		if _power[side] >= 1.0:
+			# Carga cheia: dispara sozinho e espera o botão ser solto para armar de novo.
+			fire_broadside(1.0, side)
+			_charging[side] = false
+			_power[side] = 0.0
+			_awaiting_release[side] = true
 
 
 func _update_cooldown(delta: float) -> void:
@@ -554,6 +561,10 @@ func _update_wake() -> void:
 	_wake.modulate.a = fraction * 0.8
 	_wake.emitting = fraction > 0.05
 
+	# Fumaça de cada bordo sai do convés, na altura do canhão.
+	_smoke_port.position = (DECK_OFFSET + Vector2(0.0, -GUN_LATERAL)).rotated(-rotation)
+	_smoke_starboard.position = (DECK_OFFSET + Vector2(0.0, GUN_LATERAL)).rotated(-rotation)
+
 
 func _setup_smoke(node: GPUParticles2D, side: int) -> void:
 	var material := ParticleProcessMaterial.new()
@@ -571,6 +582,7 @@ func _setup_smoke(node: GPUParticles2D, side: int) -> void:
 	material.color = Color(0.62, 0.63, 0.66, 0.45)
 	node.process_material = material
 	node.texture = _puff
+	node.position = Vector2(0.0, side * GUN_LATERAL)
 	node.local_coords = false
 	node.one_shot = true
 	node.explosiveness = 0.9
