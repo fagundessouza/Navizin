@@ -21,6 +21,16 @@ Commits, em ordem:
 - `73e5b01` chore(client): enable 2D pixel snap; keep editor-saved project file
 - `c99dcea` feat(client): tile the ocean with a repeating shader
 - `fa8298b` feat(client): Q/E and mouse buttons for broadsides, sea-locked aim, juice
+- `1c7522f` feat(client): light the ocean with relief, sun glints and vignette
+- `64a19b4` feat(client): independent Q/E charges, continuous turning, float sway
+
+## Rodada atual (Q/E, virada, balanço, iluminação)
+- **Q e E independentes:** cada bordo tem carga própria. Q e E segurados juntos carregam os dois. Soltar dispara só aquele bordo. Um toque rápido dispara uma bordada com força mínima `TAP_MIN_POWER` (0.3). Antes, um toque disparava força 0.02, quase invisível, e E era ignorado enquanto Q estava segurado.
+- **Virada contínua:** a vista acompanha o rumo real com atraso (`VISUAL_TURN_RATE` 5/s). A vista é uma mistura entre setores vizinhos, com a vista de cada múltiplo de 45° exata. A opacidade da camada de baixo é compensada, para o fundo não aparecer através das diagonais translúcidas. Passo máximo por quadro: 0.016.
+- **Balanço de flutuação:** sobe e desce (`BOB_*`, 1.2 px), deriva lateral (1 px) e balanço leve (0.012 rad). Mais velocidade, mais balanço. A sombra fica no lugar e se afasta quando o navio sobe.
+- **Mar iluminado:** a luminância do tile vira altura, e a inclinação dela vira normal. Um sol de canto sombreia as cristas, reflexos deslizam com a maré, uma segunda leitura em outra escala quebra a grade de repetição, e há vinheta. Seis leituras de textura por pixel, cerca de 0.32 ms por quadro.
+- **Limite honesto:** a virada entre uma vista de lado e uma de cima ainda parece uma dupla exposição durante cerca de 0.4 s. Um giro de verdade pede quadros intermediários desenhados. Isso é próximo passo de arte.
+- **Testes:** suíte `test_v3` com 11 verificações passa (toque, Q+E juntos, atraso da vista, mistura, virada sem corte, balanço, mar com iluminação).
 
 ## Sprite do Holandês Voador
 - Fonte: `client/assets/sprites/ships/holandes_voador/holandes_voador_directions.png` (600×400). É uma folha 4×2 com 8 vistas e rótulos de texto. A vista "Fundo" foi removida.
