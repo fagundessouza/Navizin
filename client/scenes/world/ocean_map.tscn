@@ -1,11 +1,13 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scenes/world/ocean_map.gd" id="1_map"]
 [ext_resource type="Shader" path="res://assets/shaders/ocean.gdshader" id="2_ocean"]
 [ext_resource type="PackedScene" path="res://scenes/entities/ship_base.tscn" id="3_ship"]
+[ext_resource type="Texture2D" path="res://assets/environment/ocean_tile.png" id="4_tile"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_ocean"]
 shader = ExtResource("2_ocean")
+shader_parameter/ocean_tex = ExtResource("4_tile")
 
 [node name="OceanMap" type="Node2D"]
 script = ExtResource("1_map")

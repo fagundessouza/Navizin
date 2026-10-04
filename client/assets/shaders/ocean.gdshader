@@ -1,17 +1,23 @@
 shader_type canvas_item;
 
-// Mar procedural em coordenadas de mundo: a onda é calculada a partir da
-// posição global do fragmento, então o padrão é contínuo entre telas e não
-// depende do tamanho do retângulo que o desenha.
+// Mar em tile repetido. Um único quad grande desenha tudo: cada pixel lê o tile
+// pela posição de mundo, então a repetição é contínua em qualquer distância e
+// não há uma instância por tile. Custo fixo: uma leitura de textura por pixel.
 
-uniform vec4 deep_color : source_color = vec4(0.04, 0.22, 0.34, 1.0);
-uniform vec4 shallow_color : source_color = vec4(0.09, 0.38, 0.52, 1.0);
+/// Tile do mar. `repeat_enable` faz a textura repetir fora de 0..1.
+uniform sampler2D ocean_tex : repeat_enable, filter_nearest;
 
-/// Escala espacial das ondas (menor = ondas maiores).
-uniform float wave_scale: hint_range(0.001, 0.2) = 0.02;
+/// Lado do tile em pixels de mundo (a textura é 192×192).
+uniform float tile_size: hint_range(16.0, 1024.0) = 192.0;
 
-/// Velocidade de deslocamento das ondas.
-uniform float wave_speed: hint_range(0.0, 2.0) = 0.15;
+/// Velocidade da correnteza, em pixels de mundo por segundo.
+uniform vec2 current_speed = vec2(6.0, 2.0);
+
+/// Intensidade da maré: variação de brilho que sobe e desce devagar.
+uniform float tide_strength: hint_range(0.0, 0.3) = 0.08;
+
+/// Frequência da maré, em ciclos por segundo.
+uniform float tide_frequency: hint_range(0.0, 1.0) = 0.12;
 
 varying vec2 world_pos;
 
@@ -20,15 +26,9 @@ void vertex() {
 }
 
 void fragment() {
-	float t = TIME * wave_speed;
-	vec2 p = world_pos * wave_scale;
+	vec2 drift = current_speed * TIME / tile_size;
+	vec4 water = texture(ocean_tex, world_pos / tile_size + drift);
 
-	float w = sin(p.x * 3.0 + t)
-		+ sin(p.y * 4.0 - t * 1.3)
-		+ sin((p.x + p.y) * 2.0 + t * 0.7);
-
-	// Soma de três senos está em [-3, 3]; normaliza para [0, 1].
-	w = w / 6.0 + 0.5;
-
-	COLOR = mix(deep_color, shallow_color, w);
+	float tide = sin(TIME * tide_frequency * 6.2831853);
+	COLOR = vec4(water.rgb * (1.0 + tide * tide_strength), 1.0);
 }
