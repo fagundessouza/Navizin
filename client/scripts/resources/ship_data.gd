@@ -65,8 +65,8 @@ extends Resource
 @export var shake_decay: float = 20.0
 ## Quanto do vento e da maré o navio sente (0 a 1).
 @export var wind_influence: float = 0.15
-## Metade do comprimento do casco, usada para posicionar a esteira na popa.
-@export var hull_half_length: float = 80.0
+## Metade do comprimento do casco, em pixels. Usada para a esteira, a fumaça e a posição dos canhões.
+@export var hull_half_length: float = 50.0
 
 
 ## Fator de velocidade pela carga: de 1.0 (vazio) até 0.5 (carga cheia).
