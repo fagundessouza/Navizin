@@ -123,3 +123,14 @@ Lógica em `client/scripts/entities/ship_base.gd`, dados em `client/scripts/reso
 - #3 EPIC Infraestrutura local
 - #4 Movimentação básica do navio do jogador: implementada nesta branch, aguardando PR
 - #5 Gerar direções do Holandês Voador: 7 vistas já existem, falta revisão da arte
+
+## Regras de disparo (versão atual, substitui as anteriores)
+- **Q e E:** só ligam e desligam a mira de bombordo e de estibordo. Nunca disparam. Q com a mira já ligada a desliga.
+- **Botão esquerdo:** segura para carregar a bateria ativa. A mira começa curta, perto do casco (`range_min`), e se estende até `range_max`. Ao soltar, dispara. Não há disparo automático na carga cheia. Toque rápido ainda dispara a força mínima (`TAP_MIN_POWER` 0.3).
+- **Mira:** ±20° em torno da lateral (`AIM_ARC`). Com a mira ligada, a proa trava e o mouse só ajusta o ângulo. Sem mira, a proa segue o ponteiro.
+- **Cooldown:** independente por bateria (`broadside_cooldown` 2.5 s).
+- **Cor da mira:** laranja-avermelhada (`RAIL_COLOR`), para contrastar com o mar escuro.
+- **Projétil:** raio 5 px, contorno escuro, borda em brasa e rastro de fumaça amarelada densa.
+- **Limite do mar:** `world_bounds` (padrão 8000×8000 centrado na origem). O navio para na borda.
+- **Pendente:** conferir a legibilidade do projétil em voo com captura em movimento. A captura de hoje mostrou só o rastro.
+- **Testes:** suíte `test_v5` com 14 verificações passa.
