@@ -12,7 +12,15 @@ data = ExtResource("2_data")
 texture = ExtResource("3_sprite")
 texture_filter = 1
 
+[node name="ShadowBlend" type="Sprite2D" parent="."]
+texture = ExtResource("3_sprite")
+texture_filter = 1
+
 [node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("3_sprite")
+texture_filter = 1
+
+[node name="SpriteBlend" type="Sprite2D" parent="."]
 texture = ExtResource("3_sprite")
 texture_filter = 1
 
