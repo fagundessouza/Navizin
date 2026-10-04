@@ -64,9 +64,9 @@ const DIR16_SLOTS: Array = [
 	[4, false, false],  # 0 (0.0°)
 	[4, false, false],  # 1 (22.5°)
 	[10, false, false],  # 2 (45.0°)
-	[2, false, false],  # 3 (67.5°)
+	[13, false, true],  # 3 (67.5°)
 	[0, false, false],  # 4 (90.0°)
-	[2, true, false],  # 5 (112.5°)
+	[13, true, true],  # 5 (112.5°)
 	[10, true, false],  # 6 (135.0°)
 	[4, true, false],  # 7 (157.5°)
 	[4, true, false],  # 8 (180.0°)
@@ -563,6 +563,9 @@ func _update_wake() -> void:
 	var material := _wake.process_material as ParticleProcessMaterial
 	material.direction = Vector3(stern_sign, 0.0, 0.0)
 	_wake.position = WAKE_OFFSET.rotated(-rotation)
+	# A fumaça sai das portinholas, na linha do casco, e não do centro do sprite.
+	_smoke_port.position = (WAKE_OFFSET + Vector2(0.0, -4.0)).rotated(-rotation)
+	_smoke_starboard.position = (WAKE_OFFSET + Vector2(0.0, 4.0)).rotated(-rotation)
 	material.initial_velocity_min = lerpf(0.5, 4.0, fraction)
 	material.initial_velocity_max = lerpf(3.0, 9.0, fraction)
 	_wake.modulate.a = fraction * 0.9
