@@ -19,6 +19,7 @@ offset_bottom = 10000.0
 mouse_filter = 2
 
 [node name="Ship" parent="." instance=ExtResource("3_ship")]
+player_controlled = true
 
 [node name="Camera2D" type="Camera2D" parent="Ship"]
 position_smoothing_enabled = true
