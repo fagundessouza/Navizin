@@ -47,5 +47,5 @@ make server-test
 ```
 
 ## Fluxo de trabalho
-Usamos **GitFlow**: `main` (produção), `develop` (integração), `feature/*`, `release/*`, `hotfix/*`.
+Usamos um fluxo enxuto: `main` (produção), `dev` (integração e branch padrão de trabalho), `feature/*` (saem de `dev`) e `hotfix/*` (saem de `main`).
 Commits seguem Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`).

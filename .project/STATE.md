@@ -8,7 +8,7 @@ Setup inicial concluído: GitFlow no GitHub, labels, Kanban com issues iniciais 
 
 ## Última ação executada
 - Primeiro commit em `develop`: `feat: initial repository structure, architecture docs and stack setup` (`7dd3b91`).
-- Branches `develop` e `main` publicadas em `origin` (SSH: `git@github.com:fagundessouza/Navizin.git`), com tracking configurado.
+- Branches reestruturadas para o padrão enxuto: `develop` renomeada para `dev` (local e remota, `develop` apagada no `origin`), definida como branch padrão do GitHub. `main` segue em `7dd3b91`, a base inicial, e só deve receber merges de `dev` quando houver uma versão para produção. CI (`.github/workflows/ci.yml`) e README atualizados para `dev`.
 - Sprites do **Holandês Voador** validados: 6 frames 160×160 RGBA, sheet 960×160 idêntico aos frames, sem resíduo de chroma key (verde máximo 177 de 255). Fundo transparente.
 - Cliente Godot:
   - `client/assets/shaders/ocean.gdshader`: mar procedural em coordenadas de mundo (sem costura, sem textura).
@@ -36,7 +36,7 @@ Setup inicial concluído: GitFlow no GitHub, labels, Kanban com issues iniciais 
 - Pipeline de sprites: SDXL (`pixel-art-xl`), VAE em fp32, UNet em fp8, 768 px, pixelização 768 → 192 → 768 e redução final para 160 px com vizinho mais próximo.
 - Mar: shader procedural em vez de TileMap ou textura, porque é contínuo em qualquer tamanho de tela e não precisa de asset.
 - Câmera: `Camera2D` fica como filha do navio do jogador no mapa, e não dentro de `ship_base.tscn`, para que NPCs não ganhem câmera.
-- Git: GitFlow (`main`, `develop`, `feature/*`, `release/*`, `hotfix/*`).
+- Git (fluxo enxuto): `main` é produção; `dev` é integração e branch padrão de trabalho; `feature/*` saem de `dev` e voltam para `dev`; `hotfix/*` saem de `main` e voltam para `main` e `dev`. Sem `release/*` por enquanto.
 
 ## Comandos pendentes
 - `sudo apt install podman podman-compose` (não instalado nesta máquina).
