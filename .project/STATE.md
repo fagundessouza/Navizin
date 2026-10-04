@@ -132,3 +132,23 @@ Lógica em `client/scripts/entities/ship_base.gd`, dados em `client/scripts/reso
 - **Projétil:** raio 5 px, contorno escuro, borda em brasa e rastro de fumaça amarelada.
 - **Limite do mar:** `world_bounds` (padrão 8000×8000 centrado na origem). O navio para na borda.
 - **Testes:** suíte `test_v4` com 13 verificações passa.
+
+## Checkpoint (fim da sessão de hoje) — PR #6 em `feature/issue-4-ship-movement`
+Estado atual do navio e pendências para amanhã.
+
+**Pronto e validado pelo usuário**
+- Movimentação, leme, inércia, mira e disparo (Q/E e botão do mouse), cooldown por bateria, limite do mar.
+- Tiros e faixas de mira alinhados à lateral, proporcionais ao casco (canhões em ±25 px, meio-casco 50 px).
+- Tabela de direções em `DIR_ENTRIES` (lista ordenada por ângulo), com espelhamento para a metade esquerda.
+- Sequências 8 → 8,5 → 9 → 9,5 e 7 → 7,5 → 8 aprovadas; 6,5, 3,5 (frame 13 espelhado), 1,5 e 1,75 aprovados.
+- Frames de cabeça para baixo (33,75° e 191,25°) removidos.
+
+**Pendências**
+1. **Névoa/espuma atrás do casco:** sai com aparência de quadrado estranho fora do navio. Revisar o `_wake` (textura `_puff`, escala e área) ou trocar por outro efeito. Respingo com gotas pequenas foi testado e rejeitado (parece falha de tela).
+2. **Transição entre 6 e 8 (337,5° e 348,75°):** não há frame lateral inclinado para cima sem ficar de cabeça para baixo. Precisa de arte nova ou fica parada.
+3. **Frame de 33,75° (entre 6 e 3):** foi removido por estar de cabeça para baixo; falta a animação "depois do 6" para o lado de baixo.
+4. **Conferir no jogo** a orientação de 3,5 e 1,5 (frame 13) e os frames espelhados da metade esquerda.
+5. **Fumaça dos canhões:** saindo da linha do casco; conferir se está no lugar certo nas direções.
+
+**Commits recentes:** `6fc3c08` (reverte o respingo), `2131758` (remove frames de cabeça para baixo), `d06a7e7` e `a8c9a06` (espuma na popa e na linha d'água).
+
