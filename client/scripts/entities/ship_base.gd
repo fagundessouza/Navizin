@@ -122,7 +122,7 @@ const GUN_LATERAL: float = 10.0
 const DECK_OFFSET: Vector2 = Vector2(0.0, 22.0)
 
 ## Linha d'água, em coordenadas de tela: a espuma sai daqui, sob o casco.
-const WAKE_OFFSET: Vector2 = Vector2(0.0, 40.0)
+const WAKE_OFFSET: Vector2 = Vector2(0.0, 58.0)
 
 ## Sombra: deslocamento no mundo e opacidade base.
 const SHADOW_OFFSET: Vector2 = Vector2(6.0, 10.0)
@@ -561,12 +561,13 @@ func _setup_wake() -> void:
 	material.initial_velocity_max = 3.0
 	material.damping_min = 16.0
 	material.damping_max = 24.0
-	material.scale_min = 0.35
-	material.scale_max = 0.7
-	material.color = Color(0.86, 0.96, 1.0, 0.32)
+	material.scale_min = 0.25
+	material.scale_max = 0.5
+	material.color = Color(0.9, 0.98, 1.0, 0.4)
 	_wake.process_material = material
 	_wake.texture = _puff
-	_wake.local_coords = false
+	# No referencial do casco: a popa e a deriva seguem a proa, em qualquer rumo.
+	_wake.local_coords = true
 	_wake.amount = 40
 	_wake.lifetime = 1.2
 	_wake.emitting = false
@@ -579,7 +580,7 @@ func _update_wake() -> void:
 	var fraction: float = clampf(absf(speed) / maxf(data.max_speed, 1.0), 0.0, 1.0)
 	var material := _wake.process_material as ParticleProcessMaterial
 	material.direction = Vector3(stern_sign, 0.0, 0.0)
-	_wake.position = WAKE_OFFSET.rotated(-rotation) + Vector2(stern_sign * data.hull_half_length * 0.5, 0.0)
+	_wake.position = WAKE_OFFSET.rotated(-rotation) + Vector2(stern_sign * data.hull_half_length * 0.8, 0.0)
 	# A fumaça sai das portinholas, na linha do casco, e não do centro do sprite.
 	_smoke_port.position = (WAKE_OFFSET + Vector2(0.0, -4.0)).rotated(-rotation)
 	_smoke_starboard.position = (WAKE_OFFSET + Vector2(0.0, 4.0)).rotated(-rotation)
