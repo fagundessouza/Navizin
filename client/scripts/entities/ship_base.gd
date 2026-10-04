@@ -2,7 +2,7 @@ extends Node2D
 ## Base de todos os navios (jogador e NPCs).
 ##
 ## Concentra a física (velas com inércia, leme suave, recuo, vento e maré), a
-## apresentação (vista contínua entre as 7 direções, balanço de flutuação,
+## apresentação (vista do navio entre as 7 direções, balanço de flutuação,
 ## sombra, esteira e fumaça) e o disparo lateral com carga de força.
 ## Os atributos vêm do recurso `ShipData`.
 ##
@@ -10,9 +10,9 @@ extends Node2D
 ## - A proa segue o ponteiro do mouse. O leme trava enquanto um tiro carrega.
 ## - W/S (ou setas) mudam o nível das velas.
 ## - Bombordo: tecla Q ou botão esquerdo. Estibordo: tecla E ou botão direito.
-##   Cada bordo carrega sozinho, então Q e E juntos carregam os dois. Soltar
-##   dispara aquele bordo. Um toque rápido já dispara uma bordada leve. A carga
-##   cheia dispara sozinha.
+##   Segurar entra em modo de mira e carrega a força. Soltar dispara aquele bordo.
+##   Q e E juntos mantêm os dois em mira. A carga cheia dispara sozinha.
+##   Cada bateria tem cooldown próprio.
 ## - A mira fica presa ao semiplano do bordo escolhido, entre a proa e a popa.
 ## - Teclas 1 a 4 emitem `skill_triggered`. Ainda sem efeito.
 ##
@@ -21,7 +21,7 @@ extends Node2D
 ## Nível das velas. O valor é o sentido e a força do impulso.
 enum Sail { REVERSE = -1, STOPPED = 0, HALF = 1, FULL = 2 }
 
-## Estado visual. Cada valor usa um sprite de `assets/sprites/ships/holandes_voador/dirs/`.
+## Vista do navio. Cada valor usa um sprite de `assets/sprites/ships/holandes_voador/dirs/`.
 ## TOP (vista de cima, proa para cima) não é escolhido pelo rumo: fica disponível
 ## para uso manual, como um modo de mapa.
 enum Direction { FRONT, BACK, SIDE_LEFT, SIDE_RIGHT, TOP, TOP_LEFT, TOP_RIGHT }
@@ -66,6 +66,9 @@ const SECTORS: Array = [
 	[Direction.TOP_RIGHT, true],
 ]
 
+## Velocidade da troca de vista: escurece e clareia em cerca de 0.1 s cada.
+const DIP_SPEED: float = 9.0
+
 ## Quão rápido a vista acompanha o rumo real, em 1/s. Um valor menor deixa a
 ## virada mais lenta e pesada.
 const VISUAL_TURN_RATE: float = 5.0
@@ -82,17 +85,22 @@ const SWAY_PERIOD: float = 3.7
 ## para a frente ou para trás.
 const SECTOR_MARGIN: float = 0.14
 
-## Distância dos canhões ao centro do casco, em pixels.
-const GUN_PORT_OFFSET: float = 20.0
+## Distância lateral dos canhões ao centro do casco, em pixels.
+const GUN_LATERAL: float = 10.0
+
+## Convés na arte de vista lateral, em coordenadas de tela (não giram com o casco).
+## O centro do sprite fica na altura das velas; os tiros saem daqui, e não do mastro.
+const DECK_OFFSET: Vector2 = Vector2(0.0, 22.0)
 
 ## Sombra: deslocamento no mundo e opacidade base.
 const SHADOW_OFFSET: Vector2 = Vector2(6.0, 10.0)
 const SHADOW_ALPHA: float = 0.3
 
-const ARC_COLOR: Color = Color(1.0, 0.95, 0.7, 1.0)
-const ARC_FAINT_COLOR: Color = Color(1.0, 0.95, 0.7, 0.25)
-const ARC_DOT_RADIUS: float = 2.2
-const ARC_DOT_SPACING: float = 9.0
+## Trilhos de mira, no estilo de combate naval: faixas paralelas translúcidas
+## saindo perpendiculares à lateral ativa.
+const RAIL_COLOR: Color = Color(0.3, 0.6, 1.0, 0.35)
+const RAIL_FAINT_COLOR: Color = Color(0.3, 0.6, 1.0, 0.12)
+const RAIL_HALF_WIDTH: float = 3.0
 
 ## Atributos do navio.
 @export var data: ShipData
@@ -104,12 +112,12 @@ const ARC_DOT_SPACING: float = 9.0
 @export var ambient_flow: Vector2 = Vector2.ZERO
 
 @onready var _shadow: Sprite2D = $Shadow
-@onready var _shadow_blend: Sprite2D = $ShadowBlend
 @onready var _sprite: Sprite2D = $Sprite2D
-@onready var _blend: Sprite2D = $SpriteBlend
 @onready var _wake: GPUParticles2D = $Wake
 @onready var _smoke_port: GPUParticles2D = $SmokePort
 @onready var _smoke_starboard: GPUParticles2D = $SmokeStarboard
+@onready var _port_cannons: Node2D = $PortCannons
+@onready var _starboard_cannons: Node2D = $StarboardCannons
 
 ## Nível atual das velas.
 var sail: Sail = Sail.STOPPED
@@ -123,38 +131,40 @@ var angular_velocity: float = 0.0
 ## Impulso de recuo atual, em pixels por segundo.
 var knockback: Vector2 = Vector2.ZERO
 
-## Estado visual atual: a vista dominante no momento.
+## Vista mostrada agora.
 var direction: Direction = Direction.SIDE_LEFT
 
-## Carga de cada bordo, indexada por SIDE_PORT e SIDE_STARBOARD.
+## Estado de cada bateria, indexado por SIDE_PORT e SIDE_STARBOARD.
 var _charging: Dictionary = {SIDE_PORT: false, SIDE_STARBOARD: false}
 var _power: Dictionary = {SIDE_PORT: 0.0, SIDE_STARBOARD: 0.0}
 var _awaiting_release: Dictionary = {SIDE_PORT: false, SIDE_STARBOARD: false}
+var _cooldown: Dictionary = {SIDE_PORT: 0.0, SIDE_STARBOARD: 0.0}
 
+var _was_charging: bool = false
 var _shake: float = 0.0
 var _camera: Camera2D = null
 var _puff: GradientTexture2D
 
 ## Rumo mostrado na tela: segue o rumo real com atraso, então a virada parece pesada.
 var _visual_heading: float = 0.0
-var _sector: int = -1
-var _entry_a: Array = []
-var _entry_b: Array = []
+## Vista exibida e a vista para a qual a troca está indo (-1 sem troca).
+var _shown_sector: int = -1
+var _swap_to: int = -1
+var _fade: float = 1.0
 var _time: float = 0.0
 
 
 func _ready() -> void:
 	if data == null:
 		data = ShipData.new()
-	for node in [_sprite, _blend, _shadow, _shadow_blend]:
+	for node in [_sprite, _shadow]:
 		node.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	_shadow_blend.modulate = Color(0.0, 0.0, 0.0, 0.0)
-	# Os sprites ficam atrás do desenho do próprio navio (arco de mira).
+	# O sprite fica atrás do desenho do próprio navio (trilhos de mira).
 	_sprite.show_behind_parent = true
-	_blend.show_behind_parent = true
 	_camera = get_node_or_null("Camera2D") as Camera2D
 	_visual_heading = rotation
 	_puff = _make_puff_texture()
+	_show_sector(_sector_for(rotation))
 	_setup_wake()
 	_setup_smoke(_smoke_port, SIDE_PORT)
 	_setup_smoke(_smoke_starboard, SIDE_STARBOARD)
@@ -173,15 +183,19 @@ func _process(delta: float) -> void:
 	_update_visual(delta)
 	_update_wake()
 	_update_charge(delta)
+	_update_cooldown(delta)
 	_update_shake(delta)
-	if _any_charging():
+	# Redesenha durante a carga e também no quadro em que ela termina, para apagar os trilhos.
+	var charging: bool = _any_charging()
+	if charging or _was_charging:
 		queue_redraw()
+	_was_charging = charging
 
 
 func _draw() -> void:
 	for side in [SIDE_PORT, SIDE_STARBOARD]:
 		if _charging[side]:
-			_draw_broadside_arc(side, _power[side])
+			_draw_rails(side, _power[side])
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -223,7 +237,7 @@ func get_aim_vector() -> Vector2:
 	return to_pointer.normalized()
 
 
-## Se o bordo está carregando um tiro neste momento.
+## Se o bordo está em mira, carregando a força.
 func is_charging(side: int) -> bool:
 	return _charging[side]
 
@@ -233,39 +247,53 @@ func charge_power(side: int) -> float:
 	return _power[side]
 
 
+## Segundos restantes até a bateria do bordo poder disparar de novo.
+func cooldown_left(side: int) -> float:
+	return _cooldown[side]
+
+
 ## Dispara uma bordada pelo bordo escolhido, com força de 0.0 a 1.0.
-## Cria `cannon_count` projéteis em sequência, aplica recuo e tremor.
+## Cria `cannon_count` projéteis em sequência, saindo dos canhões do bordo.
+## Não dispara se a bateria ainda está em cooldown.
 func fire_broadside(power: float, side: int) -> void:
+	if _cooldown[side] > 0.0:
+		return
 	power = clampf(power, 0.0, 1.0)
 	var limits: Vector2 = _sector_limits(side)
 	var aim: float = _broadside_angle(side)
 	var half_spread: float = lerpf(data.spread_min, data.spread_max, power)
 	var shot_speed: float = lerpf(data.projectile_speed_min, data.projectile_speed_max, power)
+	var guns: Array = _guns(side)
 
 	for i in range(data.cannon_count):
 		var local_angle: float = clampf(aim + randf_range(-half_spread, half_spread), limits.x, limits.y)
 		var velocity: Vector2 = Vector2.from_angle(rotation + local_angle) * shot_speed
+		# Os canhões se revezam ao longo do casco.
+		var gun_index: int = i % guns.size()
 		get_tree().create_timer(i * data.volley_interval).timeout.connect(
-			_spawn_cannonball.bind(side, velocity)
+			_spawn_cannonball.bind(side, gun_index, velocity)
 		)
 
 	# O recuo é perpendicular ao casco, no sentido oposto ao bordo que atirou.
 	var barrel: Vector2 = Vector2(0.0, side).rotated(rotation)
 	knockback += -barrel * data.recoil_strength * power
 	_shake = maxf(_shake, power * data.shake_strength)
+	_cooldown[side] = data.broadside_cooldown
 	_puff_smoke(side)
 
 	primary_action_triggered.emit(get_global_mouse_position())
 	broadside_fired.emit(side, power)
 
 
+## Segurar entra em mira e começa a carregar. Não dispara.
 func _press_charge(side: int) -> void:
-	if _charging[side] or _awaiting_release[side]:
+	if _charging[side] or _awaiting_release[side] or _cooldown[side] > 0.0:
 		return
 	_charging[side] = true
 	_power[side] = 0.0
 
 
+## Soltar dispara o bordo com a força acumulada, e só ele.
 func _release_charge(side: int) -> void:
 	if _charging[side]:
 		fire_broadside(maxf(_power[side], TAP_MIN_POWER), side)
@@ -305,31 +333,42 @@ func _broadside_angle(side: int) -> float:
 	return clampf(local_angle, limits.x, limits.y)
 
 
-func _draw_broadside_arc(side: int, power: float) -> void:
-	var limits: Vector2 = _sector_limits(side)
-	var aim: float = _broadside_angle(side)
-	var half: float = lerpf(data.spread_min, data.spread_max, power)
-	var from: float = clampf(aim - half, limits.x, limits.y)
-	var to: float = clampf(aim + half, limits.x, limits.y)
-	# Alcance atual da carga, e o alcance máximo com a mesma abertura, mais discreto.
-	_draw_dotted_arc(from, to, data.range_max, ARC_FAINT_COLOR)
-	_draw_dotted_arc(from, to, lerpf(data.range_min, data.range_max, power), ARC_COLOR)
+## Canhões de um bordo, na ordem em que são usados na bordada.
+func _guns(side: int) -> Array:
+	return _port_cannons.get_children() if side == SIDE_PORT else _starboard_cannons.get_children()
 
 
-func _draw_dotted_arc(from: float, to: float, radius: float, color: Color) -> void:
-	var length: float = absf(to - from) * radius
-	var count: int = maxi(2, floori(length / ARC_DOT_SPACING))
-	for i in range(count + 1):
-		var angle: float = lerpf(from, to, float(i) / count)
-		draw_circle(Vector2.from_angle(angle) * radius, ARC_DOT_RADIUS, color)
+## Trilhos paralelos perpendiculares ao bordo, um por canhão. Crescem com a carga.
+## O trilho de alcance máximo fica como referência discreta.
+func _draw_rails(side: int, power: float) -> void:
+	var normal: Vector2 = Vector2(0.0, side)
+	var length: float = lerpf(data.range_min, data.range_max, power)
+	var deck: Vector2 = DECK_OFFSET.rotated(-rotation)
+	for gun in _guns(side):
+		var start: Vector2 = (gun as Node2D).position + deck
+		_draw_rail(start, start + normal * data.range_max, RAIL_FAINT_COLOR)
+		_draw_rail(start, start + normal * length, RAIL_COLOR)
 
 
-func _spawn_cannonball(side: int, velocity: Vector2) -> void:
+func _draw_rail(from: Vector2, to: Vector2, color: Color) -> void:
+	var w: float = RAIL_HALF_WIDTH
+	var points: PackedVector2Array = PackedVector2Array([
+		from + Vector2(-w, 0.0), from + Vector2(w, 0.0),
+		to + Vector2(w, 0.0), to + Vector2(-w, 0.0),
+	])
+	draw_colored_polygon(points, color)
+
+
+func _spawn_cannonball(side: int, gun_index: int, velocity: Vector2) -> void:
+	var gun: Node2D = _guns(side)[gun_index] as Node2D
 	var ball := Cannonball.new()
 	ball.velocity = velocity
 	ball.lifetime = data.projectile_lifetime
 	get_parent().add_child(ball)
-	ball.global_position = global_position + Vector2(0.0, side * GUN_PORT_OFFSET).rotated(rotation)
+	# Atrás do navio: na arte de lado, um tiro para bombordo sobe pelas velas e
+	# deve passar por trás delas, não por cima.
+	get_parent().move_child(ball, get_index())
+	ball.global_position = global_position + DECK_OFFSET + gun.position.rotated(rotation)
 
 
 func _update_steering(delta: float) -> void:
@@ -365,31 +404,51 @@ func _target_speed() -> float:
 			return 0.0
 
 
-## Vista contínua: o rumo mostrado segue o real com atraso, e a vista é uma
-## mistura entre os dois setores vizinhos. Assim a virada não tem corte seco.
+## Uma vista por vez. O rumo mostrado segue o real com atraso. Quando ele passa
+## para outra vista, a atual escurece, a nova aparece e a vista clareia de novo.
+## Assim não há duas direções visíveis ao mesmo tempo.
 func _update_visual(delta: float) -> void:
 	_time += delta
 	_visual_heading = lerp_angle(_visual_heading, rotation, 1.0 - exp(-VISUAL_TURN_RATE * delta))
 
-	# Posição no ciclo de 8 setores: cada vista fica exatamente no seu ângulo
-	# (múltiplo de 45°). A parte inteira é o setor, a fração é a mistura com o vizinho.
-	var f: float = wrapf(_visual_heading, -PI, PI) / (PI / 4.0)
-	var base: int = posmod(floori(f), 8)
-	var t: float = f - floorf(f)
+	var wanted: int = _sector_for(_visual_heading)
+	if wanted != _shown_sector:
+		_swap_to = wanted
+	else:
+		_swap_to = -1
 
-	if base != _sector:
-		_sector = base
-		_entry_a = SECTORS[base]
-		_entry_b = SECTORS[(base + 1) % 8]
-		_set_textures()
+	if _swap_to != -1:
+		_fade = move_toward(_fade, 0.0, DIP_SPEED * delta)
+		if _fade <= 0.0:
+			_show_sector(_swap_to)
+			_swap_to = -1
+	else:
+		_fade = move_toward(_fade, 1.0, DIP_SPEED * delta)
 
-	_blend.modulate.a = t * _opacity_for(_entry_b[0])
-	_sprite.modulate.a = _under_alpha((1.0 - t) * _opacity_for(_entry_a[0]), _blend.modulate.a)
-	_shadow_blend.modulate.a = t * SHADOW_ALPHA
-	_shadow.modulate.a = _under_alpha((1.0 - t) * SHADOW_ALPHA, _shadow_blend.modulate.a)
-	direction = _entry_a[0] if t < 0.5 else _entry_b[0]
+	var entry: Array = SECTORS[_shown_sector]
+	_sprite.modulate.a = _fade * _opacity_for(entry[0])
+	_shadow.modulate.a = SHADOW_ALPHA * _fade
+	direction = entry[0]
 
 	_apply_float()
+
+
+## Vista mais próxima do rumo, como índice em `SECTORS`.
+func _sector_for(angle: float) -> int:
+	return posmod(roundi(wrapf(angle, -PI, PI) / (PI / 4.0)), 8)
+
+
+## Mostra a vista do setor: textura, espelhamento e sombra.
+func _show_sector(sector: int) -> void:
+	_shown_sector = sector
+	var entry: Array = SECTORS[sector]
+	var tex: Texture2D = _texture_for(entry[0])
+	_sprite.texture = tex
+	_shadow.texture = tex
+	_sprite.flip_h = entry[1]
+	_sprite.flip_v = entry[1]
+	_shadow.flip_h = entry[1]
+	_shadow.flip_v = entry[1]
 
 
 ## Balanço de flutuação: o navio sobe e desce, deriva de lado e balança. Mais
@@ -402,43 +461,12 @@ func _apply_float() -> void:
 	var drift: float = sin(_time * TAU / DRIFT_PERIOD) * DRIFT_AMPLITUDE * amp
 	var sway: float = sin(_time * TAU / SWAY_PERIOD) * SWAY_ANGLE * amp
 
-	var local_offset: Vector2 = Vector2(drift, bob).rotated(-rotation)
-	_sprite.position = local_offset
-	_blend.position = local_offset
+	_sprite.position = Vector2(drift, bob).rotated(-rotation)
 	_sprite.rotation = -rotation + sway
-	_blend.rotation = -rotation + sway
 
 	var shadow_offset: Vector2 = (SHADOW_OFFSET + Vector2(0.0, -bob * 0.8)).rotated(-rotation)
 	_shadow.position = shadow_offset
-	_shadow_blend.position = shadow_offset
 	_shadow.rotation = -rotation
-	_shadow_blend.rotation = -rotation
-
-
-## Aplica os dois sprites da mistura: a vista atual e a próxima, com espelhamento.
-func _set_textures() -> void:
-	var tex_a: Texture2D = _texture_for(_entry_a[0])
-	_sprite.texture = tex_a
-	_shadow.texture = tex_a
-	_sprite.flip_h = _entry_a[1]
-	_sprite.flip_v = _entry_a[1]
-	_shadow.flip_h = _entry_a[1]
-	_shadow.flip_v = _entry_a[1]
-
-	var tex_b: Texture2D = _texture_for(_entry_b[0])
-	_blend.texture = tex_b
-	_shadow_blend.texture = tex_b
-	_blend.flip_h = _entry_b[1]
-	_blend.flip_v = _entry_b[1]
-	_shadow_blend.flip_h = _entry_b[1]
-	_shadow_blend.flip_v = _entry_b[1]
-
-
-## Opacidade da camada de baixo para que, sob a camada de cima, o peso visível
-## seja `weight`. Sem isso, as duas vistas translúcidas deixam o fundo aparecer
-## e a virada parece um fantasma.
-func _under_alpha(weight: float, over_alpha: float) -> float:
-	return clampf(weight / maxf(1.0 - over_alpha, 0.0001), 0.0, 1.0)
 
 
 func _opacity_for(dir: Direction) -> float:
@@ -477,6 +505,11 @@ func _update_charge(delta: float) -> void:
 			_awaiting_release[side] = true
 
 
+func _update_cooldown(delta: float) -> void:
+	for side in [SIDE_PORT, SIDE_STARBOARD]:
+		_cooldown[side] = maxf(0.0, _cooldown[side] - delta)
+
+
 func _update_shake(delta: float) -> void:
 	if _camera == null:
 		return
@@ -512,6 +545,10 @@ func _update_wake() -> void:
 	_wake.modulate.a = fraction * 0.8
 	_wake.emitting = fraction > 0.05
 
+	# Fumaça de cada bordo sai do convés, na altura do canhão.
+	_smoke_port.position = (DECK_OFFSET + Vector2(0.0, -GUN_LATERAL)).rotated(-rotation)
+	_smoke_starboard.position = (DECK_OFFSET + Vector2(0.0, GUN_LATERAL)).rotated(-rotation)
+
 
 func _setup_smoke(node: GPUParticles2D, side: int) -> void:
 	var material := ParticleProcessMaterial.new()
@@ -529,7 +566,7 @@ func _setup_smoke(node: GPUParticles2D, side: int) -> void:
 	material.color = Color(0.62, 0.63, 0.66, 0.45)
 	node.process_material = material
 	node.texture = _puff
-	node.position = Vector2(0.0, side * GUN_PORT_OFFSET)
+	node.position = Vector2(0.0, side * GUN_LATERAL)
 	node.local_coords = false
 	node.one_shot = true
 	node.explosiveness = 0.9

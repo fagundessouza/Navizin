@@ -40,6 +40,8 @@ extends Resource
 @export var cannon_count: int = 6
 ## Intervalo entre projéteis da mesma bordada, em segundos.
 @export var volley_interval: float = 0.05
+## Tempo até a bateria poder disparar de novo, em segundos. Vale para cada bordo.
+@export var broadside_cooldown: float = 2.5
 ## Alcance mínimo e máximo, em pixels, conforme a força.
 @export var range_min: float = 60.0
 @export var range_max: float = 260.0

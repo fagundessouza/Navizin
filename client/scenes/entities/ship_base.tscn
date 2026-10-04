@@ -12,15 +12,7 @@ data = ExtResource("2_data")
 texture = ExtResource("3_sprite")
 texture_filter = 1
 
-[node name="ShadowBlend" type="Sprite2D" parent="."]
-texture = ExtResource("3_sprite")
-texture_filter = 1
-
 [node name="Sprite2D" type="Sprite2D" parent="."]
-texture = ExtResource("3_sprite")
-texture_filter = 1
-
-[node name="SpriteBlend" type="Sprite2D" parent="."]
 texture = ExtResource("3_sprite")
 texture_filter = 1
 
@@ -35,3 +27,25 @@ emitting = false
 
 [node name="SmokeStarboard" type="GPUParticles2D" parent="."]
 emitting = false
+
+[node name="PortCannons" type="Node2D" parent="."]
+
+[node name="Cannon1" type="Marker2D" parent="PortCannons"]
+position = Vector2(-30, -10)
+
+[node name="Cannon2" type="Marker2D" parent="PortCannons"]
+position = Vector2(0, -10)
+
+[node name="Cannon3" type="Marker2D" parent="PortCannons"]
+position = Vector2(30, -10)
+
+[node name="StarboardCannons" type="Node2D" parent="."]
+
+[node name="Cannon1" type="Marker2D" parent="StarboardCannons"]
+position = Vector2(-30, 10)
+
+[node name="Cannon2" type="Marker2D" parent="StarboardCannons"]
+position = Vector2(0, 10)
+
+[node name="Cannon3" type="Marker2D" parent="StarboardCannons"]
+position = Vector2(30, 10)
