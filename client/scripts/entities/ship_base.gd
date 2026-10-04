@@ -553,7 +553,8 @@ func _setup_wake() -> void:
 	# pela largura e pelo comprimento do casco, que se dissipam sem formar fio.
 	var material := ParticleProcessMaterial.new()
 	material.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
-	material.emission_box_extents = Vector3(data.hull_half_length * 0.9, 9.0, 0.0)
+	# Metade de popa do casco: a espuma nasce atrás e é levada para trás.
+	material.emission_box_extents = Vector3(data.hull_half_length * 0.5, 9.0, 0.0)
 	material.spread = 60.0
 	material.gravity = Vector3.ZERO
 	material.initial_velocity_min = 0.5
@@ -578,7 +579,7 @@ func _update_wake() -> void:
 	var fraction: float = clampf(absf(speed) / maxf(data.max_speed, 1.0), 0.0, 1.0)
 	var material := _wake.process_material as ParticleProcessMaterial
 	material.direction = Vector3(stern_sign, 0.0, 0.0)
-	_wake.position = WAKE_OFFSET.rotated(-rotation)
+	_wake.position = WAKE_OFFSET.rotated(-rotation) + Vector2(stern_sign * data.hull_half_length * 0.5, 0.0)
 	# A fumaça sai das portinholas, na linha do casco, e não do centro do sprite.
 	_smoke_port.position = (WAKE_OFFSET + Vector2(0.0, -4.0)).rotated(-rotation)
 	_smoke_starboard.position = (WAKE_OFFSET + Vector2(0.0, 4.0)).rotated(-rotation)
