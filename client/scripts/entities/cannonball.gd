@@ -13,6 +13,8 @@ var lifetime: float = 1.0
 ## Raio da esfera de ferro, em pixels.
 const RADIUS: float = 5.0
 
+const SPLASH_SCENE: PackedScene = preload("res://scenes/fx/WaterSplashFX.tscn")
+
 const IRON_COLOR: Color = Color(0.09, 0.09, 0.11)
 const OUTLINE_COLOR: Color = Color(0.05, 0.05, 0.07)
 const GLINT_COLOR: Color = Color(0.6, 0.66, 0.7, 0.8)
@@ -40,7 +42,18 @@ func _process(delta: float) -> void:
 			_trail.pop_front()
 	queue_redraw()
 	if _age >= lifetime:
-		queue_free()
+		_impact()
+
+
+## Fim do alcance: a bala cai na água. Some e deixa o respingo no lugar.
+func _impact() -> void:
+	visible = false
+	var fx := SPLASH_SCENE.instantiate() as Node2D
+	# Cena principal; se não houver, a raiz da árvore.
+	var host: Node = get_tree().current_scene if get_tree().current_scene else get_tree().root
+	host.add_child(fx)
+	fx.global_position = global_position
+	queue_free()
 
 
 func _draw() -> void:
