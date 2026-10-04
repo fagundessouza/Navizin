@@ -1,0 +1,21 @@
+# Ambiente e segredos
+.env
+.venv/
+__pycache__/
+*.pyc
+
+# Godot
+client/.godot/
+client/.import/
+client/export_presets.cfg
+
+# Editores
+.vscode/
+.idea/
+*.swp
+
+# Saídas locais
+*.log
+
+# Cache de testes
+.pytest_cache/

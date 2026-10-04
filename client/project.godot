@@ -1,0 +1,27 @@
+; Projeto Navizin (Godot 4.x).
+; Arquivo gerado no setup inicial. O Godot ajusta as seções ao abrir o projeto.
+
+config_version=5
+
+[application]
+
+config/name="Navizin"
+config/description="MMORPG 2D naval em pixel art"
+run/main_scene="res://scenes/world/ocean_map.tscn"
+config/features=PackedStringArray("4.3")
+
+[autoload]
+
+GameManager="*res://scripts/autoload/game_manager.gd"
+NetworkClient="*res://scripts/autoload/network_client.gd"
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/stretch/mode="canvas_items"
+window/stretch/aspect="keep"
+
+[rendering]
+
+textures/canvas_textures/default_texture_filter=0
