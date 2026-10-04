@@ -28,6 +28,9 @@ Pipeline de geração de sprites pixel art com ComfyUI local (SDXL).
 - Spritesheet: `client/assets/sprites/ships/<nome>/<nome>_sheet.png`.
 - Nome do navio em minúsculas e sem acento, por exemplo `holandes_voador`.
 
-## Direções e ângulos (planejado)
-- Vista lateral (side view) como padrão.
-- Direções de 8 sentidos: a gerar a partir da vista lateral, com revisão manual.
+## Direções (implementado para o Holandês Voador)
+- São 7 vistas, geradas e revisadas à mão. A vista "Fundo" foi removida.
+- Arquivos finais em `client/assets/sprites/ships/<nome>/dirs/`, todos no mesmo canvas de 176×178 com o pivô no centro: `front`, `back`, `left` (proa à direita), `right` (proa à esquerda), `top` (proa para cima), `top_left` e `top_right` (diagonais de cima).
+- A fonte é `<nome>_directions.png`, uma folha 4×2 com rótulos de texto. Os recortes são feitos por caixa de alfa, fora das faixas de rótulo.
+- O rumo escolhe a vista (`ship_base.gd`, `SECTORS`): as diagonais de cima usam o mesmo sprite, espelhado nos dois eixos para a outra metade do círculo.
+- Nas diagonais de cima, o sprite fica com opacidade 0.5 para o convés não ficar coberto.
