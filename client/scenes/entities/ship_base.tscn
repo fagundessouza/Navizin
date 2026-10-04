@@ -12,15 +12,15 @@ data = ExtResource("2_data")
 texture = ExtResource("3_sprite")
 texture_filter = 1
 
-[node name="Sprite2D" type="Sprite2D" parent="."]
-texture = ExtResource("3_sprite")
-texture_filter = 1
-
 [node name="Wake" type="GPUParticles2D" parent="."]
 amount = 28
 lifetime = 1.1
 local_coords = false
 emitting = false
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("3_sprite")
+texture_filter = 1
 
 [node name="SmokePort" type="GPUParticles2D" parent="."]
 emitting = false

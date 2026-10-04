@@ -64,9 +64,9 @@ const DIR16_SLOTS: Array = [
 	[4, false, false],  # 0 (0.0°)
 	[4, false, false],  # 1 (22.5°)
 	[10, false, false],  # 2 (45.0°)
-	[3, false, false],  # 3 (67.5°)
+	[2, false, false],  # 3 (67.5°)
 	[0, false, false],  # 4 (90.0°)
-	[3, true, false],  # 5 (112.5°)
+	[2, true, false],  # 5 (112.5°)
 	[10, true, false],  # 6 (135.0°)
 	[4, true, false],  # 7 (157.5°)
 	[4, true, false],  # 8 (180.0°)
@@ -118,6 +118,9 @@ const GUN_LATERAL: float = 10.0
 ## Convés na arte de vista lateral, em coordenadas de tela (não giram com o casco).
 ## O centro do sprite fica na altura das velas; os tiros saem daqui, e não do mastro.
 const DECK_OFFSET: Vector2 = Vector2(0.0, 22.0)
+
+## Linha d'água, em coordenadas de tela: a espuma sai daqui, sob o casco.
+const WAKE_OFFSET: Vector2 = Vector2(0.0, 40.0)
 
 ## Sombra: deslocamento no mundo e opacidade base.
 const SHADOW_OFFSET: Vector2 = Vector2(6.0, 10.0)
@@ -537,19 +540,18 @@ func _setup_wake() -> void:
 	material.emission_box_extents = Vector3(data.hull_half_length * 0.9, 9.0, 0.0)
 	material.spread = 60.0
 	material.gravity = Vector3.ZERO
-	material.initial_velocity_min = 2.0
-	material.initial_velocity_max = 8.0
-	material.damping_min = 8.0
-	material.damping_max = 14.0
-	material.scale_min = 1.6
-	material.scale_max = 3.2
-	material.color = Color(0.82, 0.95, 1.0, 0.32)
+	material.initial_velocity_min = 0.5
+	material.initial_velocity_max = 3.0
+	material.damping_min = 16.0
+	material.damping_max = 24.0
+	material.scale_min = 0.35
+	material.scale_max = 0.7
+	material.color = Color(0.86, 0.96, 1.0, 0.32)
 	_wake.process_material = material
 	_wake.texture = _puff
 	_wake.local_coords = false
-	_wake.amount = 36
-	_wake.lifetime = 1.6
-	_wake.position = Vector2.ZERO
+	_wake.amount = 40
+	_wake.lifetime = 1.2
 	_wake.emitting = false
 
 
@@ -560,8 +562,9 @@ func _update_wake() -> void:
 	var fraction: float = clampf(absf(speed) / maxf(data.max_speed, 1.0), 0.0, 1.0)
 	var material := _wake.process_material as ParticleProcessMaterial
 	material.direction = Vector3(stern_sign, 0.0, 0.0)
-	material.initial_velocity_min = lerpf(2.0, 8.0, fraction)
-	material.initial_velocity_max = lerpf(6.0, 18.0, fraction)
+	_wake.position = WAKE_OFFSET.rotated(-rotation)
+	material.initial_velocity_min = lerpf(0.5, 4.0, fraction)
+	material.initial_velocity_max = lerpf(3.0, 9.0, fraction)
 	_wake.modulate.a = fraction * 0.9
 	_wake.emitting = fraction > 0.05
 
