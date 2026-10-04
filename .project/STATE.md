@@ -4,7 +4,13 @@
 > Ao final de cada sessão ou marco, diga **"Salvar checkpoint"** para atualizá-lo.
 
 ## Módulo atual
-Setup inicial concluído: GitFlow no GitHub, labels, Kanban com issues iniciais e primeira cena do cliente (mar + navio + câmera), validada no Godot 4.7.2.
+Issue #4 (movimentação do navio do jogador) implementada na branch `feature/issue-4-ship-movement`, aguardando revisão e merge em `dev`. Setup inicial, Kanban e primeira cena do cliente concluídos e validados no Godot 4.7.2.
+
+## Branch de trabalho atual
+- `feature/issue-4-ship-movement`, criada a partir de `dev`. Commits locais, ainda sem push:
+  - `ac3c353` feat(client): add ship movement with acceleration, drag and smooth turning
+  - `a6436db` feat(client): make the map's ship player-controlled
+- Ainda não há PR. Quando for revisado, faz merge em `dev` e a issue #4 fecha.
 
 ## Última ação executada
 - Primeiro commit em `develop`: `feat: initial repository structure, architecture docs and stack setup` (`7dd3b91`).
@@ -23,7 +29,7 @@ Setup inicial concluído: GitFlow no GitHub, labels, Kanban com issues iniciais 
 - Estrutura de assets conferida: `assets/sprites/{ships,environment,ui}`, `assets/shaders`, `assets/audio`, `assets/fonts`.
 
 ## Próximos passos imediatos
-1. Implementar a issue #4: movimentação do navio do jogador (script de movimento sobre `ship_base.gd`, câmera já presa ao navio).
+1. Revisar e fazer merge de `feature/issue-4-ship-movement` em `dev` (fecha a issue #4). Antes, decidir se a branch vai para `origin`.
 2. Instalar **Podman**, **podman-compose** e subir a infraestrutura com `make up`, validando as portas 5432, 6379, 9000/9001, 16686 e 9090 (issue #3).
 3. Criar a primeira migration do Alembic (`server/alembic`), também na issue #3.
 4. Gerar as direções do Holandês Voador (issue #5).
