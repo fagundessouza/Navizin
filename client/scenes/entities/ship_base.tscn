@@ -22,12 +22,6 @@ emitting = false
 texture = ExtResource("3_sprite")
 texture_filter = 1
 
-[node name="SmokePort" type="GPUParticles2D" parent="."]
-emitting = false
-
-[node name="SmokeStarboard" type="GPUParticles2D" parent="."]
-emitting = false
-
 [node name="PortCannons" type="Node2D" parent="."]
 
 [node name="Cannon1" type="Marker2D" parent="PortCannons"]

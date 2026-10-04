@@ -17,10 +17,10 @@ const IRON_COLOR: Color = Color(0.09, 0.09, 0.11)
 const OUTLINE_COLOR: Color = Color(0.05, 0.05, 0.07)
 const GLINT_COLOR: Color = Color(0.6, 0.66, 0.7, 0.8)
 const EMBER_COLOR: Color = Color(1.0, 0.55, 0.15, 0.85)
-const SMOKE_COLOR: Color = Color(0.46, 0.41, 0.24)
+const SMOKE_COLOR: Color = Color(0.55, 0.55, 0.56)
 
 ## Quantos pontos de rastro guardar, e o intervalo entre eles, em segundos.
-const TRAIL_LENGTH: int = 14
+const TRAIL_LENGTH: int = 8
 const TRAIL_STEP: float = 0.03
 
 var _age: float = 0.0
@@ -44,12 +44,12 @@ func _process(delta: float) -> void:
 
 
 func _draw() -> void:
-	# Rastro: fumaça escura, mais densa e larga perto da bola, e apagando para trás.
+	# Rastro: fumaça cinza curta, mais densa perto da bola, e apagando para trás.
 	var count: int = _trail.size()
 	for i in range(count):
 		var t: float = float(i + 1) / float(count + 1)
 		var local: Vector2 = _trail[i] - global_position
-		draw_circle(local, lerpf(2.0, 5.0, t), Color(SMOKE_COLOR.r, SMOKE_COLOR.g, SMOKE_COLOR.b, 0.65 * t))
+		draw_circle(local, lerpf(1.5, 3.5, t), Color(SMOKE_COLOR.r, SMOKE_COLOR.g, SMOKE_COLOR.b, 0.45 * t))
 
 	# Esfera de ferro, com contorno escuro, borda em brasa e um brilho.
 	draw_circle(Vector2.ZERO, RADIUS + 1.0, OUTLINE_COLOR)

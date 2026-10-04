@@ -114,6 +114,14 @@ const SWAY_PERIOD: float = 3.7
 ## tiro iria para a proa ou a popa, o que é proibido.
 const AIM_ARC: float = 0.35
 
+## Imperfeição do canhão: desvio angular e variação de velocidade por bala.
+const CANNON_SCATTER: float = 0.05
+const SHOT_SPEED_JITTER: float = 0.05
+
+## Recuo visual do sprite ao disparar, em pixels.
+const KICK_PX: float = 3.0
+const KICK_RECOVERY: float = 18.0
+
 ## Distância lateral dos canhões ao centro do casco, em pixels.
 const GUN_LATERAL: float = 10.0
 
@@ -149,8 +157,6 @@ const RAIL_HALF_WIDTH: float = 3.0
 @onready var _shadow: Sprite2D = $Shadow
 @onready var _sprite: Sprite2D = $Sprite2D
 @onready var _wake: GPUParticles2D = $Wake
-@onready var _smoke_port: GPUParticles2D = $SmokePort
-@onready var _smoke_starboard: GPUParticles2D = $SmokeStarboard
 @onready var _port_cannons: Node2D = $PortCannons
 @onready var _starboard_cannons: Node2D = $StarboardCannons
 
@@ -176,6 +182,7 @@ var _awaiting_release: Dictionary = {SIDE_PORT: false, SIDE_STARBOARD: false}
 var _cooldown: Dictionary = {SIDE_PORT: 0.0, SIDE_STARBOARD: 0.0}
 
 var _was_charging: bool = false
+var _kick: Vector2 = Vector2.ZERO
 var _shake: float = 0.0
 var _camera: Camera2D = null
 var _puff: GradientTexture2D
@@ -202,8 +209,6 @@ func _ready() -> void:
 	_shadow.scale = Vector2.ONE * SPRITE_SCALE
 	_show_direction(_nearest_entry(rad_to_deg(rotation), -1))
 	_setup_wake()
-	_setup_smoke(_smoke_port, SIDE_PORT)
-	_setup_smoke(_smoke_starboard, SIDE_STARBOARD)
 
 
 func _physics_process(delta: float) -> void:
@@ -222,6 +227,7 @@ func _process(delta: float) -> void:
 	_update_charge(delta)
 	_update_cooldown(delta)
 	_update_shake(delta)
+	_kick = _kick.move_toward(Vector2.ZERO, KICK_RECOVERY * delta)
 	# Redesenha durante a carga e também no quadro em que ela termina, para apagar os trilhos.
 	var charging: bool = _any_charging()
 	if charging or _was_charging:
@@ -303,8 +309,10 @@ func fire_broadside(power: float, side: int) -> void:
 	var guns: Array = _guns(side)
 
 	for i in range(data.cannon_count):
-		var local_angle: float = clampf(aim + randf_range(-half_spread, half_spread), limits.x, limits.y)
-		var velocity: Vector2 = Vector2.from_angle(rotation + local_angle) * shot_speed
+		var scatter: float = randf_range(-CANNON_SCATTER, CANNON_SCATTER)
+		var local_angle: float = clampf(aim + randf_range(-half_spread, half_spread) + scatter, limits.x, limits.y)
+		var jitter: float = 1.0 + randf_range(-SHOT_SPEED_JITTER, SHOT_SPEED_JITTER)
+		var velocity: Vector2 = Vector2.from_angle(rotation + local_angle) * shot_speed * jitter
 		# Os canhões se revezam ao longo do casco.
 		var gun_index: int = i % guns.size()
 		get_tree().create_timer(i * data.volley_interval).timeout.connect(
@@ -315,6 +323,7 @@ func fire_broadside(power: float, side: int) -> void:
 	var barrel: Vector2 = Vector2(0.0, side).rotated(rotation)
 	knockback += -barrel * data.recoil_strength * power
 	_shake = maxf(_shake, power * data.shake_strength)
+	_kick += -barrel * KICK_PX * power
 	_cooldown[side] = data.broadside_cooldown
 	_puff_smoke(side)
 
@@ -501,7 +510,7 @@ func _apply_float() -> void:
 
 	# O sprite é filho do nó, que gira com o rumo. Ele é contra-rotacionado para
 	# mostrar o frame da direção como está; a orientação já está no frame.
-	_sprite.position = Vector2(drift, bob).rotated(-rotation)
+	_sprite.position = (Vector2(drift, bob) + _kick).rotated(-rotation)
 	_sprite.rotation = -rotation + sway
 
 	_shadow.position = (SHADOW_OFFSET + Vector2(0.0, -bob * 0.8)).rotated(-rotation)
@@ -549,79 +558,95 @@ func _update_shake(delta: float) -> void:
 
 
 func _setup_wake() -> void:
-	# Espuma sob a área do casco, na linha d'água: partículas macias, espalhadas
-	# pela largura e pelo comprimento do casco, que se dissipam sem formar fio.
+	# Espuma orgânica: partículas circulares, com giro aleatório, que crescem um
+	# pouco e somem suavemente. Vida varia de 0.6 a 1.6 s.
+	var scale_curve := Curve.new()
+	scale_curve.add_point(Vector2(0.0, 0.5))
+	scale_curve.add_point(Vector2(0.3, 1.0))
+	scale_curve.add_point(Vector2(1.0, 0.15))
+	var scale_tex := CurveTexture.new()
+	scale_tex.curve = scale_curve
+	var fade := Gradient.new()
+	fade.set_color(0, Color(1.0, 1.0, 1.0, 1.0))
+	fade.set_color(1, Color(1.0, 1.0, 1.0, 0.0))
+	var fade_tex := GradientTexture1D.new()
+	fade_tex.gradient = fade
 	var material := ParticleProcessMaterial.new()
 	material.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
-	# Metade de popa do casco: a espuma nasce atrás e é levada para trás.
-	material.emission_box_extents = Vector3(data.hull_half_length * 0.5, 9.0, 0.0)
+	material.emission_box_extents = Vector3(data.hull_half_length * 0.35, 6.0, 0.0)
 	material.spread = 60.0
 	material.gravity = Vector3.ZERO
 	material.initial_velocity_min = 0.5
 	material.initial_velocity_max = 3.0
 	material.damping_min = 16.0
 	material.damping_max = 24.0
-	material.scale_min = 0.25
-	material.scale_max = 0.5
-	material.color = Color(0.9, 0.98, 1.0, 0.4)
+	material.angle_min = 0.0
+	material.angle_max = 360.0
+	material.angular_velocity_min = -90.0
+	material.angular_velocity_max = 90.0
+	material.scale_min = 0.5
+	material.scale_max = 1.2
+	material.scale_curve = scale_tex
+	material.color = Color(0.9, 0.98, 1.0, 0.5)
+	material.color_ramp = fade_tex
+	material.lifetime_randomness = 0.45
 	_wake.process_material = material
 	_wake.texture = _puff
-	# Névoa suave: filtro linear, senão o Nearest do projeto a quebra em blocos quadrados.
+	# Névoa suave: filtro linear, senão o Nearest do projeto a quebra em blocos.
 	_wake.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	# No referencial do casco: a popa e a deriva seguem a proa, em qualquer rumo.
 	_wake.local_coords = true
 	_wake.amount = 40
-	_wake.lifetime = 1.2
+	_wake.lifetime = 1.1
 	_wake.emitting = false
 
 
-## A espuma acompanha a área do casco. Com mais velocidade, ela fica mais forte
-## e se espalha mais para trás, do lado oposto ao movimento.
+## A espuma sai da popa, na linha d'água. A quantidade acompanha a velocidade:
+## parado, não emite.
 func _update_wake() -> void:
 	var stern_sign: float = -1.0 if speed >= 0.0 else 1.0
 	var fraction: float = clampf(absf(speed) / maxf(data.max_speed, 1.0), 0.0, 1.0)
 	var material := _wake.process_material as ParticleProcessMaterial
 	material.direction = Vector3(stern_sign, 0.0, 0.0)
-	_wake.position = WAKE_OFFSET.rotated(-rotation) + Vector2(stern_sign * data.hull_half_length * 0.8, 0.0)
-	# A fumaça sai das portinholas, na linha do casco, e não do centro do sprite.
-	_smoke_port.position = (WAKE_OFFSET + Vector2(0.0, -4.0)).rotated(-rotation)
-	_smoke_starboard.position = (WAKE_OFFSET + Vector2(0.0, 4.0)).rotated(-rotation)
 	material.initial_velocity_min = lerpf(0.5, 4.0, fraction)
 	material.initial_velocity_max = lerpf(3.0, 9.0, fraction)
-	_wake.modulate.a = fraction * 0.9
-	_wake.emitting = fraction > 0.05
+	_wake.position = WAKE_OFFSET.rotated(-rotation) + Vector2(stern_sign * data.hull_half_length * 0.8, 0.0)
+	_wake.amount_ratio = fraction
+	_wake.emitting = fraction > 0.02
 
 
-func _setup_smoke(node: GPUParticles2D, side: int) -> void:
-	var material := ParticleProcessMaterial.new()
-	material.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
-	material.emission_box_extents = Vector3(data.hull_half_length * 0.6, 3.0, 0.0)
-	material.direction = Vector3(0.0, side, 0.0)
-	material.spread = 22.0
-	material.gravity = Vector3.ZERO
-	material.initial_velocity_min = 14.0
-	material.initial_velocity_max = 30.0
-	material.damping_min = 18.0
-	material.damping_max = 30.0
-	material.scale_min = 0.6
-	material.scale_max = 1.3
-	material.color = Color(0.62, 0.63, 0.66, 0.45)
-	node.process_material = material
-	node.texture = _puff
-	node.position = Vector2(0.0, side * GUN_LATERAL)
-	node.local_coords = false
-	node.one_shot = true
-	node.explosiveness = 0.9
-	node.amount = 10
-	node.lifetime = 1.6
-	node.emitting = false
-
-
-## Fumaça de pólvora: uma baforada no bordo que atirou.
+## Clarão e fumaça na saída de cada canhão do bordo que atirou.
 func _puff_smoke(side: int) -> void:
-	var node: GPUParticles2D = _smoke_port if side == SIDE_PORT else _smoke_starboard
-	node.restart()
-	node.emitting = true
+	for gun in _guns(side):
+		# Na linha do casco, distribuído ao longo do navio, e não na altura das velas.
+		_spawn_muzzle(global_position + WAKE_OFFSET + (gun as Node2D).position.x * Vector2.RIGHT.rotated(rotation))
+
+
+## Baforada rápida de fumaça cinza, que se dissipa e some sozinha.
+func _spawn_muzzle(at: Vector2) -> void:
+	var burst := GPUParticles2D.new()
+	var material := ParticleProcessMaterial.new()
+	material.spread = 180.0
+	material.gravity = Vector3.ZERO
+	material.initial_velocity_min = 8.0
+	material.initial_velocity_max = 22.0
+	material.damping_min = 40.0
+	material.damping_max = 60.0
+	material.scale_min = 0.6
+	material.scale_max = 1.2
+	material.color = Color(0.7, 0.7, 0.72, 0.55)
+	burst.process_material = material
+	burst.texture = _puff
+	burst.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	burst.one_shot = true
+	burst.explosiveness = 1.0
+	burst.amount = 8
+	burst.lifetime = 0.6
+	burst.local_coords = false
+	get_parent().add_child(burst)
+	burst.global_position = at
+	burst.emitting = true
+	get_tree().create_timer(1.2).timeout.connect(burst.queue_free)
 
 
 ## Mancha redonda e macia usada como partícula de fumaça.
