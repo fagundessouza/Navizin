@@ -566,6 +566,8 @@ func _setup_wake() -> void:
 	material.color = Color(0.9, 0.98, 1.0, 0.4)
 	_wake.process_material = material
 	_wake.texture = _puff
+	# Névoa suave: filtro linear, senão o Nearest do projeto a quebra em blocos quadrados.
+	_wake.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	# No referencial do casco: a popa e a deriva seguem a proa, em qualquer rumo.
 	_wake.local_coords = true
 	_wake.amount = 40
