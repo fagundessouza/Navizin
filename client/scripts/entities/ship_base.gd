@@ -37,33 +37,43 @@ const SIDE_STARBOARD: int = 1
 ## Força mínima de qualquer bordada. Um toque rápido ainda sai como tiro visível.
 const TAP_MIN_POWER: float = 0.3
 
-## Os 16 frames de direção, de 0° a 337.5°, em passos de 22.5°. Pares (índices
-## pares) vêm de `ficha_laterais_frontais`; ímpares, de `ficha_intermediarios`.
+## Frame de cada direção (0 a 15, de 22.5° em 22.5°): arquivo `dir16_NN.png` e
+## se é espelhado em 180°. Escolhido pela proa mais próxima do rumo. Girar 180°
+## só vale para vistas de cima; as laterais e de frente/costas ficam sem giro.
 const DIR16_TEXTURES: Array[Texture2D] = [
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_04.png"),  # direção 0 -> frame 4
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_01.png"),  # direção 1 -> frame 1
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_06.png"),  # direção 2 -> frame 6
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_03.png"),  # direção 3 -> frame 3
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_00.png"),  # direção 4 -> frame 0
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_05.png"),  # direção 5 -> frame 5
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_10.png"),  # direção 6 -> frame 10
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_07.png"),  # direção 7 -> frame 7
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_12.png"),  # direção 8 -> frame 12
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_09.png"),  # direção 9 -> frame 9
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_10.png"),  # direção 10 -> frame 10
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_11.png"),  # direção 11 -> frame 11
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_08.png"),  # direção 12 -> frame 8
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_13.png"),  # direção 13 -> frame 13
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_06.png"),  # direção 14 -> frame 6
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_15.png"),  # direção 15 -> frame 15
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_04.png"),  # 0
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_04.png"),  # 1
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_06.png"),  # 2
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_03.png"),  # 3
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_00.png"),  # 4
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_13.png"),  # 5
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_10.png"),  # 6
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_10.png"),  # 7
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_12.png"),  # 8
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_12.png"),  # 9
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_03.png"),  # 10
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_03.png"),  # 11
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_08.png"),  # 12
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_13.png"),  # 13
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_05.png"),  # 14
+	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_04.png"),  # 15
 ]
 
-## Vistas de cima (fonte intermediária, índices ímpares): sem sombra deslocada,
-## para o casco não parecer duplicado.
-const DIR16_TOP_VIEW: Array[bool] = [
-	false, true, false, true, false, true, false, true,
-	false, true, false, true, false, true, false, true,
-]
+const DIR16_FLIP: Array[bool] = [false, false, false, false, false, false, false, false, false, false, true, true, false, true, true, false]
+
+## Vistas de cima (frames ímpares da segunda ficha): sem sombra deslocada, para o
+## casco não parecer duplicado.
+const DIR16_TOP_VIEW: Array[bool] = [false, false, false, true, false, true, false, false, false, false, true, true, false, true, true, false]
+
+## Escala do sprite e da sombra: o navio fica 8% maior.
+const SPRITE_SCALE: float = 1.08
+
+## Histerese da troca de frame, em passos de 22.5°: só troca depois de passar
+## da fronteira por este valor. Evita piscar quando o rumo fica parado perto dela.
+const FRAME_HYSTERESIS: float = 0.15
+
+## Zona morta do leme, em radianos (~1°): abaixo disso a proa para de girar.
+const STEER_DEADBAND: float = 0.02
 
 ## Passo angular de cada direção, em graus.
 const DIR_STEP_DEG: float = 22.5
@@ -169,7 +179,9 @@ func _ready() -> void:
 	_visual_heading = rotation
 	_puff = _make_puff_texture()
 	_shadow.modulate = Color(0.0, 0.0, 0.0, SHADOW_ALPHA)
-	_show_direction(_direction_index(rotation))
+	_sprite.scale = Vector2.ONE * SPRITE_SCALE
+	_shadow.scale = Vector2.ONE * SPRITE_SCALE
+	_show_direction(posmod(roundi(rad_to_deg(rotation) / DIR_STEP_DEG), DIRECTIONS))
 	_setup_wake()
 	_setup_smoke(_smoke_port, SIDE_PORT)
 	_setup_smoke(_smoke_starboard, SIDE_STARBOARD)
@@ -266,7 +278,7 @@ func fire_broadside(power: float, side: int) -> void:
 		return
 	power = clampf(power, 0.0, 1.0)
 	var limits: Vector2 = _sector_limits(side)
-	var aim: float = _broadside_angle(side)
+	var aim: float = _normal_local(side)
 	var half_spread: float = lerpf(data.spread_min, data.spread_max, power)
 	var shot_speed: float = lerpf(data.projectile_speed_min, data.projectile_speed_max, power)
 	var guns: Array = _guns(side)
@@ -324,21 +336,17 @@ func _any_holding() -> bool:
 	return _any_charging() or _awaiting_release[SIDE_PORT] or _awaiting_release[SIDE_STARBOARD]
 
 
+## Lateral do bordo no referencial do casco: bombordo aponta para -Y, estibordo para +Y.
+func _normal_local(side: int) -> float:
+	return -PI / 2.0 if side == SIDE_PORT else PI / 2.0
+
+
 ## Limites do ângulo de tiro (em relação à proa): só ±20° em torno da lateral do bordo.
 func _sector_limits(side: int) -> Vector2:
 	var normal: float = -PI / 2.0 if side == SIDE_PORT else PI / 2.0
 	return Vector2(normal - AIM_ARC, normal + AIM_ARC)
 
 
-## Ângulo de tiro local do bordo: o cursor, preso ao semiplano desse lado.
-func _broadside_angle(side: int) -> float:
-	var to_pointer: Vector2 = get_global_mouse_position() - global_position
-	var local_angle: float = wrapf(to_pointer.angle() - rotation, -PI, PI)
-	var limits: Vector2 = _sector_limits(side)
-	return clampf(local_angle, limits.x, limits.y)
-
-
-## Canhões de um bordo, na ordem em que são usados na bordada.
 func _guns(side: int) -> Array:
 	return _port_cannons.get_children() if side == SIDE_PORT else _starboard_cannons.get_children()
 
@@ -382,7 +390,8 @@ func _update_steering(delta: float) -> void:
 	var aim: Vector2 = Vector2.ZERO if _any_holding() else get_aim_vector()
 	if aim != Vector2.ZERO:
 		var error: float = angle_difference(rotation, aim.angle())
-		steer = clampf(error * data.aim_responsiveness, -1.0, 1.0)
+		if absf(error) > STEER_DEADBAND:
+			steer = clampf(error * data.aim_responsiveness, -1.0, 1.0)
 
 	angular_velocity = move_toward(angular_velocity, steer * data.turn_speed, data.turn_acceleration * delta)
 	rotation += angular_velocity * delta
@@ -409,34 +418,34 @@ func _target_speed() -> float:
 			return 0.0
 
 
-## Uma direção por vez, de 16. A troca é instantânea: a opacidade fica sempre em
-## 100%, então não há fantasma durante a virada. O índice segue a fórmula
-## posmod(round(graus / 22.5), 16) do rumo global do nó.
+## Uma direção por vez, de 16, sem mudança de opacidade. A direção só troca
+## quando o rumo passa da fronteira com folga (histerese), para não piscar.
 func _update_visual(delta: float) -> void:
 	_time += delta
-	var index: int = _direction_index(global_rotation)
-	if index != _shown_index:
+	var steps: float = rad_to_deg(global_rotation) / DIR_STEP_DEG
+	var index: int = posmod(roundi(steps), DIRECTIONS)
+	if _shown_index < 0:
 		_show_direction(index)
+	else:
+		var d: float = wrapf(steps - float(_shown_index) + DIRECTIONS / 2.0, 0.0, float(DIRECTIONS)) - DIRECTIONS / 2.0
+		if absf(d) > 0.5 + FRAME_HYSTERESIS:
+			_show_direction(index)
 	_apply_float()
 
 
-## Índice da direção para um rumo em radianos: 0 a 15, em passos de 22.5°.
-func _direction_index(angle: float) -> int:
-	return posmod(int(round(rad_to_deg(angle) / DIR_STEP_DEG)), DIRECTIONS)
-
-
-## Mostra a direção: um único sprite, opaco, sem espelhamento. Nas vistas de cima
+## Mostra a direção: um único sprite, opaco. Nas vistas de cima
 ## a sombra some, porque o casco já cobre a água.
 func _show_direction(index: int) -> void:
 	_shown_index = index
 	direction = index
 	_sprite.texture = DIR16_TEXTURES[index]
-	_sprite.flip_h = false
-	_sprite.flip_v = false
+	var flip: bool = DIR16_FLIP[index]
+	_sprite.flip_h = flip
+	_sprite.flip_v = flip
 	_sprite.modulate.a = 1.0
 	_shadow.texture = null if DIR16_TOP_VIEW[index] else DIR16_TEXTURES[index]
-	_shadow.flip_h = false
-	_shadow.flip_v = false
+	_shadow.flip_h = flip
+	_shadow.flip_v = flip
 
 
 ## Balanço de flutuação: o navio sobe e desce, deriva de lado e balança. Mais
