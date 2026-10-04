@@ -81,9 +81,9 @@ const DRIFT_PERIOD: float = 4.1
 const SWAY_ANGLE: float = 0.012
 const SWAY_PERIOD: float = 3.7
 
-## Margem junto da proa e da popa, em radianos (~8°). A mira nunca aponta direto
-## para a frente ou para trás.
-const SECTOR_MARGIN: float = 0.14
+## Abertura da mira em torno da lateral, em radianos (±20°). Fora desse arco, o
+## tiro iria para a proa ou a popa, o que é proibido.
+const AIM_ARC: float = 0.35
 
 ## Distância lateral dos canhões ao centro do casco, em pixels.
 const GUN_LATERAL: float = 10.0
@@ -322,11 +322,10 @@ func _any_holding() -> bool:
 	return _any_charging() or _awaiting_release[SIDE_PORT] or _awaiting_release[SIDE_STARBOARD]
 
 
-## Limites do ângulo de tiro (em relação à proa) para o bordo: só o semiplano dele.
+## Limites do ângulo de tiro (em relação à proa): só ±20° em torno da lateral do bordo.
 func _sector_limits(side: int) -> Vector2:
-	if side == SIDE_PORT:
-		return Vector2(-PI + SECTOR_MARGIN, -SECTOR_MARGIN)
-	return Vector2(SECTOR_MARGIN, PI - SECTOR_MARGIN)
+	var normal: float = -PI / 2.0 if side == SIDE_PORT else PI / 2.0
+	return Vector2(normal - AIM_ARC, normal + AIM_ARC)
 
 
 ## Ângulo de tiro local do bordo: o cursor, preso ao semiplano desse lado.
