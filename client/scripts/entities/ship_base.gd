@@ -64,7 +64,6 @@ const DIR16_TEXTURES: Array[Texture2D] = [
 const DIR_ENTRIES: Array = [
 	[0, 4, false, false],  # 0°
 	[22.5, 4, false, false],  # 22.5°
-	[33.75, 4, false, true],  # 33.75°
 	[45, 10, false, false],  # 45°
 	[67.5, 13, true, false],  # 67.5°
 	[90, 0, false, false],  # 90°
@@ -72,7 +71,6 @@ const DIR_ENTRIES: Array = [
 	[135, 10, true, false],  # 135°
 	[157.5, 4, true, false],  # 157.5°
 	[180, 4, true, false],  # 180°
-	[191.25, 4, true, true],  # 191.25°
 	[202.5, 4, true, false],  # 202.5°
 	[225, 5, false, true],  # 225°
 	[247.5, 13, false, true],  # 247.5°
