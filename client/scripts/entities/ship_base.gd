@@ -79,7 +79,7 @@ const DIR_ENTRIES: Array = [
 	[270, 8, false, false],  # 270°
 	[292.5, 13, true, true],  # 292.5°
 	[315, 5, true, true],  # 315°
-	[337.5, 4, false, false],  # 337.5°
+	[337.5, 4, false, true],  # 337.5°
 	[348.75, 4, false, false],  # 348.75°
 ]
 
