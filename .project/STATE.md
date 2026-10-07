@@ -3,6 +3,34 @@
 > Arquivo de contexto. Ao iniciar uma sessão nova, diga **"Carregar checkpoint"** e leia só este arquivo.
 > Ao final de cada sessão ou marco, diga **"Salvar checkpoint"** para atualizá-lo.
 
+## Checkpoint atual (2026-10-07) — branch `feature/issue-4-ship-movement`, PR #6 para `dev`
+
+**Último commit:** `23dcdbe` (mystic orb bars, Cinzel labels, retrato +25%).
+
+**Módulo atual:** HUD do capitão e física de navegação. A issue #4 segue no PR #6.
+
+**Feito nesta rodada**
+- **Escala e vento:** navio em `SPRITE_SCALE` 0.62 (~2.3× o anterior), câmera em zoom 1.3, autoload `WindManager` (direção e força por ruído, sinal `wind_changed`), física com produto escalar (+35% a favor, até -50% contra, deriva lateral também de través).
+- **Esteira e proa:** esteira escalada ao galeão; `BowWave` (respingo da proa que empurra a água para os lados).
+- **HUD (`scenes/ui/hud.tscn`):** bloco do capitão no canto inferior esquerdo (80% de escala, 16 px de margem), com retrato (+25%) e três barras empilhadas: casco (caveira), suprimentos (barril, consome ao navegar) e vento (rosa). Bússola em código no topo central, a 65% de alfa, só letras cardinais. Minimapa no canto superior direito com a moldura completa. Hotbar 1 a 8 a 50% de escala, com ícones, quantidade e recarga circular (slot 1 = bordada). Barra de menus com 12 botões, hover 1.05, som de clique e atalhos (L, N, B, C, F, R, M, T, I, P, V, K).
+- **Tipografia:** Cinzel Bold (OFL) nos rótulos das barras, creme `#F3E5AB`, sombra 1×2 preta. Pirata One (OFL) como fonte padrão do tema (`assets/ui/theme_navizin.tres`).
+- **Barras com efeito de orbe:** `assets/shaders/mystic_bar.gdshader` (gradiente líquido, brilho no topo que pulsa, varredura de luz), mascarado pelo alfa da textura da barra.
+- **Física do giro:** o leme só gira o casco com velocidade. Parado (abaixo de 1 px/s) a taxa é zero. A curva cresce com a velocidade até `turn_speed`. Função `steering_rate` testada com 6 casos.
+- **Dano e suprimento:** `ship_base.gd` emite `hull_changed`, tem `apply_damage()`, `supply`/`max_supply` (1000) e `broadside_ratio()`. Regeneração em ilha (`regen_supply`) existe, mas ainda não há ilhas no mapa.
+
+**Pendências deste checkpoint**
+1. Conferir no jogo o tamanho do bloco do capitão, da hotbar e do menu, e a intensidade do brilho/varredura das barras.
+2. Janelas do menu (Leme, Munição, Tripulação, Frota, Consumíveis, Mapa, Reconhecimento, Inventário, Perfis) estão com texto "Em construção". Só Rosa dos ventos e Ancorar funcionam.
+3. Moldura preta das barras continua com o peso original: reduzir exige repintar a arte.
+4. Arte que o usuário citou (`image_f1dae2.png`, `image_f1d64c.png`, `image_f23843.jpg`) não foi encontrada no computador. Usei as barras do kit `464ad6b5…`.
+5. Gatilhos de vício: recusados. Não serão implementados.
+6. Mundo sem ilhas: o `Terrain` (TileMapLayer) está vazio, à espera dos tilesets do ComfyUI em `assets/sprites/environment/islands/`.
+7. Ícone 12 da barra de menus (caveira com ossos) está como "Alertas", em construção.
+
+**Ficheiros de UI novos desta rodada:** `assets/ui/` (frames, bars, icons, theme), `assets/fonts/` (Pirata One, Cinzel), `assets/audio/ui_click.wav`, `scenes/ui/` (hud, captain_status, compass_hud, minimap_hud, hotbar, system_menu_bar, dialog_panel), `scripts/ui/` (hud_controller, compass_tape).
+
+---
+
 ## Módulo atual
 Módulo 1 (movimentação, vento/maré, inércia, visual do navio e disparo lateral com carga de força) implementado na branch `feature/issue-4-ship-movement`. A issue #4 é coberta por esse trabalho. Aguardando PR para `dev`.
 
