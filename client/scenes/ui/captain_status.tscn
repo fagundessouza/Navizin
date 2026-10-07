@@ -10,6 +10,8 @@
 
 [node name="CaptainStatus" type="Control"]
 custom_minimum_size = Vector2(380, 200)
+scale = Vector2(0.8, 0.8)
+pivot_offset = Vector2(0, 200)
 layout_mode = 3
 offset_right = 380.0
 offset_bottom = 200.0
@@ -26,10 +28,10 @@ mouse_filter = 2
 
 [node name="HullArt" type="TextureRect" parent="."]
 layout_mode = 0
-offset_left = 124.0
-offset_top = 0.0
-offset_right = 378.0
-offset_bottom = 53.0
+offset_left = 118
+offset_top = 0
+offset_right = 372
+offset_bottom = 53
 texture = ExtResource("2_skull")
 expand_mode = 0
 stretch_mode = 0
@@ -37,10 +39,10 @@ mouse_filter = 2
 
 [node name="HullFill" type="TextureProgressBar" parent="."]
 layout_mode = 0
-offset_left = 192.0
-offset_top = 10.0
-offset_right = 348.0
-offset_bottom = 42.0
+offset_left = 186
+offset_top = 10
+offset_right = 342
+offset_bottom = 42
 min_value = 0.0
 max_value = 1.0
 value = 1.0
@@ -49,10 +51,10 @@ mouse_filter = 2
 
 [node name="HullLabel" type="Label" parent="."]
 layout_mode = 0
-offset_left = 192.0
-offset_top = 8.0
-offset_right = 348.0
-offset_bottom = 44.0
+offset_left = 186
+offset_top = 8
+offset_right = 342
+offset_bottom = 44
 theme_override_colors/font_color = Color(0.97, 0.94, 0.86, 1)
 theme_override_font_sizes/font_size = 14
 text = "CASCO 1000 / 1000"
@@ -63,10 +65,10 @@ mouse_filter = 2
 
 [node name="SupplyArt" type="TextureRect" parent="."]
 layout_mode = 0
-offset_left = 124.0
-offset_top = 60.0
-offset_right = 378.0
-offset_bottom = 128.0
+offset_left = 118
+offset_top = 56
+offset_right = 372
+offset_bottom = 124
 texture = ExtResource("3_barrel")
 expand_mode = 0
 stretch_mode = 0
@@ -74,10 +76,10 @@ mouse_filter = 2
 
 [node name="SupplyFill" type="TextureProgressBar" parent="."]
 layout_mode = 0
-offset_left = 192.0
-offset_top = 76.0
-offset_right = 348.0
-offset_bottom = 110.0
+offset_left = 186
+offset_top = 72
+offset_right = 342
+offset_bottom = 106
 min_value = 0.0
 max_value = 1.0
 value = 1.0
@@ -86,10 +88,10 @@ mouse_filter = 2
 
 [node name="SupplyLabel" type="Label" parent="."]
 layout_mode = 0
-offset_left = 192.0
-offset_top = 74.0
-offset_right = 348.0
-offset_bottom = 112.0
+offset_left = 186
+offset_top = 70
+offset_right = 342
+offset_bottom = 108
 theme_override_colors/font_color = Color(0.97, 0.94, 0.86, 1)
 theme_override_font_sizes/font_size = 14
 text = "SUPRIMENTOS 1000 / 1000"
@@ -100,10 +102,10 @@ mouse_filter = 2
 
 [node name="WindArt" type="TextureRect" parent="."]
 layout_mode = 0
-offset_left = 124.0
-offset_top = 132.0
-offset_right = 378.0
-offset_bottom = 198.0
+offset_left = 118
+offset_top = 127
+offset_right = 372
+offset_bottom = 193
 texture = ExtResource("4_compass")
 expand_mode = 0
 stretch_mode = 0
@@ -111,10 +113,10 @@ mouse_filter = 2
 
 [node name="WindFill" type="TextureProgressBar" parent="."]
 layout_mode = 0
-offset_left = 192.0
-offset_top = 142.0
-offset_right = 348.0
-offset_bottom = 174.0
+offset_left = 186
+offset_top = 137
+offset_right = 342
+offset_bottom = 169
 min_value = 0.0
 max_value = 1.0
 value = 1.0
@@ -123,10 +125,10 @@ mouse_filter = 2
 
 [node name="WindLabel" type="Label" parent="."]
 layout_mode = 0
-offset_left = 192.0
-offset_top = 140.0
-offset_right = 348.0
-offset_bottom = 176.0
+offset_left = 186
+offset_top = 135
+offset_right = 342
+offset_bottom = 171
 theme_override_colors/font_color = Color(0.97, 0.94, 0.86, 1)
 theme_override_font_sizes/font_size = 14
 text = "VENTO"
