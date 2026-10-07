@@ -155,6 +155,8 @@ var speed: float = 0.0
 
 ## Velocidade de giro atual, em radianos por segundo.
 var angular_velocity: float = 0.0
+## Abaixo desta velocidade (px/s) o casco está parado e o leme não gira.
+const STOP_SPEED: float = 1.0
 
 ## Impulso de recuo atual, em pixels por segundo.
 var knockback: Vector2 = Vector2.ZERO
@@ -448,8 +450,20 @@ func _update_steering(delta: float) -> void:
 		if absf(error) > STEER_DEADBAND:
 			steer = clampf(error * data.aim_responsiveness, -1.0, 1.0)
 
-	angular_velocity = move_toward(angular_velocity, steer * data.turn_speed, data.turn_acceleration * delta)
+	var rate: float = steering_rate(steer, speed, data.max_speed, data.turn_speed)
+	# Sem velocidade o leme não gira o casco: a rotação anterior se desfaz pela inércia.
+	angular_velocity = move_toward(angular_velocity, rate, data.turn_acceleration * delta)
 	rotation += angular_velocity * delta
+
+
+## Taxa de giro, em rad/s, pelo comando do leme e pela velocidade do navio.
+## Parado (abaixo de STOP_SPEED) não gira. Em movimento, a curva cresce com a velocidade:
+## a água só oferece resistência ao leme quando o casco anda.
+static func steering_rate(steer: float, current_speed: float, max_speed_value: float, turn_speed_value: float) -> float:
+	if absf(current_speed) < STOP_SPEED:
+		return 0.0
+	var ratio: float = clampf(absf(current_speed) / maxf(max_speed_value, 0.001), 0.0, 1.0)
+	return steer * turn_speed_value * ratio
 
 
 func _update_speed(delta: float) -> void:
