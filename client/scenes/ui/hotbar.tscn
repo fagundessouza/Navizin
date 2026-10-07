@@ -1,0 +1,421 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/bars/hotbar_strip.png" id="1_strip"]
+[ext_resource type="Texture2D" path="res://assets/ui/bars/cooldown_disc.png" id="3_disc"]
+
+[sub_resource type="StyleBoxFlat" id="Shadow"]
+bg_color = Color(0, 0, 0, 0)
+shadow_color = Color(0, 0, 0, 0.6)
+shadow_size = 10
+shadow_offset = Vector2(3, 5)
+
+[node name="Hotbar" type="Control"]
+custom_minimum_size = Vector2(692, 140)
+layout_mode = 3
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -346.0
+offset_top = -152.0
+offset_right = 346.0
+offset_bottom = -12.0
+grow_horizontal = 2
+grow_vertical = 0
+scale = Vector2(0.6, 0.6)
+pivot_offset = Vector2(346, 70)
+mouse_filter = 2
+
+[node name="Shadow" type="Panel" parent="."]
+layout_mode = 0
+offset_right = 692.0
+offset_bottom = 140.0
+theme_override_styles/panel = SubResource("Shadow")
+mouse_filter = 2
+
+[node name="Strip" type="TextureRect" parent="."]
+layout_mode = 0
+offset_right = 692.0
+offset_bottom = 140.0
+texture = ExtResource("1_strip")
+expand_mode = 0
+stretch_mode = 0
+mouse_filter = 2
+
+[node name="Slot1" type="Control" parent="."]
+layout_mode = 0
+offset_left = 27.0
+offset_top = 18.0
+offset_right = 97.0
+offset_bottom = 92.0
+mouse_filter = 2
+
+[node name="Icon1" type="TextureRect" parent="Slot1"]
+layout_mode = 0
+offset_left = 7.0
+offset_top = 9.0
+offset_right = 63.0
+offset_bottom = 65.0
+expand_mode = 1
+stretch_mode = 5
+mouse_filter = 2
+
+[node name="Qty1" type="Label" parent="Slot1"]
+layout_mode = 0
+offset_left = 2.0
+offset_top = 2.0
+offset_right = 68.0
+offset_bottom = 20.0
+theme_override_colors/font_color = Color(1, 0.9, 0.6, 1)
+theme_override_font_sizes/font_size = 12
+horizontal_alignment = 2
+mouse_filter = 2
+
+[node name="Cooldown1" type="TextureProgressBar" parent="Slot1"]
+layout_mode = 0
+offset_right = 70.0
+offset_bottom = 74.0
+max_value = 1.0
+fill_mode = 4
+tint_progress = Color(0, 0, 0, 0.6)
+texture_progress = ExtResource("3_disc")
+mouse_filter = 2
+
+[node name="Highlight1" type="ColorRect" parent="Slot1"]
+visible = false
+layout_mode = 0
+offset_right = 70.0
+offset_bottom = 74.0
+color = Color(1, 0.85, 0.4, 0.22)
+mouse_filter = 2
+
+[node name="Slot2" type="Control" parent="."]
+layout_mode = 0
+offset_left = 109.0
+offset_top = 18.0
+offset_right = 179.0
+offset_bottom = 92.0
+mouse_filter = 2
+
+[node name="Icon2" type="TextureRect" parent="Slot2"]
+layout_mode = 0
+offset_left = 7.0
+offset_top = 9.0
+offset_right = 63.0
+offset_bottom = 65.0
+expand_mode = 1
+stretch_mode = 5
+mouse_filter = 2
+
+[node name="Qty2" type="Label" parent="Slot2"]
+layout_mode = 0
+offset_left = 2.0
+offset_top = 2.0
+offset_right = 68.0
+offset_bottom = 20.0
+theme_override_colors/font_color = Color(1, 0.9, 0.6, 1)
+theme_override_font_sizes/font_size = 12
+horizontal_alignment = 2
+mouse_filter = 2
+
+[node name="Cooldown2" type="TextureProgressBar" parent="Slot2"]
+layout_mode = 0
+offset_right = 70.0
+offset_bottom = 74.0
+max_value = 1.0
+fill_mode = 4
+tint_progress = Color(0, 0, 0, 0.6)
+texture_progress = ExtResource("3_disc")
+mouse_filter = 2
+
+[node name="Highlight2" type="ColorRect" parent="Slot2"]
+visible = false
+layout_mode = 0
+offset_right = 70.0
+offset_bottom = 74.0
+color = Color(1, 0.85, 0.4, 0.22)
+mouse_filter = 2
+
+[node name="Slot3" type="Control" parent="."]
+layout_mode = 0
+offset_left = 190.0
+offset_top = 18.0
+offset_right = 260.0
+offset_bottom = 92.0
+mouse_filter = 2
+
+[node name="Icon3" type="TextureRect" parent="Slot3"]
+layout_mode = 0
+offset_left = 7.0
+offset_top = 9.0
+offset_right = 63.0
+offset_bottom = 65.0
+expand_mode = 1
+stretch_mode = 5
+mouse_filter = 2
+
+[node name="Qty3" type="Label" parent="Slot3"]
+layout_mode = 0
+offset_left = 2.0
+offset_top = 2.0
+offset_right = 68.0
+offset_bottom = 20.0
+theme_override_colors/font_color = Color(1, 0.9, 0.6, 1)
+theme_override_font_sizes/font_size = 12
+horizontal_alignment = 2
+mouse_filter = 2
+
+[node name="Cooldown3" type="TextureProgressBar" parent="Slot3"]
+layout_mode = 0
+offset_right = 70.0
+offset_bottom = 74.0
+max_value = 1.0
+fill_mode = 4
+tint_progress = Color(0, 0, 0, 0.6)
+texture_progress = ExtResource("3_disc")
+mouse_filter = 2
+
+[node name="Highlight3" type="ColorRect" parent="Slot3"]
+visible = false
+layout_mode = 0
+offset_right = 70.0
+offset_bottom = 74.0
+color = Color(1, 0.85, 0.4, 0.22)
+mouse_filter = 2
+
+[node name="Slot4" type="Control" parent="."]
+layout_mode = 0
+offset_left = 272.0
+offset_top = 18.0
+offset_right = 342.0
+offset_bottom = 92.0
+mouse_filter = 2
+
+[node name="Icon4" type="TextureRect" parent="Slot4"]
+layout_mode = 0
+offset_left = 7.0
+offset_top = 9.0
+offset_right = 63.0
+offset_bottom = 65.0
+expand_mode = 1
+stretch_mode = 5
+mouse_filter = 2
+
+[node name="Qty4" type="Label" parent="Slot4"]
+layout_mode = 0
+offset_left = 2.0
+offset_top = 2.0
+offset_right = 68.0
+offset_bottom = 20.0
+theme_override_colors/font_color = Color(1, 0.9, 0.6, 1)
+theme_override_font_sizes/font_size = 12
+horizontal_alignment = 2
+mouse_filter = 2
+
+[node name="Cooldown4" type="TextureProgressBar" parent="Slot4"]
+layout_mode = 0
+offset_right = 70.0
+offset_bottom = 74.0
+max_value = 1.0
+fill_mode = 4
+tint_progress = Color(0, 0, 0, 0.6)
+texture_progress = ExtResource("3_disc")
+mouse_filter = 2
+
+[node name="Highlight4" type="ColorRect" parent="Slot4"]
+visible = false
+layout_mode = 0
+offset_right = 70.0
+offset_bottom = 74.0
+color = Color(1, 0.85, 0.4, 0.22)
+mouse_filter = 2
+
+[node name="Slot5" type="Control" parent="."]
+layout_mode = 0
+offset_left = 354.0
+offset_top = 18.0
+offset_right = 424.0
+offset_bottom = 92.0
+mouse_filter = 2
+
+[node name="Icon5" type="TextureRect" parent="Slot5"]
+layout_mode = 0
+offset_left = 7.0
+offset_top = 9.0
+offset_right = 63.0
+offset_bottom = 65.0
+expand_mode = 1
+stretch_mode = 5
+mouse_filter = 2
+
+[node name="Qty5" type="Label" parent="Slot5"]
+layout_mode = 0
+offset_left = 2.0
+offset_top = 2.0
+offset_right = 68.0
+offset_bottom = 20.0
+theme_override_colors/font_color = Color(1, 0.9, 0.6, 1)
+theme_override_font_sizes/font_size = 12
+horizontal_alignment = 2
+mouse_filter = 2
+
+[node name="Cooldown5" type="TextureProgressBar" parent="Slot5"]
+layout_mode = 0
+offset_right = 70.0
+offset_bottom = 74.0
+max_value = 1.0
+fill_mode = 4
+tint_progress = Color(0, 0, 0, 0.6)
+texture_progress = ExtResource("3_disc")
+mouse_filter = 2
+
+[node name="Highlight5" type="ColorRect" parent="Slot5"]
+visible = false
+layout_mode = 0
+offset_right = 70.0
+offset_bottom = 74.0
+color = Color(1, 0.85, 0.4, 0.22)
+mouse_filter = 2
+
+[node name="Slot6" type="Control" parent="."]
+layout_mode = 0
+offset_left = 436.0
+offset_top = 18.0
+offset_right = 506.0
+offset_bottom = 92.0
+mouse_filter = 2
+
+[node name="Icon6" type="TextureRect" parent="Slot6"]
+layout_mode = 0
+offset_left = 7.0
+offset_top = 9.0
+offset_right = 63.0
+offset_bottom = 65.0
+expand_mode = 1
+stretch_mode = 5
+mouse_filter = 2
+
+[node name="Qty6" type="Label" parent="Slot6"]
+layout_mode = 0
+offset_left = 2.0
+offset_top = 2.0
+offset_right = 68.0
+offset_bottom = 20.0
+theme_override_colors/font_color = Color(1, 0.9, 0.6, 1)
+theme_override_font_sizes/font_size = 12
+horizontal_alignment = 2
+mouse_filter = 2
+
+[node name="Cooldown6" type="TextureProgressBar" parent="Slot6"]
+layout_mode = 0
+offset_right = 70.0
+offset_bottom = 74.0
+max_value = 1.0
+fill_mode = 4
+tint_progress = Color(0, 0, 0, 0.6)
+texture_progress = ExtResource("3_disc")
+mouse_filter = 2
+
+[node name="Highlight6" type="ColorRect" parent="Slot6"]
+visible = false
+layout_mode = 0
+offset_right = 70.0
+offset_bottom = 74.0
+color = Color(1, 0.85, 0.4, 0.22)
+mouse_filter = 2
+
+[node name="Slot7" type="Control" parent="."]
+layout_mode = 0
+offset_left = 517.0
+offset_top = 18.0
+offset_right = 587.0
+offset_bottom = 92.0
+mouse_filter = 2
+
+[node name="Icon7" type="TextureRect" parent="Slot7"]
+layout_mode = 0
+offset_left = 7.0
+offset_top = 9.0
+offset_right = 63.0
+offset_bottom = 65.0
+expand_mode = 1
+stretch_mode = 5
+mouse_filter = 2
+
+[node name="Qty7" type="Label" parent="Slot7"]
+layout_mode = 0
+offset_left = 2.0
+offset_top = 2.0
+offset_right = 68.0
+offset_bottom = 20.0
+theme_override_colors/font_color = Color(1, 0.9, 0.6, 1)
+theme_override_font_sizes/font_size = 12
+horizontal_alignment = 2
+mouse_filter = 2
+
+[node name="Cooldown7" type="TextureProgressBar" parent="Slot7"]
+layout_mode = 0
+offset_right = 70.0
+offset_bottom = 74.0
+max_value = 1.0
+fill_mode = 4
+tint_progress = Color(0, 0, 0, 0.6)
+texture_progress = ExtResource("3_disc")
+mouse_filter = 2
+
+[node name="Highlight7" type="ColorRect" parent="Slot7"]
+visible = false
+layout_mode = 0
+offset_right = 70.0
+offset_bottom = 74.0
+color = Color(1, 0.85, 0.4, 0.22)
+mouse_filter = 2
+
+[node name="Slot8" type="Control" parent="."]
+layout_mode = 0
+offset_left = 599.0
+offset_top = 18.0
+offset_right = 669.0
+offset_bottom = 92.0
+mouse_filter = 2
+
+[node name="Icon8" type="TextureRect" parent="Slot8"]
+layout_mode = 0
+offset_left = 7.0
+offset_top = 9.0
+offset_right = 63.0
+offset_bottom = 65.0
+expand_mode = 1
+stretch_mode = 5
+mouse_filter = 2
+
+[node name="Qty8" type="Label" parent="Slot8"]
+layout_mode = 0
+offset_left = 2.0
+offset_top = 2.0
+offset_right = 68.0
+offset_bottom = 20.0
+theme_override_colors/font_color = Color(1, 0.9, 0.6, 1)
+theme_override_font_sizes/font_size = 12
+horizontal_alignment = 2
+mouse_filter = 2
+
+[node name="Cooldown8" type="TextureProgressBar" parent="Slot8"]
+layout_mode = 0
+offset_right = 70.0
+offset_bottom = 74.0
+max_value = 1.0
+fill_mode = 4
+tint_progress = Color(0, 0, 0, 0.6)
+texture_progress = ExtResource("3_disc")
+mouse_filter = 2
+
+[node name="Highlight8" type="ColorRect" parent="Slot8"]
+visible = false
+layout_mode = 0
+offset_right = 70.0
+offset_bottom = 74.0
+color = Color(1, 0.85, 0.4, 0.22)
+mouse_filter = 2
+

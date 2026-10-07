@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://brm5gdhbhgvnk"
-path="res://.godot/imported/fill_blue.png-920bbdc13999652047885bce037e45ce.ctex"
+uid="uid://1ijaivquqwht"
+path="res://.godot/imported/fill_supply_gold.png-ae89062da79ce34bdbc5976c8166d9ab.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/bars/fill_blue.png"
-dest_files=["res://.godot/imported/fill_blue.png-920bbdc13999652047885bce037e45ce.ctex"]
+source_file="res://assets/ui/bars/fill_supply_gold.png"
+dest_files=["res://.godot/imported/fill_supply_gold.png-ae89062da79ce34bdbc5976c8166d9ab.ctex"]
 
 [params]
 

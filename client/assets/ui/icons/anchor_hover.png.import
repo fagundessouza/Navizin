@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cbg58v585d3r0"
-path="res://.godot/imported/bg_dark.png-13f47567febdda4c3bfde45e206c6a3e.ctex"
+uid="uid://cab05wy4x64wj"
+path="res://.godot/imported/anchor_hover.png-e0671b6aadafa737b9905e15f766ea68.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/bars/bg_dark.png"
-dest_files=["res://.godot/imported/bg_dark.png-13f47567febdda4c3bfde45e206c6a3e.ctex"]
+source_file="res://assets/ui/icons/anchor_hover.png"
+dest_files=["res://.godot/imported/anchor_hover.png-e0671b6aadafa737b9905e15f766ea68.ctex"]
 
 [params]
 

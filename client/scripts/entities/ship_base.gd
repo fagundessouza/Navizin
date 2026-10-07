@@ -173,8 +173,13 @@ var _kick: Vector2 = Vector2.ZERO
 ## Squash & stretch: -1 desacelerando forte, +1 acelerando forte. Suavizado.
 var _squash: float = 0.0
 ## Casco: pontos de vida do navio, mostrados na interface do capitão.
-@export var max_hull: float = 100.0
-var hull: float = 100.0
+@export var max_hull: float = 1000.0
+var hull: float = 1000.0
+## Suprimentos: consumidos ao navegar, regenerados em ilhas. Mostrados na barra do capitão.
+@export var max_supply: float = 1000.0
+var supply: float = 1000.0
+const SUPPLY_PER_PX: float = 0.02
+
 
 ## Casco mudou: valor atual e máximo, para a interface do capitão.
 signal hull_changed(hull_value: float, max_value: float)
@@ -233,6 +238,7 @@ func _physics_process(delta: float) -> void:
 	position += Vector2.RIGHT.rotated(rotation) * speed * delta
 	position += knockback * delta
 	_apply_wind_drift(delta)
+	supply = maxf(0.0, supply - absf(speed) * SUPPLY_PER_PX * delta)
 	_clamp_to_world()
 
 
@@ -859,3 +865,13 @@ func _update_bow_wave(fraction: float) -> void:
 func apply_damage(amount: float) -> void:
 	hull = clampf(hull - maxf(amount, 0.0), 0.0, max_hull)
 	hull_changed.emit(hull, max_hull)
+
+
+## Fração de recarga da bordada mais lenta (0 = pronto, 1 = recém disparado).
+func broadside_ratio() -> float:
+	return maxf(_cooldown[SIDE_PORT], _cooldown[SIDE_STARBOARD]) / data.broadside_cooldown
+
+
+## Reabastece em ilha. Ainda sem ilhas no mapa, fica disponível para quando existirem.
+func regen_supply(amount: float) -> void:
+	supply = minf(max_supply, supply + amount)

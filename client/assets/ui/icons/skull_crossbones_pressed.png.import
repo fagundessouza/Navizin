@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dr8huy8dtgqvl"
-path="res://.godot/imported/fill_red.png-7f7e3487ff21a0f7f94ddeda5c014d25.ctex"
+uid="uid://ys02kx4ltjhk"
+path="res://.godot/imported/skull_crossbones_pressed.png-fe8ff5f7e5edbaef391fe0a4f87aa06a.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/bars/fill_red.png"
-dest_files=["res://.godot/imported/fill_red.png-7f7e3487ff21a0f7f94ddeda5c014d25.ctex"]
+source_file="res://assets/ui/icons/skull_crossbones_pressed.png"
+dest_files=["res://.godot/imported/skull_crossbones_pressed.png-fe8ff5f7e5edbaef391fe0a4f87aa06a.ctex"]
 
 [params]
 
