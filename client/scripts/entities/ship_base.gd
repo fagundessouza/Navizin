@@ -141,6 +141,7 @@ const RAIL_HALF_WIDTH: float = 3.0
 @onready var _shadow: Sprite2D = $Shadow
 @onready var _sprite: Sprite2D = $Sprite2D
 @onready var _wake: GPUParticles2D = $WaterTrailFX
+@onready var _bow: GPUParticles2D = $BowWave
 @onready var _lantern: PointLight2D = $LanternGlow
 @onready var _chimney: GPUParticles2D = $ChimneySmoke
 @onready var _port_cannons: Node2D = $PortCannons
@@ -171,6 +172,10 @@ var _was_charging: bool = false
 var _kick: Vector2 = Vector2.ZERO
 ## Squash & stretch: -1 desacelerando forte, +1 acelerando forte. Suavizado.
 var _squash: float = 0.0
+## Casco: pontos de vida do navio, mostrados na interface do capitão.
+@export var max_hull: float = 100.0
+var hull: float = 100.0
+
 ## Vento global (autoload `WindManager`), obtido no _ready.
 var _wind: Node = null
 var _prev_speed: float = 0.0
@@ -205,6 +210,10 @@ func _ready() -> void:
 	_shadow.scale = Vector2.ONE * SPRITE_SCALE
 	_show_frame(_nearest_frame(rad_to_deg(rotation), -1))
 	_setup_wake()
+	_setup_bow_wave()
+	if player_controlled:
+		add_to_group("player_ship")
+	hull = max_hull
 	_setup_lantern()
 	_setup_chimney()
 
@@ -615,8 +624,8 @@ func _setup_wake() -> void:
 	active_mat.angle_max = 360.0
 	active_mat.angular_velocity_min = -90.0
 	active_mat.angular_velocity_max = 90.0
-	active_mat.scale_min = 0.5
-	active_mat.scale_max = 1.2
+	active_mat.scale_min = 0.3 * SIZE_FACTOR
+	active_mat.scale_max = 0.6 * SIZE_FACTOR
 	active_mat.scale_curve = scale_tex
 	active_mat.color = Color(0.9, 0.98, 1.0, 0.5)
 	active_mat.color_ramp = fade_tex
@@ -630,7 +639,7 @@ func _setup_wake() -> void:
 	_wake.local_coords = false
 	# Atrás do casco: a espuma fica abaixo do sprite do navio.
 	_wake.show_behind_parent = true
-	_wake.amount = 40
+	_wake.amount = 60
 	_wake.lifetime = 1.1
 	_wake.emitting = false
 
@@ -669,6 +678,7 @@ func _update_wake() -> void:
 	active_mat.initial_velocity_max = lerpf(3.0, 9.0, fraction)
 	_wake.global_position = global_position + base + back
 	_wake.amount_ratio = fraction
+	_update_bow_wave(fraction)
 	_wake.emitting = fraction > 0.02
 
 
@@ -807,3 +817,35 @@ func _make_puff_texture() -> GradientTexture2D:
 	texture.width = 32
 	texture.height = 32
 	return texture
+
+
+## Respingo da proa: a água é empurrada para os lados pelo casco. As partículas saem
+## da proa, espalham-se para fora e crescem com o tamanho do galeão.
+func _setup_bow_wave() -> void:
+	var bow_mat := ParticleProcessMaterial.new()
+	bow_mat.spread = 70.0
+	bow_mat.gravity = Vector3.ZERO
+	bow_mat.initial_velocity_min = 20.0
+	bow_mat.initial_velocity_max = 50.0
+	bow_mat.damping_min = 40.0
+	bow_mat.damping_max = 60.0
+	bow_mat.scale_min = 0.22 * SIZE_FACTOR
+	bow_mat.scale_max = 0.42 * SIZE_FACTOR
+	bow_mat.color = Color(0.85, 0.96, 1.0, 0.35)
+	_bow.process_material = bow_mat
+	_bow.texture = _puff
+	_bow.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	_bow.local_coords = false
+	_bow.amount = 30
+	_bow.lifetime = 0.9
+	_bow.emitting = false
+
+
+## Posição da proa no mundo, e intensidade do respingo pela velocidade.
+func _update_bow_wave(fraction: float) -> void:
+	var forward: Vector2 = Vector2.RIGHT.rotated(rotation)
+	_bow.global_position = global_position + forward * data.hull_half_length * 0.9
+	var bow_mat := _bow.process_material as ParticleProcessMaterial
+	bow_mat.direction = Vector3(forward.x, forward.y, 0.0)
+	_bow.amount_ratio = fraction
+	_bow.emitting = fraction > 0.1

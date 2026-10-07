@@ -4,7 +4,7 @@
 [ext_resource type="Shader" uid="uid://dm8entpontmqi" path="res://assets/shaders/ocean.gdshader" id="2_ocean"]
 [ext_resource type="PackedScene" uid="uid://b2b46jxrkob82" path="res://scenes/entities/ship_base.tscn" id="3_ship"]
 [ext_resource type="Texture2D" uid="uid://bbaxt08n5ykk" path="res://assets/environment/ocean_tile.png" id="4_tile"]
-[ext_resource type="PackedScene" path="res://scenes/ui/wind_hud.tscn" id="5_wind"]
+[ext_resource type="PackedScene" path="res://scenes/ui/captain_hud.tscn" id="5_hud"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_ocean"]
 shader = ExtResource("2_ocean")
@@ -54,6 +54,6 @@ environment = SubResource("Env_sea")
 
 [node name="HUD" type="CanvasLayer" parent="."]
 
-[node name="WindHUD" parent="HUD" instance=ExtResource("5_wind")]
+[node name="CaptainHUD" parent="HUD" instance=ExtResource("5_hud")]
 
 [node name="Terrain" type="TileMapLayer" parent="."]

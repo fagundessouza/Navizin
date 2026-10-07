@@ -21,6 +21,9 @@ emitting = false
 amount = 28
 lifetime = 1.1
 
+[node name="BowWave" type="GPUParticles2D" parent="."]
+emitting = false
+
 [node name="Sprite2D" type="Sprite2D" parent="." unique_id=225768888]
 material = SubResource("ShaderMaterial_outline")
 texture_filter = 1
