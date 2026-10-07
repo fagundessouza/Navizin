@@ -7,15 +7,17 @@ extends Resource
 
 @export_group("Velas")
 ## Velocidade com vela cheia, em pixels por segundo.
-@export var max_speed: float = 120.0
+@export var max_speed: float = 78.0
 ## Velocidade com meia vela, em pixels por segundo.
-@export var half_speed: float = 60.0
+@export var half_speed: float = 39.0
 ## Velocidade em ré, em pixels por segundo.
-@export var reverse_speed: float = 40.0
+@export var reverse_speed: float = 26.0
 ## Aceleração enquanto a velocidade sobe em direção ao alvo, em px/s².
-@export var acceleration: float = 40.0
+@export var acceleration: float = 26.0
 ## Desaceleração enquanto a velocidade cai (inércia), em px/s².
 @export var deceleration: float = 30.0
+## Atrito da água: freia em proporção à velocidade quando não há comando.
+@export var water_drag: float = 0.35
 
 @export_group("Leme")
 ## Velocidade angular máxima de giro, em radianos por segundo.

@@ -90,6 +90,11 @@ const SHOT_SPEED_JITTER: float = 0.05
 const KICK_PX: float = 3.0
 const KICK_RECOVERY: float = 18.0
 
+## Vento: intensidade de referência, bônus a favor e penalidade contra.
+const WIND_REFERENCE: float = 40.0
+const WIND_BONUS: float = 0.30
+const WIND_PENALTY: float = 0.50
+
 ## Distância lateral dos canhões ao centro do casco, em pixels.
 const GUN_LATERAL: float = 10.0
 
@@ -127,7 +132,11 @@ const RAIL_HALF_WIDTH: float = 3.0
 @export var player_controlled: bool = false
 
 ## Vento e maré, em pixels por segundo. Definido pelo mapa.
-@export var ambient_flow: Vector2 = Vector2.ZERO
+## Vento: direção (unitária) e intensidade, em nós do mapa. Ver `_wind_factor`.
+@export var wind_direction: Vector2 = Vector2.RIGHT
+@export var wind_speed: float = 0.0
+## Maré: força contínua no espaço do mundo, em pixels por segundo.
+@export var current_force: Vector2 = Vector2.ZERO
 
 @onready var _shadow: Sprite2D = $Shadow
 @onready var _sprite: Sprite2D = $Sprite2D
@@ -201,7 +210,7 @@ func _physics_process(delta: float) -> void:
 	knockback = knockback.move_toward(Vector2.ZERO, data.recoil_damping * delta)
 	position += Vector2.RIGHT.rotated(rotation) * speed * delta
 	position += knockback * delta
-	position += ambient_flow * data.wind_influence * delta
+	position += current_force * delta
 	_clamp_to_world()
 
 
@@ -416,11 +425,26 @@ func _update_steering(delta: float) -> void:
 
 
 func _update_speed(delta: float) -> void:
-	var target: float = _target_speed()
-	# Acelera quando o alvo está mais longe de zero que a velocidade atual;
-	# caso contrário, solta devagar (inércia).
-	var rate: float = data.acceleration if absf(target) > absf(speed) else data.deceleration
-	speed = move_toward(speed, target, rate * delta)
+	var wind: float = _wind_factor()
+	var target: float = _target_speed() * wind
+	if absf(target) > absf(speed):
+		speed = move_toward(speed, target, data.acceleration * wind * delta)
+	elif target == 0.0:
+		# Sem comando: o atrito da água freia em proporção à velocidade, com inércia.
+		var drag: float = data.deceleration * 0.4 + data.water_drag * absf(speed)
+		speed = move_toward(speed, 0.0, drag * delta)
+	else:
+		speed = move_toward(speed, target, data.deceleration * delta)
+
+
+## Fator de vento sobre a velocidade: até +30% a favor e até -50% contra, em
+## função do produto escalar entre a proa e o vento, e da intensidade do vento.
+func _wind_factor() -> float:
+	var strength: float = clampf(wind_speed / WIND_REFERENCE, 0.0, 1.0)
+	var along: float = Vector2.RIGHT.rotated(rotation).dot(wind_direction.normalized())
+	if along >= 0.0:
+		return 1.0 + WIND_BONUS * along * strength
+	return 1.0 + WIND_PENALTY * along * strength
 
 
 func _target_speed() -> float:
@@ -481,9 +505,11 @@ func _show_frame(index: int) -> void:
 func _apply_float() -> void:
 	var fraction: float = clampf(absf(speed) / maxf(data.max_speed, 1.0), 0.0, 1.0)
 	var amp: float = 1.0 + 0.5 * fraction
-	var bob: float = sin(_time * TAU / BOB_PERIOD) * BOB_AMPLITUDE * amp
+	# Flutuação sobre as ondas: relógio do sistema, como pedido.
+	var tick: float = sin(Time.get_ticks_msec() * 0.002)
+	var bob: float = tick * BOB_AMPLITUDE * amp
 	var drift: float = sin(_time * TAU / DRIFT_PERIOD) * DRIFT_AMPLITUDE * amp
-	var sway: float = sin(_time * TAU / SWAY_PERIOD) * SWAY_ANGLE * amp
+	var sway: float = tick * SWAY_ANGLE * amp
 
 	# O sprite é filho do nó, que gira com o rumo. Ele é contra-rotacionado para
 	# mostrar o frame da direção como está; a orientação já está no frame.
@@ -697,7 +723,8 @@ func _update_fx(delta: float) -> void:
 	var wave: float = sin(_time * 3.1) * 0.6 + sin(_time * 7.3) * 0.4
 	_lantern.energy = FX_TUNING["lantern_base_energy"] + FX_TUNING["lantern_wave"] * wave + FX_TUNING["fire_kick_glow"] * _fx_fire
 	var smoke_mat := _chimney.process_material as ParticleProcessMaterial
-	smoke_mat.gravity = Vector3(ambient_flow.x * FX_TUNING["smoke_wind"] * 0.1, -10.0, 0.0)
+	var wind_vec: Vector2 = wind_direction.normalized() * wind_speed
+	smoke_mat.gravity = Vector3(wind_vec.x * FX_TUNING["smoke_wind"] * 0.1, -10.0, 0.0)
 	_chimney.amount_ratio = 0.3 + 0.7 * fraction
 	_fx_turn = move_toward(_fx_turn, 0.0, delta * 2.0)
 	_fx_fire = move_toward(_fx_fire, 0.0, delta * 3.0)
