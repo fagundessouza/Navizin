@@ -30,6 +30,12 @@ uniform float glint_strength: hint_range(0.0, 1.0) = 0.4;
 /// Escurecimento das bordas da tela, para focar o centro.
 uniform float vignette_strength: hint_range(0.0, 1.0) = 0.35;
 
+/// Distorção senoidal da superfície, em pixels de tile. Dá o movimento de onda.
+uniform float distort_amp: hint_range(0.0, 8.0) = 2.5;
+
+/// Intensidade das linhas de espuma nas cristas claras.
+uniform float foam_strength: hint_range(0.0, 1.0) = 0.45;
+
 varying vec2 world_pos;
 
 void vertex() {
@@ -43,6 +49,9 @@ float luma(vec2 uv) {
 void fragment() {
 	vec2 drift = current_speed * TIME / tile_size;
 	vec2 uv = world_pos / tile_size + drift;
+	// Distorção senoidal: a superfície ondula sem trocar de tile.
+	vec2 wave = vec2(sin(world_pos.y * 0.021 + TIME * 1.3), cos(world_pos.x * 0.019 + TIME * 1.1));
+	uv += wave * distort_amp / tile_size;
 	vec2 texel = 1.0 / vec2(textureSize(ocean_tex, 0));
 	vec3 base = texture(ocean_tex, uv).rgb;
 
@@ -80,6 +89,11 @@ void fragment() {
 	// Vinheta de tela.
 	vec2 centered = (SCREEN_UV - 0.5) * vec2(1.25, 1.0);
 	lit *= 1.0 - vignette_strength * smoothstep(0.35, 0.8, length(centered));
+
+	// Linhas de espuma: cristas muito claras viram faixas brancas que correm com a maré.
+	float crest = smoothstep(0.78, 0.9, luma(uv));
+	float streak = 0.5 + 0.5 * sin(world_pos.x * 0.045 + world_pos.y * 0.03 + TIME * 2.0);
+	lit = mix(lit, vec3(0.9, 0.97, 1.0), crest * streak * foam_strength);
 
 	COLOR = vec4(lit, 1.0);
 }

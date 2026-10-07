@@ -55,7 +55,8 @@ const FRAME_TEXTURES: Array[Texture2D] = [
 const FRAME_HEADING_DEG: Array[float] = [90.0, 45.0, 0.0, -45.0, -90.0, -135.0, 180.0, 135.0]
 
 ## Escala do sprite e da sombra. Os frames novos são maiores que os antigos.
-const SPRITE_SCALE: float = 0.23
+## Escala do sprite e da sombra: 15% acima da escala anterior (0.23 × 1.15).
+const SPRITE_SCALE: float = 0.2645
 
 ## Histerese da troca de frame, em graus: só troca depois de passar da fronteira
 ## por este valor. Evita piscar quando o rumo fica parado perto dela.
@@ -130,7 +131,9 @@ const RAIL_HALF_WIDTH: float = 3.0
 
 @onready var _shadow: Sprite2D = $Shadow
 @onready var _sprite: Sprite2D = $Sprite2D
-@onready var _wake: GPUParticles2D = $Wake
+@onready var _wake: GPUParticles2D = $WaterTrailFX
+@onready var _lantern: PointLight2D = $LanternGlow
+@onready var _chimney: GPUParticles2D = $ChimneySmoke
 @onready var _port_cannons: Node2D = $PortCannons
 @onready var _starboard_cannons: Node2D = $StarboardCannons
 
@@ -187,10 +190,13 @@ func _ready() -> void:
 	_shadow.scale = Vector2.ONE * SPRITE_SCALE
 	_show_frame(_nearest_frame(rad_to_deg(rotation), -1))
 	_setup_wake()
+	_setup_lantern()
+	_setup_chimney()
 
 
 func _physics_process(delta: float) -> void:
 	_update_steering(delta)
+	fx_on_turn(angular_velocity / maxf(data.turn_speed, 0.001))
 	_update_speed(delta)
 	knockback = knockback.move_toward(Vector2.ZERO, data.recoil_damping * delta)
 	position += Vector2.RIGHT.rotated(rotation) * speed * delta
@@ -202,6 +208,7 @@ func _physics_process(delta: float) -> void:
 func _process(delta: float) -> void:
 	_update_visual(delta)
 	_update_wake()
+	_update_fx(delta)
 	_update_charge(delta)
 	_update_cooldown(delta)
 	_update_shake(delta)
@@ -302,6 +309,7 @@ func fire_broadside(power: float, side: int) -> void:
 	knockback += -barrel * data.recoil_strength * power
 	_shake = maxf(_shake, power * data.shake_strength)
 	_kick += -barrel * KICK_PX * power
+	fx_on_fire(power)
 	_cooldown[side] = data.broadside_cooldown
 	_puff_smoke(side)
 
@@ -564,7 +572,8 @@ func _setup_wake() -> void:
 	# Névoa suave: filtro linear, senão o Nearest do projeto a quebra em blocos.
 	_wake.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	# No referencial do casco: a popa e a deriva seguem a proa, em qualquer rumo.
-	_wake.local_coords = true
+	# No mundo: a espuma fica onde foi solta e se dissolve aos poucos.
+	_wake.local_coords = false
 	# Atrás do casco: a espuma fica abaixo do sprite do navio.
 	_wake.show_behind_parent = true
 	_wake.amount = 40
@@ -599,15 +608,101 @@ func _update_wake() -> void:
 	var base: Vector2 = _stern_base[_shown_index]
 	if reversing:
 		back = -back
-	var screen_pos: Vector2 = base + back
-	var local_back: Vector2 = back.rotated(-rotation).normalized()
+	# Frames são desenhados na tela, então a ré e a emissão são em coordenadas do mundo.
 	var material := _wake.process_material as ParticleProcessMaterial
-	material.direction = Vector3(local_back.x, local_back.y, 0.0)
+	material.direction = Vector3(back.normalized().x, back.normalized().y, 0.0)
 	material.initial_velocity_min = lerpf(0.5, 4.0, fraction)
 	material.initial_velocity_max = lerpf(3.0, 9.0, fraction)
-	_wake.position = screen_pos.rotated(-rotation)
+	_wake.global_position = global_position + base + back
 	_wake.amount_ratio = fraction
 	_wake.emitting = fraction > 0.02
+
+
+## Luz quente das lanternas: energia oscila de forma orgânica, sem repetição exata.
+func _setup_lantern() -> void:
+	var grad := Gradient.new()
+	grad.set_color(0, Color(1.0, 1.0, 1.0, 1.0))
+	grad.set_color(1, Color(1.0, 1.0, 1.0, 0.0))
+	var tex := GradientTexture2D.new()
+	tex.gradient = grad
+	tex.fill = GradientTexture2D.FILL_RADIAL
+	tex.fill_from = Vector2(0.5, 0.5)
+	tex.fill_to = Vector2(1.0, 0.5)
+	tex.width = 128
+	tex.height = 128
+	_lantern.texture = tex
+	_lantern.texture_scale = 1.4
+	_lantern.blend_mode = Light2D.BLEND_MODE_ADD
+
+
+## Fumaça da chaminé: sobe devagar, abre e some, levada pelo vento do mapa.
+func _setup_chimney() -> void:
+	var grow := Curve.new()
+	grow.add_point(Vector2(0.0, 0.4))
+	grow.add_point(Vector2(1.0, 1.6))
+	var grow_tex := CurveTexture.new()
+	grow_tex.curve = grow
+	var fade := Gradient.new()
+	fade.set_color(0, Color(0.85, 0.85, 0.85, 0.35))
+	fade.set_color(1, Color(0.85, 0.85, 0.85, 0.0))
+	var fade_tex := GradientTexture1D.new()
+	fade_tex.gradient = fade
+	var material := ParticleProcessMaterial.new()
+	material.direction = Vector3(0.0, -1.0, 0.0)
+	material.spread = 12.0
+	material.gravity = Vector3(0.0, -10.0, 0.0)
+	material.initial_velocity_min = 6.0
+	material.initial_velocity_max = 12.0
+	material.damping_min = 4.0
+	material.damping_max = 8.0
+	material.scale_min = 0.8
+	material.scale_max = 1.2
+	material.scale_curve = grow_tex
+	material.color_ramp = fade_tex
+	material.lifetime_randomness = 0.3
+	_chimney.process_material = material
+	_chimney.texture = _puff
+	_chimney.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	_chimney.local_coords = false
+	_chimney.amount = 12
+	_chimney.lifetime = 2.2
+	_chimney.emitting = true
+
+
+## Módulo de efeitos: o navio informa as ações (acelerar, virar, atirar) e cada efeito
+## reage com os parâmetros de `FX_TUNING`. Sem ação, cada efeito volta ao repouso.
+const FX_TUNING: Dictionary = {
+	"lantern_base_energy": 0.8,
+	"lantern_wave": 0.12,
+	"wake_turn_boost": 0.5,
+	"smoke_wind": 6.0,
+	"fire_kick_glow": 0.6,
+}
+var _fx_turn: float = 0.0
+var _fx_fire: float = 0.0
+
+
+## Ações do jogador que alimentam os efeitos. Chamadas pelo próprio navio.
+func fx_on_turn(amount: float) -> void:
+	_fx_turn = clampf(absf(amount), 0.0, 1.0)
+
+
+func fx_on_fire(power: float) -> void:
+	_fx_fire = maxf(_fx_fire, power)
+
+
+## Atualiza os efeitos a cada quadro, a partir do estado atual do navio.
+func _update_fx(delta: float) -> void:
+	var fraction: float = clampf(absf(speed) / maxf(data.max_speed, 1.0), 0.0, 1.0)
+	var wave: float = sin(_time * 3.1) * 0.6 + sin(_time * 7.3) * 0.4
+	_lantern.energy = FX_TUNING["lantern_base_energy"] + FX_TUNING["lantern_wave"] * wave + FX_TUNING["fire_kick_glow"] * _fx_fire
+	var smoke_mat := _chimney.process_material as ParticleProcessMaterial
+	smoke_mat.gravity = Vector3(ambient_flow.x * FX_TUNING["smoke_wind"] * 0.1, -10.0, 0.0)
+	_chimney.amount_ratio = 0.3 + 0.7 * fraction
+	_fx_turn = move_toward(_fx_turn, 0.0, delta * 2.0)
+	_fx_fire = move_toward(_fx_fire, 0.0, delta * 3.0)
+	var wake_mat := _wake.process_material as ParticleProcessMaterial
+	wake_mat.initial_velocity_max = lerpf(3.0, 9.0, fraction) * (1.0 + FX_TUNING["wake_turn_boost"] * _fx_turn)
 
 
 ## Clarão e fumaça na saída de cada canhão do bordo que atirou.

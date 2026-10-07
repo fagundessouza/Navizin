@@ -12,7 +12,7 @@ data = ExtResource("2_data")
 texture_filter = 1
 texture = ExtResource("3_sprite")
 
-[node name="Wake" type="GPUParticles2D" parent="." unique_id=319747898]
+[node name="WaterTrailFX" type="GPUParticles2D" parent="." unique_id=319747898]
 emitting = false
 amount = 28
 lifetime = 1.1
@@ -42,3 +42,13 @@ position = Vector2(0, 10)
 
 [node name="Cannon3" type="Marker2D" parent="StarboardCannons" unique_id=811385468]
 position = Vector2(25, 10)
+
+[node name="LanternGlow" type="PointLight2D" parent="."]
+position = Vector2(-30, 4)
+color = Color(1, 0.72, 0.4, 1)
+energy = 0.8
+blend_mode = 0
+
+[node name="ChimneySmoke" type="GPUParticles2D" parent="."]
+position = Vector2(-18, -58)
+emitting = false
