@@ -37,65 +37,32 @@ const SIDE_STARBOARD: int = 1
 ## Força mínima de qualquer bordada. Um toque rápido ainda sai como tiro visível.
 const TAP_MIN_POWER: float = 0.3
 
-## Os 16 frames de direção, arquivo `dir16_NN.png`, 00 a 15 da ficha.
-const DIR16_TEXTURES: Array[Texture2D] = [
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_00.png"),
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_01.png"),
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_02.png"),
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_03.png"),
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_04.png"),
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_05.png"),
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_06.png"),
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_07.png"),
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_08.png"),
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_09.png"),
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_10.png"),
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_11.png"),
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_12.png"),
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_13.png"),
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_14.png"),
-	preload("res://assets/sprites/ships/holandes_voador/dirs16/dir16_15.png"),
+## Os 8 frames do navio, de `dir8/dir8_NN.png`. Frame 0 é Sul (frente), 1 Sudeste,
+## 2 Leste, 3 Nordeste, 4 Norte (trás), 5 Noroeste, 6 Oeste, 7 Sudoeste.
+const FRAME_TEXTURES: Array[Texture2D] = [
+	preload("res://assets/sprites/ships/holandes_voador/dir8/dir8_00.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dir8/dir8_01.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dir8/dir8_02.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dir8/dir8_03.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dir8/dir8_04.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dir8/dir8_05.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dir8/dir8_06.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dir8/dir8_07.png"),
 ]
 
-## Direções mostradas: [ângulo em graus, frame, espelha na horizontal, espelha na
-## vertical]. Ordenadas pelo ângulo. Os 16 passos de 22.5° mais os intermediários
-## de 33.75°, 191.25° e 348.75°, que são os espelhos do primeiro frame lateral
-## depois de 6 e de 4.
-const DIR_ENTRIES: Array = [
-	[0, 4, false, false],  # 0°
-	[22.5, 4, false, false],  # 22.5°
-	[45, 10, false, false],  # 45°
-	[67.5, 13, true, false],  # 67.5°
-	[90, 0, false, false],  # 90°
-	[112.5, 13, false, false],  # 112.5°
-	[135, 10, true, false],  # 135°
-	[157.5, 4, true, false],  # 157.5°
-	[180, 4, true, false],  # 180°
-	[202.5, 4, true, false],  # 202.5°
-	[225, 5, false, true],  # 225°
-	[247.5, 13, false, true],  # 247.5°
-	[270, 8, false, false],  # 270°
-	[292.5, 13, true, true],  # 292.5°
-	[315, 5, true, true],  # 315°
-	[337.5, 4, false, false],  # 337.5°
-	[348.75, 4, false, false],  # 348.75°
-]
+## Rumo em graus (convenção do jogo, y para baixo) de cada frame: Sul = 90, Leste = 0,
+## Norte = -90, Oeste = 180.
+const FRAME_HEADING_DEG: Array[float] = [90.0, 45.0, 0.0, -45.0, -90.0, -135.0, 180.0, 135.0]
 
-## Escala do sprite e da sombra: o navio fica 8% maior.
-const SPRITE_SCALE: float = 1.08
+## Escala do sprite e da sombra. Os frames novos são maiores que os antigos.
+const SPRITE_SCALE: float = 0.23
 
 ## Histerese da troca de frame, em graus: só troca depois de passar da fronteira
 ## por este valor. Evita piscar quando o rumo fica parado perto dela.
-const FRAME_HYSTERESIS_DEG: float = 3.0
+const FRAME_HYSTERESIS_DEG: float = 10.0
 
 ## Zona morta do leme, em radianos (~1°): abaixo disso a proa para de girar.
 const STEER_DEADBAND: float = 0.02
-
-## Passo angular de cada direção, em graus.
-const DIR_STEP_DEG: float = 22.5
-
-## Número de direções discretas do navio.
-const DIRECTIONS: int = 16
 
 
 ## Quão rápido a vista acompanha o rumo real, em 1/s. Um valor menor deixa a
@@ -218,7 +185,7 @@ func _ready() -> void:
 	_shadow.modulate = Color(0.0, 0.0, 0.0, SHADOW_ALPHA)
 	_sprite.scale = Vector2.ONE * SPRITE_SCALE
 	_shadow.scale = Vector2.ONE * SPRITE_SCALE
-	_show_direction(_nearest_entry(rad_to_deg(rotation), -1))
+	_show_frame(_nearest_frame(rad_to_deg(rotation), -1))
 	_setup_wake()
 
 
@@ -378,7 +345,7 @@ func _any_holding() -> bool:
 ## Lateral da direção mostrada, no referencial do casco. A mira usa o ângulo da
 ## vista (índice × 22.5°), para ficar alinhada ao desenho e não ao rumo contínuo.
 func _aim_local(side: int) -> float:
-	var shown: float = deg_to_rad(float(DIR_ENTRIES[_shown_index][0]))
+	var shown: float = deg_to_rad(FRAME_HEADING_DEG[_shown_index])
 	return shown + _normal_local(side) - rotation
 
 
@@ -466,22 +433,22 @@ func _target_speed() -> float:
 func _update_visual(delta: float) -> void:
 	_time += delta
 	var deg: float = rad_to_deg(global_rotation)
-	_show_direction(_nearest_entry(deg, _shown_index))
+	_show_frame(_nearest_frame(deg, _shown_index))
 	_apply_float()
 
 
-## Entrada de `DIR_ENTRIES` mais próxima do rumo, em graus. Se `current` já é uma
-## entrada vizinha dentro da histerese, mantém a atual.
-func _nearest_entry(deg: float, current: int) -> int:
+## Frame mais próximo do rumo, em graus. Se `current` está dentro da histerese,
+## mantém o atual.
+func _nearest_frame(deg: float, current: int) -> int:
 	var best: int = 0
 	var best_dist: float = INF
-	for k in range(DIR_ENTRIES.size()):
-		var d: float = _circ_dist(deg, DIR_ENTRIES[k][0])
+	for k in range(FRAME_HEADING_DEG.size()):
+		var d: float = _circ_dist(deg, FRAME_HEADING_DEG[k])
 		if d < best_dist:
 			best_dist = d
 			best = k
 	if current >= 0 and current != best:
-		var cur_dist: float = _circ_dist(deg, DIR_ENTRIES[current][0])
+		var cur_dist: float = _circ_dist(deg, FRAME_HEADING_DEG[current])
 		if cur_dist <= best_dist + FRAME_HYSTERESIS_DEG:
 			return current
 	return best
@@ -491,22 +458,13 @@ func _circ_dist(a: float, b: float) -> float:
 	return absf(wrapf(a - b, -180.0, 180.0))
 
 
-## Mostra a direção: um único sprite, opaco. Nas vistas de cima
-## a sombra some, porque o casco já cobre a água.
-func _show_direction(index: int) -> void:
+## Mostra o frame: um único sprite, opaco, sem espelhamento. A sombra segue o mesmo frame.
+func _show_frame(index: int) -> void:
 	_shown_index = index
-	var entry: Array = DIR_ENTRIES[index]
-	var frame: int = entry[1]
-	var tex: Texture2D = DIR16_TEXTURES[frame]
+	var tex: Texture2D = FRAME_TEXTURES[index]
 	_sprite.texture = tex
-	_sprite.flip_h = entry[2]
-	_sprite.flip_v = entry[3]
 	_sprite.modulate.a = 1.0
-	# Vistas de cima (frames ímpares) não levam sombra deslocada.
-	var top_view: bool = frame % 2 == 1
-	_shadow.texture = null if top_view else tex
-	_shadow.flip_h = entry[2]
-	_shadow.flip_v = entry[3]
+	_shadow.texture = tex
 
 
 ## Balanço de flutuação: o navio sobe e desce, deriva de lado e balança. Mais
@@ -620,8 +578,8 @@ func _setup_wake() -> void:
 func _build_stern_table() -> void:
 	_stern_base.clear()
 	_stern_back.clear()
-	for entry in DIR_ENTRIES:
-		var angle: float = deg_to_rad(float(entry[0]))
+	for heading in FRAME_HEADING_DEG:
+		var angle: float = deg_to_rad(heading)
 		var bow_down: float = sin(angle)
 		var base: Vector2 = WAKE_OFFSET
 		if bow_down > 0.5:

@@ -1,45 +1,44 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene format=3 uid="uid://b2b46jxrkob82"]
 
-[ext_resource type="Script" path="res://scripts/entities/ship_base.gd" id="1_ship"]
+[ext_resource type="Script" uid="uid://bey8542iig5ai" path="res://scripts/entities/ship_base.gd" id="1_ship"]
 [ext_resource type="Resource" path="res://data/ship_holandes_voador.tres" id="2_data"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ships/holandes_voador/dirs/left.png" id="3_sprite"]
+[ext_resource type="Texture2D" uid="uid://c4y5n48a6h3i0" path="res://assets/sprites/ships/holandes_voador/dirs/left.png" id="3_sprite"]
 
-[node name="ShipBase" type="Node2D"]
+[node name="ShipBase" type="Node2D" unique_id=1944009318]
 script = ExtResource("1_ship")
 data = ExtResource("2_data")
 
-[node name="Shadow" type="Sprite2D" parent="."]
-texture = ExtResource("3_sprite")
+[node name="Shadow" type="Sprite2D" parent="." unique_id=575220340]
 texture_filter = 1
+texture = ExtResource("3_sprite")
 
-[node name="Wake" type="GPUParticles2D" parent="."]
+[node name="Wake" type="GPUParticles2D" parent="." unique_id=319747898]
+emitting = false
 amount = 28
 lifetime = 1.1
-local_coords = false
-emitting = false
 
-[node name="Sprite2D" type="Sprite2D" parent="."]
-texture = ExtResource("3_sprite")
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=225768888]
 texture_filter = 1
+texture = ExtResource("3_sprite")
 
-[node name="PortCannons" type="Node2D" parent="."]
+[node name="PortCannons" type="Node2D" parent="." unique_id=965552933]
 
-[node name="Cannon1" type="Marker2D" parent="PortCannons"]
+[node name="Cannon1" type="Marker2D" parent="PortCannons" unique_id=618653788]
 position = Vector2(-25, -10)
 
-[node name="Cannon2" type="Marker2D" parent="PortCannons"]
+[node name="Cannon2" type="Marker2D" parent="PortCannons" unique_id=894698123]
 position = Vector2(0, -10)
 
-[node name="Cannon3" type="Marker2D" parent="PortCannons"]
+[node name="Cannon3" type="Marker2D" parent="PortCannons" unique_id=161923314]
 position = Vector2(25, -10)
 
-[node name="StarboardCannons" type="Node2D" parent="."]
+[node name="StarboardCannons" type="Node2D" parent="." unique_id=1609572892]
 
-[node name="Cannon1" type="Marker2D" parent="StarboardCannons"]
+[node name="Cannon1" type="Marker2D" parent="StarboardCannons" unique_id=1114127412]
 position = Vector2(-25, 10)
 
-[node name="Cannon2" type="Marker2D" parent="StarboardCannons"]
+[node name="Cannon2" type="Marker2D" parent="StarboardCannons" unique_id=269924]
 position = Vector2(0, 10)
 
-[node name="Cannon3" type="Marker2D" parent="StarboardCannons"]
+[node name="Cannon3" type="Marker2D" parent="StarboardCannons" unique_id=811385468]
 position = Vector2(25, 10)

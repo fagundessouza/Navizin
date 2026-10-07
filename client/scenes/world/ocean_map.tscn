@@ -1,18 +1,25 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene format=3 uid="uid://byy5veg5wcirx"]
 
-[ext_resource type="Script" path="res://scenes/world/ocean_map.gd" id="1_map"]
-[ext_resource type="Shader" path="res://assets/shaders/ocean.gdshader" id="2_ocean"]
+[ext_resource type="Script" uid="uid://bs77nrkke2352" path="res://scenes/world/ocean_map.gd" id="1_map"]
+[ext_resource type="Shader" uid="uid://dm8entpontmqi" path="res://assets/shaders/ocean.gdshader" id="2_ocean"]
 [ext_resource type="PackedScene" path="res://scenes/entities/ship_base.tscn" id="3_ship"]
-[ext_resource type="Texture2D" path="res://assets/environment/ocean_tile.png" id="4_tile"]
+[ext_resource type="Texture2D" uid="uid://bbaxt08n5ykk" path="res://assets/environment/ocean_tile.png" id="4_tile"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_ocean"]
 shader = ExtResource("2_ocean")
 shader_parameter/ocean_tex = ExtResource("4_tile")
+shader_parameter/tile_size = 192.0
+shader_parameter/current_speed = Vector2(6, 2)
+shader_parameter/tide_strength = 0.08
+shader_parameter/tide_frequency = 0.12
+shader_parameter/relief = 1.2
+shader_parameter/glint_strength = 0.4
+shader_parameter/vignette_strength = 0.35
 
-[node name="OceanMap" type="Node2D"]
+[node name="OceanMap" type="Node2D" unique_id=516550437]
 script = ExtResource("1_map")
 
-[node name="Ocean" type="ColorRect" parent="."]
+[node name="Ocean" type="ColorRect" parent="." unique_id=1911683274]
 material = SubResource("ShaderMaterial_ocean")
 offset_left = -10000.0
 offset_top = -10000.0
@@ -20,8 +27,8 @@ offset_right = 10000.0
 offset_bottom = 10000.0
 mouse_filter = 2
 
-[node name="Ship" parent="." instance=ExtResource("3_ship")]
+[node name="Ship" parent="." unique_id=923919172 instance=ExtResource("3_ship")]
 player_controlled = true
 
-[node name="Camera2D" type="Camera2D" parent="Ship"]
+[node name="Camera2D" type="Camera2D" parent="Ship" unique_id=234192159]
 position_smoothing_enabled = true
