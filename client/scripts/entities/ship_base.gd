@@ -176,6 +176,9 @@ var _squash: float = 0.0
 @export var max_hull: float = 100.0
 var hull: float = 100.0
 
+## Casco mudou: valor atual e máximo, para a interface do capitão.
+signal hull_changed(hull_value: float, max_value: float)
+
 ## Vento global (autoload `WindManager`), obtido no _ready.
 var _wind: Node = null
 var _prev_speed: float = 0.0
@@ -214,6 +217,7 @@ func _ready() -> void:
 	if player_controlled:
 		add_to_group("player_ship")
 	hull = max_hull
+	hull_changed.emit(hull, max_hull)
 	_setup_lantern()
 	_setup_chimney()
 
@@ -849,3 +853,9 @@ func _update_bow_wave(fraction: float) -> void:
 	bow_mat.direction = Vector3(forward.x, forward.y, 0.0)
 	_bow.amount_ratio = fraction
 	_bow.emitting = fraction > 0.1
+
+
+## Aplica dano ao casco e avisa a interface. Sem dano automático ainda.
+func apply_damage(amount: float) -> void:
+	hull = clampf(hull - maxf(amount, 0.0), 0.0, max_hull)
+	hull_changed.emit(hull, max_hull)

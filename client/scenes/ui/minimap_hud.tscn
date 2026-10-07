@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/frames/minimap_frame.png" id="1_map"]
+
+[node name="MinimapHUD" type="TextureRect"]
+offset_left = -184.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = 192.0
+grow_horizontal = 0
+texture = ExtResource("1_map")
+expand_mode = 1
+stretch_mode = 5

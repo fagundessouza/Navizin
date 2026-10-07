@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/frames/dialog_panel.png" id="1_panel"]
+
+[node name="DialogPanel" type="NinePatchRect"]
+visible = false
+offset_right = 360.0
+offset_bottom = 320.0
+texture = ExtResource("1_panel")
+patch_margin_left = 40
+patch_margin_top = 40
+patch_margin_right = 40
+patch_margin_bottom = 40

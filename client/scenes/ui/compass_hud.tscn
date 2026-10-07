@@ -1,0 +1,40 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/bars/compass_strip.png" id="1_strip"]
+
+[node name="CompassHUD" type="Control"]
+clip_contents = true
+custom_minimum_size = Vector2(360, 60)
+layout_mode = 3
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -180.0
+offset_right = 180.0
+offset_bottom = 60.0
+grow_horizontal = 2
+mouse_filter = 2
+
+[node name="TapeA" type="TextureRect" parent="."]
+layout_mode = 0
+offset_right = 634.0
+offset_bottom = 60.0
+texture = ExtResource("1_strip")
+expand_mode = 1
+stretch_mode = 0
+mouse_filter = 2
+
+[node name="TapeB" type="TextureRect" parent="."]
+layout_mode = 0
+offset_left = 634.0
+offset_right = 1268.0
+offset_bottom = 60.0
+texture = ExtResource("1_strip")
+expand_mode = 1
+stretch_mode = 0
+mouse_filter = 2
+
+[node name="Pointer" type="Polygon2D" parent="."]
+position = Vector2(180, 0)
+color = Color(0.95, 0.8, 0.42, 1)
+polygon = PackedVector2Array(-8, 0, 8, 0, 0, 14)
