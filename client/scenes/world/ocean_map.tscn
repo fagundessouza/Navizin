@@ -55,3 +55,5 @@ environment = SubResource("Env_sea")
 [node name="HUD" type="CanvasLayer" parent="."]
 
 [node name="WindHUD" parent="HUD" instance=ExtResource("5_wind")]
+
+[node name="Terrain" type="TileMapLayer" parent="."]

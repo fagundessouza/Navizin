@@ -466,9 +466,10 @@ func _wind_along() -> float:
 func _apply_wind_drift(delta: float) -> void:
 	var forward: Vector2 = Vector2.RIGHT.rotated(rotation)
 	var along: float = _wind_along()
-	if along < 0.0:
-		var lateral: Vector2 = _wind.wind_direction - forward * along
-		position += lateral * WIND_DRIFT_PX * _wind.wind_strength * (-along) * delta
+	# Componente do vento perpendicular à proa: de través e contra, empurra o casco.
+	var lateral: Vector2 = _wind.wind_direction - forward * along
+	var weight: float = clampf(0.5 - along * 0.5, 0.0, 1.0)
+	position += lateral * WIND_DRIFT_PX * _wind.wind_strength * weight * delta
 
 
 func _target_speed() -> float:
