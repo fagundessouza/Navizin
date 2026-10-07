@@ -97,7 +97,7 @@ func _update_status() -> void:
 	var max_supply: float = _ship.get("max_supply")
 	_supply_fill.max_value = max_supply
 	_supply_fill.value = supply
-	_supply_label.text = "SUPRIMENTOS %d / %d" % [int(supply), int(max_supply)]
+	_supply_label.text = "SUPRIM. %d/%d" % [int(supply), int(max_supply)]
 
 
 ## Recarga da bordada no slot 1: a área cinza some conforme a arma fica pronta.

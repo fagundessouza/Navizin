@@ -8,6 +8,32 @@
 [ext_resource type="Texture2D" path="res://assets/ui/bars/fill_gold_supply.png" id="6_gold"]
 [ext_resource type="Texture2D" path="res://assets/ui/bars/fill_wind.png" id="7_wind"]
 
+[ext_resource type="Shader" path="res://assets/shaders/mystic_bar.gdshader" id="8_shader"]
+[ext_resource type="FontFile" path="res://assets/fonts/Cinzel-Variable.ttf" id="9_font"]
+
+[sub_resource type="FontVariation" id="Font_label"]
+base_font = ExtResource("9_font")
+variation_opentype = {2003265652: 700}
+spacing_glyph = 1
+
+[sub_resource type="ShaderMaterial" id="Mat_hull"]
+shader = ExtResource("8_shader")
+shader_parameter/top_color = Color(0.86, 0.8, 0.45, 1)
+shader_parameter/bottom_color = Color(0.07, 0.32, 0.24, 1)
+shader_parameter/glow_color = Color(1, 0.87, 0.5, 1)
+
+[sub_resource type="ShaderMaterial" id="Mat_supply"]
+shader = ExtResource("8_shader")
+shader_parameter/top_color = Color(1, 0.85, 0.4, 1)
+shader_parameter/bottom_color = Color(0.7, 0.38, 0.08, 1)
+shader_parameter/glow_color = Color(1, 0.9, 0.6, 1)
+
+[sub_resource type="ShaderMaterial" id="Mat_wind"]
+shader = ExtResource("8_shader")
+shader_parameter/top_color = Color(0.8, 0.95, 1, 1)
+shader_parameter/bottom_color = Color(0.25, 0.55, 0.9, 1)
+shader_parameter/glow_color = Color(0.85, 0.97, 1, 1)
+
 [node name="CaptainStatus" type="Control"]
 custom_minimum_size = Vector2(380, 200)
 scale = Vector2(0.8, 0.8)
@@ -19,8 +45,9 @@ mouse_filter = 2
 
 [node name="Portrait" type="TextureRect" parent="."]
 layout_mode = 0
-offset_right = 114.0
-offset_bottom = 140.0
+offset_top = 9.0
+offset_right = 142.0
+offset_bottom = 184.0
 texture = ExtResource("1_frame")
 expand_mode = 1
 stretch_mode = 5
@@ -28,9 +55,9 @@ mouse_filter = 2
 
 [node name="HullArt" type="TextureRect" parent="."]
 layout_mode = 0
-offset_left = 118
+offset_left = 150.0
 offset_top = 0
-offset_right = 372
+offset_right = 404.0
 offset_bottom = 53
 texture = ExtResource("2_skull")
 expand_mode = 0
@@ -39,26 +66,29 @@ mouse_filter = 2
 
 [node name="HullFill" type="TextureProgressBar" parent="."]
 layout_mode = 0
-offset_left = 186
+offset_left = 218.0
 offset_top = 10
-offset_right = 342
+offset_right = 374.0
 offset_bottom = 42
 min_value = 0.0
 max_value = 1.0
 value = 1.0
 texture_progress = ExtResource("5_petrol")
+material = SubResource("Mat_hull")
 mouse_filter = 2
 
 [node name="HullLabel" type="Label" parent="."]
 layout_mode = 0
-offset_left = 186
+offset_left = 218.0
 offset_top = 8
-offset_right = 342
+offset_right = 374.0
 offset_bottom = 44
-theme_override_colors/font_color = Color(0.97, 0.94, 0.86, 1)
-theme_override_font_sizes/font_size = 20
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 4
+theme_override_colors/font_color = Color(0.953, 0.898, 0.671, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 15
+theme_override_fonts/font = SubResource("Font_label")
 text = "CASCO 1000 / 1000"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -67,9 +97,9 @@ mouse_filter = 2
 
 [node name="SupplyArt" type="TextureRect" parent="."]
 layout_mode = 0
-offset_left = 118
+offset_left = 150.0
 offset_top = 56
-offset_right = 372
+offset_right = 404.0
 offset_bottom = 124
 texture = ExtResource("3_barrel")
 expand_mode = 0
@@ -78,27 +108,30 @@ mouse_filter = 2
 
 [node name="SupplyFill" type="TextureProgressBar" parent="."]
 layout_mode = 0
-offset_left = 186
+offset_left = 218.0
 offset_top = 72
-offset_right = 342
+offset_right = 374.0
 offset_bottom = 106
 min_value = 0.0
 max_value = 1.0
 value = 1.0
 texture_progress = ExtResource("6_gold")
+material = SubResource("Mat_supply")
 mouse_filter = 2
 
 [node name="SupplyLabel" type="Label" parent="."]
 layout_mode = 0
-offset_left = 186
+offset_left = 218.0
 offset_top = 70
-offset_right = 342
+offset_right = 374.0
 offset_bottom = 108
-theme_override_colors/font_color = Color(0.97, 0.94, 0.86, 1)
-theme_override_font_sizes/font_size = 20
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 4
-text = "SUPRIMENTOS 1000 / 1000"
+theme_override_colors/font_color = Color(0.953, 0.898, 0.671, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 15
+theme_override_fonts/font = SubResource("Font_label")
+text = "SUPRIM. 1000/1000"
 horizontal_alignment = 1
 vertical_alignment = 1
 mouse_filter = 2
@@ -106,9 +139,9 @@ mouse_filter = 2
 
 [node name="WindArt" type="TextureRect" parent="."]
 layout_mode = 0
-offset_left = 118
+offset_left = 150.0
 offset_top = 127
-offset_right = 372
+offset_right = 404.0
 offset_bottom = 193
 texture = ExtResource("4_compass")
 expand_mode = 0
@@ -117,26 +150,29 @@ mouse_filter = 2
 
 [node name="WindFill" type="TextureProgressBar" parent="."]
 layout_mode = 0
-offset_left = 186
+offset_left = 218.0
 offset_top = 137
-offset_right = 342
+offset_right = 374.0
 offset_bottom = 169
 min_value = 0.0
 max_value = 1.0
 value = 1.0
 texture_progress = ExtResource("7_wind")
+material = SubResource("Mat_wind")
 mouse_filter = 2
 
 [node name="WindLabel" type="Label" parent="."]
 layout_mode = 0
-offset_left = 186
+offset_left = 218.0
 offset_top = 135
-offset_right = 342
+offset_right = 374.0
 offset_bottom = 171
-theme_override_colors/font_color = Color(0.97, 0.94, 0.86, 1)
-theme_override_font_sizes/font_size = 20
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 4
+theme_override_colors/font_color = Color(0.953, 0.898, 0.671, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 15
+theme_override_fonts/font = SubResource("Font_label")
 text = "VENTO"
 horizontal_alignment = 1
 vertical_alignment = 1
