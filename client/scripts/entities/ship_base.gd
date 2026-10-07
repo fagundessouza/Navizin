@@ -56,7 +56,11 @@ const FRAME_HEADING_DEG: Array[float] = [90.0, 45.0, 0.0, -45.0, -90.0, -135.0, 
 
 ## Escala do sprite e da sombra. Os frames novos são maiores que os antigos.
 ## Escala do sprite e da sombra: 15% acima da escala anterior (0.23 × 1.15).
-const SPRITE_SCALE: float = 0.2645
+const SPRITE_SCALE: float = 0.62
+
+## Fator de tamanho do navio em relação à escala antiga: canhões, esteira, sombra e
+## popa são escalados por ele para acompanhar o casco.
+const SIZE_FACTOR: float = 2.34
 
 ## Histerese da troca de frame, em graus: só troca depois de passar da fronteira
 ## por este valor. Evita piscar quando o rumo fica parado perto dela.
@@ -91,29 +95,29 @@ const KICK_PX: float = 3.0
 const KICK_RECOVERY: float = 18.0
 
 ## Vento: intensidade de referência, bônus a favor e penalidade contra.
-const WIND_REFERENCE: float = 40.0
-const WIND_BONUS: float = 0.30
+const WIND_DRIFT_PX: float = 14.0
+const WIND_BONUS: float = 0.35
 const WIND_PENALTY: float = 0.50
 
 ## Distância lateral dos canhões ao centro do casco, em pixels.
-const GUN_LATERAL: float = 10.0
+const GUN_LATERAL: float = 23.0
 
 ## Convés na arte de vista lateral, em coordenadas de tela (não giram com o casco).
 ## O centro do sprite fica na altura das velas; os tiros saem daqui, e não do mastro.
-const DECK_OFFSET: Vector2 = Vector2(0.0, 22.0)
+const DECK_OFFSET: Vector2 = Vector2(0.0, 51.0)
 
 ## Linha d'água, em coordenadas de tela: a espuma sai daqui, sob o casco.
-const WAKE_OFFSET: Vector2 = Vector2(0.0, 58.0)
+const WAKE_OFFSET: Vector2 = Vector2(0.0, 136.0)
 ## Distância da popa ao ponto de emissão, em pixels de tela.
-const STERN_REACH: float = 40.0
+const STERN_REACH: float = 94.0
 ## Ajuste vertical da popa por frame: frames com a proa para baixo descem o ponto
 ## de emissão até a borda inferior da popa; frames com a proa para cima sobem um pouco
 ## para colar na base traseira.
-const STERN_DOWN_Y: float = -20.0
-const STERN_UP_Y: float = 10.0
+const STERN_DOWN_Y: float = -47.0
+const STERN_UP_Y: float = 23.0
 
 ## Sombra: deslocamento no mundo e opacidade base.
-const SHADOW_OFFSET: Vector2 = Vector2(6.0, 10.0)
+const SHADOW_OFFSET: Vector2 = Vector2(14.0, 23.0)
 const SHADOW_ALPHA: float = 0.3
 
 ## Trilhos de mira, no estilo de combate naval: faixas paralelas translúcidas
@@ -132,11 +136,7 @@ const RAIL_HALF_WIDTH: float = 3.0
 @export var player_controlled: bool = false
 
 ## Vento e maré, em pixels por segundo. Definido pelo mapa.
-## Vento: direção (unitária) e intensidade, em nós do mapa. Ver `_wind_factor`.
-@export var wind_direction: Vector2 = Vector2.RIGHT
-@export var wind_speed: float = 0.0
-## Maré: força contínua no espaço do mundo, em pixels por segundo.
-@export var current_force: Vector2 = Vector2.ZERO
+
 
 @onready var _shadow: Sprite2D = $Shadow
 @onready var _sprite: Sprite2D = $Sprite2D
@@ -171,6 +171,8 @@ var _was_charging: bool = false
 var _kick: Vector2 = Vector2.ZERO
 ## Squash & stretch: -1 desacelerando forte, +1 acelerando forte. Suavizado.
 var _squash: float = 0.0
+## Vento global (autoload `WindManager`), obtido no _ready.
+var _wind: Node = null
 var _prev_speed: float = 0.0
 ## Offsets da popa por entrada de `DIR_ENTRIES`: base (tela) e vetor de ré.
 var _stern_base: Array[Vector2] = []
@@ -187,6 +189,7 @@ var _time: float = 0.0
 
 
 func _ready() -> void:
+	_wind = get_node("/root/WindManager")
 	if data == null:
 		data = ShipData.new()
 	for node in [_sprite, _shadow]:
@@ -216,7 +219,7 @@ func _physics_process(delta: float) -> void:
 	knockback = knockback.move_toward(Vector2.ZERO, data.recoil_damping * delta)
 	position += Vector2.RIGHT.rotated(rotation) * speed * delta
 	position += knockback * delta
-	position += current_force * delta
+	_apply_wind_drift(delta)
 	_clamp_to_world()
 
 
@@ -443,14 +446,29 @@ func _update_speed(delta: float) -> void:
 		speed = move_toward(speed, target, data.deceleration * delta)
 
 
-## Fator de vento sobre a velocidade: até +30% a favor e até -50% contra, em
-## função do produto escalar entre a proa e o vento, e da intensidade do vento.
+## Fator de vento sobre a velocidade, pelo produto escalar entre a proa e o vento
+## global. A favor: até +40%. Contra: até -50%, com a força do vento.
 func _wind_factor() -> float:
-	var strength: float = clampf(wind_speed / WIND_REFERENCE, 0.0, 1.0)
-	var along: float = Vector2.RIGHT.rotated(rotation).dot(wind_direction.normalized())
+	var along: float = _wind_along()
+	var strength: float = _wind.wind_strength
 	if along >= 0.0:
 		return 1.0 + WIND_BONUS * along * strength
-	return 1.0 + WIND_PENALTY * along * strength
+	return maxf(0.5, 1.0 + WIND_PENALTY * along * strength)
+
+
+## Produto escalar entre a proa e a direção do vento: +1 a favor, -1 contra.
+func _wind_along() -> float:
+	return Vector2.RIGHT.rotated(rotation).dot(_wind.wind_direction)
+
+
+## Vento contra: a componente lateral empurra o casco para o lado, obrigando a
+## navegar em zig-zag. Quanto mais forte o vento de frente, maior a deriva.
+func _apply_wind_drift(delta: float) -> void:
+	var forward: Vector2 = Vector2.RIGHT.rotated(rotation)
+	var along: float = _wind_along()
+	if along < 0.0:
+		var lateral: Vector2 = _wind.wind_direction - forward * along
+		position += lateral * WIND_DRIFT_PX * _wind.wind_strength * (-along) * delta
 
 
 func _target_speed() -> float:
@@ -732,7 +750,7 @@ func _update_fx(delta: float) -> void:
 	var wave: float = sin(_time * 3.1) * 0.6 + sin(_time * 7.3) * 0.4
 	_lantern.energy = FX_TUNING["lantern_base_energy"] + FX_TUNING["lantern_wave"] * wave + FX_TUNING["fire_kick_glow"] * _fx_fire
 	var smoke_mat := _chimney.process_material as ParticleProcessMaterial
-	var wind_vec: Vector2 = wind_direction.normalized() * wind_speed
+	var wind_vec: Vector2 = _wind.wind_direction * _wind.wind_strength
 	smoke_mat.gravity = Vector3(wind_vec.x * FX_TUNING["smoke_wind"] * 0.1, -10.0, 0.0)
 	_chimney.amount_ratio = 0.3 + 0.7 * fraction
 	_fx_turn = move_toward(_fx_turn, 0.0, delta * 2.0)

@@ -29,24 +29,24 @@ texture = ExtResource("3_sprite")
 [node name="PortCannons" type="Node2D" parent="." unique_id=965552933]
 
 [node name="Cannon1" type="Marker2D" parent="PortCannons" unique_id=618653788]
-position = Vector2(-25, -10)
+position = Vector2(-58, -23)
 
 [node name="Cannon2" type="Marker2D" parent="PortCannons" unique_id=894698123]
-position = Vector2(0, -10)
+position = Vector2(0, -23)
 
 [node name="Cannon3" type="Marker2D" parent="PortCannons" unique_id=161923314]
-position = Vector2(25, -10)
+position = Vector2(58, -23)
 
 [node name="StarboardCannons" type="Node2D" parent="." unique_id=1609572892]
 
 [node name="Cannon1" type="Marker2D" parent="StarboardCannons" unique_id=1114127412]
-position = Vector2(-25, 10)
+position = Vector2(-58, 23)
 
 [node name="Cannon2" type="Marker2D" parent="StarboardCannons" unique_id=269924]
-position = Vector2(0, 10)
+position = Vector2(0, 23)
 
 [node name="Cannon3" type="Marker2D" parent="StarboardCannons" unique_id=811385468]
-position = Vector2(25, 10)
+position = Vector2(58, 23)
 
 [node name="LanternGlow" type="PointLight2D" parent="."]
 position = Vector2(-30, 4)

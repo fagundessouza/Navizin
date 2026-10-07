@@ -23,6 +23,7 @@ config/features=PackedStringArray("4.7")
 
 GameManager="*res://scripts/autoload/game_manager.gd"
 NetworkClient="*res://scripts/autoload/network_client.gd"
+WindManager="*res://scripts/singletons/wind_manager.gd"
 
 [display]
 

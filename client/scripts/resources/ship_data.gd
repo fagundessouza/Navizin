@@ -21,9 +21,9 @@ extends Resource
 
 @export_group("Leme")
 ## Velocidade angular máxima de giro, em radianos por segundo.
-@export var turn_speed: float = 1.4
+@export var turn_speed: float = 0.9
 ## Quão rápido a velocidade angular chega ao alvo (suavização do giro).
-@export var turn_acceleration: float = 4.0
+@export var turn_acceleration: float = 2.5
 ## Quanto a proa reage ao erro de mira. Valores maiores giram mais rápido.
 @export var aim_responsiveness: float = 3.0
 ## Distância mínima do ponteiro para a proa mudar de direção, em pixels.
@@ -68,7 +68,7 @@ extends Resource
 ## Quanto do vento e da maré o navio sente (0 a 1).
 @export var wind_influence: float = 0.15
 ## Metade do comprimento do casco, em pixels. Usada para a esteira, a fumaça e a posição dos canhões.
-@export var hull_half_length: float = 50.0
+@export var hull_half_length: float = 117.0
 
 
 ## Fator de velocidade pela carga: de 1.0 (vazio) até 0.5 (carga cheia).
