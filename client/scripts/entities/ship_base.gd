@@ -169,6 +169,9 @@ var _cooldown: Dictionary = {SIDE_PORT: 0.0, SIDE_STARBOARD: 0.0}
 
 var _was_charging: bool = false
 var _kick: Vector2 = Vector2.ZERO
+## Squash & stretch: -1 desacelerando forte, +1 acelerando forte. Suavizado.
+var _squash: float = 0.0
+var _prev_speed: float = 0.0
 ## Offsets da popa por entrada de `DIR_ENTRIES`: base (tela) e vetor de ré.
 var _stern_base: Array[Vector2] = []
 var _stern_back: Array[Vector2] = []
@@ -207,6 +210,9 @@ func _physics_process(delta: float) -> void:
 	_update_steering(delta)
 	fx_on_turn(angular_velocity / maxf(data.turn_speed, 0.001))
 	_update_speed(delta)
+	var accel: float = (speed - _prev_speed) / maxf(delta, 0.0001)
+	_prev_speed = speed
+	_squash = lerpf(_squash, clampf(accel / maxf(data.acceleration, 1.0), -1.0, 1.0), minf(1.0, 8.0 * delta))
 	knockback = knockback.move_toward(Vector2.ZERO, data.recoil_damping * delta)
 	position += Vector2.RIGHT.rotated(rotation) * speed * delta
 	position += knockback * delta
@@ -513,6 +519,9 @@ func _apply_float() -> void:
 
 	# O sprite é filho do nó, que gira com o rumo. Ele é contra-rotacionado para
 	# mostrar o frame da direção como está; a orientação já está no frame.
+	# Squash & stretch: comprime no impulso e estica quando ganha velocidade de cruzeiro.
+	var squash: Vector2 = Vector2(1.0 - 0.03 * _squash, 1.0 + 0.03 * _squash)
+	_sprite.scale = Vector2.ONE * SPRITE_SCALE * squash
 	_sprite.position = (Vector2(drift, bob) + _kick).rotated(-rotation)
 	_sprite.rotation = -rotation + sway
 
@@ -574,26 +583,26 @@ func _setup_wake() -> void:
 	fade.set_color(1, Color(1.0, 1.0, 1.0, 0.0))
 	var fade_tex := GradientTexture1D.new()
 	fade_tex.gradient = fade
-	var material := ParticleProcessMaterial.new()
-	material.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
-	material.emission_box_extents = Vector3(data.hull_half_length * 0.35, 6.0, 0.0)
-	material.spread = 60.0
-	material.gravity = Vector3.ZERO
-	material.initial_velocity_min = 0.5
-	material.initial_velocity_max = 3.0
-	material.damping_min = 16.0
-	material.damping_max = 24.0
-	material.angle_min = 0.0
-	material.angle_max = 360.0
-	material.angular_velocity_min = -90.0
-	material.angular_velocity_max = 90.0
-	material.scale_min = 0.5
-	material.scale_max = 1.2
-	material.scale_curve = scale_tex
-	material.color = Color(0.9, 0.98, 1.0, 0.5)
-	material.color_ramp = fade_tex
-	material.lifetime_randomness = 0.45
-	_wake.process_material = material
+	var active_mat := ParticleProcessMaterial.new()
+	active_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	active_mat.emission_box_extents = Vector3(data.hull_half_length * 0.35, 6.0, 0.0)
+	active_mat.spread = 60.0
+	active_mat.gravity = Vector3.ZERO
+	active_mat.initial_velocity_min = 0.5
+	active_mat.initial_velocity_max = 3.0
+	active_mat.damping_min = 16.0
+	active_mat.damping_max = 24.0
+	active_mat.angle_min = 0.0
+	active_mat.angle_max = 360.0
+	active_mat.angular_velocity_min = -90.0
+	active_mat.angular_velocity_max = 90.0
+	active_mat.scale_min = 0.5
+	active_mat.scale_max = 1.2
+	active_mat.scale_curve = scale_tex
+	active_mat.color = Color(0.9, 0.98, 1.0, 0.5)
+	active_mat.color_ramp = fade_tex
+	active_mat.lifetime_randomness = 0.45
+	_wake.process_material = active_mat
 	_wake.texture = _puff
 	# Névoa suave: filtro linear, senão o Nearest do projeto a quebra em blocos.
 	_wake.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
@@ -635,10 +644,10 @@ func _update_wake() -> void:
 	if reversing:
 		back = -back
 	# Frames são desenhados na tela, então a ré e a emissão são em coordenadas do mundo.
-	var material := _wake.process_material as ParticleProcessMaterial
-	material.direction = Vector3(back.normalized().x, back.normalized().y, 0.0)
-	material.initial_velocity_min = lerpf(0.5, 4.0, fraction)
-	material.initial_velocity_max = lerpf(3.0, 9.0, fraction)
+	var active_mat := _wake.process_material as ParticleProcessMaterial
+	active_mat.direction = Vector3(back.normalized().x, back.normalized().y, 0.0)
+	active_mat.initial_velocity_min = lerpf(0.5, 4.0, fraction)
+	active_mat.initial_velocity_max = lerpf(3.0, 9.0, fraction)
 	_wake.global_position = global_position + base + back
 	_wake.amount_ratio = fraction
 	_wake.emitting = fraction > 0.02
@@ -673,20 +682,20 @@ func _setup_chimney() -> void:
 	fade.set_color(1, Color(0.85, 0.85, 0.85, 0.0))
 	var fade_tex := GradientTexture1D.new()
 	fade_tex.gradient = fade
-	var material := ParticleProcessMaterial.new()
-	material.direction = Vector3(0.0, -1.0, 0.0)
-	material.spread = 12.0
-	material.gravity = Vector3(0.0, -10.0, 0.0)
-	material.initial_velocity_min = 6.0
-	material.initial_velocity_max = 12.0
-	material.damping_min = 4.0
-	material.damping_max = 8.0
-	material.scale_min = 0.8
-	material.scale_max = 1.2
-	material.scale_curve = grow_tex
-	material.color_ramp = fade_tex
-	material.lifetime_randomness = 0.3
-	_chimney.process_material = material
+	var active_mat := ParticleProcessMaterial.new()
+	active_mat.direction = Vector3(0.0, -1.0, 0.0)
+	active_mat.spread = 12.0
+	active_mat.gravity = Vector3(0.0, -10.0, 0.0)
+	active_mat.initial_velocity_min = 6.0
+	active_mat.initial_velocity_max = 12.0
+	active_mat.damping_min = 4.0
+	active_mat.damping_max = 8.0
+	active_mat.scale_min = 0.8
+	active_mat.scale_max = 1.2
+	active_mat.scale_curve = grow_tex
+	active_mat.color_ramp = fade_tex
+	active_mat.lifetime_randomness = 0.3
+	_chimney.process_material = active_mat
 	_chimney.texture = _puff
 	_chimney.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	_chimney.local_coords = false
@@ -742,17 +751,17 @@ func _puff_smoke(side: int) -> void:
 ## Baforada rápida de fumaça cinza, que se dissipa e some sozinha.
 func _spawn_muzzle(at: Vector2) -> void:
 	var burst := GPUParticles2D.new()
-	var material := ParticleProcessMaterial.new()
-	material.spread = 180.0
-	material.gravity = Vector3.ZERO
-	material.initial_velocity_min = 8.0
-	material.initial_velocity_max = 22.0
-	material.damping_min = 40.0
-	material.damping_max = 60.0
-	material.scale_min = 0.6
-	material.scale_max = 1.2
-	material.color = Color(0.7, 0.7, 0.72, 0.55)
-	burst.process_material = material
+	var active_mat := ParticleProcessMaterial.new()
+	active_mat.spread = 180.0
+	active_mat.gravity = Vector3.ZERO
+	active_mat.initial_velocity_min = 8.0
+	active_mat.initial_velocity_max = 22.0
+	active_mat.damping_min = 40.0
+	active_mat.damping_max = 60.0
+	active_mat.scale_min = 0.6
+	active_mat.scale_max = 1.2
+	active_mat.color = Color(0.7, 0.7, 0.72, 0.55)
+	burst.process_material = active_mat
 	burst.texture = _puff
 	burst.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	burst.one_shot = true

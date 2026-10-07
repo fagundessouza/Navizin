@@ -15,3 +15,26 @@ func _ready() -> void:
 	$Ship.wind_direction = WIND_DIRECTION.normalized()
 	$Ship.wind_speed = WIND_SPEED
 	$Ship.current_force = CURRENT_FORCE
+	_add_captain_light($Ship)
+
+
+## Luz de visão do capitão: um halo quente e suave preso ao navio do jogador. A área
+## perto do navio fica limpa, e a borda da tela escurece pela vinheta do mar.
+func _add_captain_light(ship: Node2D) -> void:
+	var grad := Gradient.new()
+	grad.set_color(0, Color(1.0, 1.0, 1.0, 1.0))
+	grad.set_color(1, Color(1.0, 1.0, 1.0, 0.0))
+	var tex := GradientTexture2D.new()
+	tex.gradient = grad
+	tex.fill = GradientTexture2D.FILL_RADIAL
+	tex.fill_from = Vector2(0.5, 0.5)
+	tex.fill_to = Vector2(1.0, 0.5)
+	tex.width = 256
+	tex.height = 256
+	var light := PointLight2D.new()
+	light.texture = tex
+	light.texture_scale = 5.0
+	light.energy = 0.6
+	light.color = Color(0.95, 0.97, 1.0, 1.0)
+	light.blend_mode = Light2D.BLEND_MODE_ADD
+	ship.add_child(light)

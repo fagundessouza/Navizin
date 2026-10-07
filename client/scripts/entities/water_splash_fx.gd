@@ -8,6 +8,12 @@ extends Node2D
 
 const DURATION: float = 1.0
 
+## Anel de onda que se expande e some, desenhado pelo próprio respingo.
+const RIPPLE_MAX_RADIUS: float = 26.0
+const RIPPLE_COLOR: Color = Color(0.85, 0.97, 1.0, 0.7)
+
+var _age: float = 0.0
+
 static var _drop_material: ParticleProcessMaterial
 static var _mist_material: ParticleProcessMaterial
 static var _drop_texture: Texture2D
@@ -42,6 +48,18 @@ func _ready() -> void:
 	drops.emitting = true
 	mist.emitting = true
 	get_tree().create_timer(DURATION).timeout.connect(queue_free)
+
+
+func _process(delta: float) -> void:
+	_age += delta
+	queue_redraw()
+
+
+func _draw() -> void:
+	var k: float = clampf(_age / 0.6, 0.0, 1.0)
+	var color: Color = RIPPLE_COLOR
+	color.a *= 1.0 - k
+	draw_arc(Vector2.ZERO, RIPPLE_MAX_RADIUS * k, 0.0, TAU, 32, color, 1.0)
 
 
 static func _ensure_shared() -> void:

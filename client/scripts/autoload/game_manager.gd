@@ -7,6 +7,7 @@ extends Node
 ## Acesso em qualquer script: `GameManager.<membro>`.
 
 ## Emitido quando o estado do jogador muda, para a UI reagir sem acoplamento.
+@warning_ignore("unused_signal")
 signal player_state_changed(state: Dictionary)
 
 ## Identificador do jogador logado, vazio enquanto não há sessão.

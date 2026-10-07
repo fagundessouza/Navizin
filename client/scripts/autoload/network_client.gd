@@ -5,9 +5,11 @@ extends Node
 ## Nesta fase é um esqueleto: as chamadas reais entram quando a API tiver rotas.
 
 ## Emitido quando uma resposta do servidor chega com sucesso.
+@warning_ignore("unused_signal")
 signal request_succeeded(endpoint: String, payload: Dictionary)
 
 ## Emitido quando uma chamada falha (rede, HTTP ou JSON inválido).
+@warning_ignore("unused_signal")
 signal request_failed(endpoint: String, reason: String)
 
 ## Endereço base da API em desenvolvimento.

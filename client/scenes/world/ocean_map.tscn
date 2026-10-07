@@ -16,6 +16,14 @@ shader_parameter/relief = 1.2
 shader_parameter/glint_strength = 0.4
 shader_parameter/vignette_strength = 0.35
 
+[sub_resource type="Environment" id="Env_sea"]
+background_mode = 1
+background_color = Color(0.03, 0.07, 0.12, 1)
+glow_enabled = true
+glow_intensity = 0.35
+glow_hdr_threshold = 0.95
+glow_bloom = 0.05
+
 [node name="OceanMap" type="Node2D" unique_id=516550437]
 script = ExtResource("1_map")
 
@@ -32,3 +40,9 @@ player_controlled = true
 
 [node name="Camera2D" type="Camera2D" parent="Ship" unique_id=234192159]
 position_smoothing_enabled = true
+
+[node name="CanvasModulate" type="CanvasModulate" parent="."]
+color = Color(0.82, 0.9, 1, 1)
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Env_sea")

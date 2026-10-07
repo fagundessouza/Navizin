@@ -60,6 +60,13 @@ void fragment() {
 	vec2 uv2 = world_pos / (tile_size * 1.37) + vec2(0.31, 0.57) - drift * 0.6;
 	base = mix(base, texture(ocean_tex, uv2).rgb, 0.35);
 
+	// Costura: perto das bordas do tile, mistura com a amostra do centro do tile,
+	// que não tem costura, para as linhas de repetição sumirem.
+	vec2 f = fract(uv);
+	float edge_dist = min(min(f.x, 1.0 - f.x), min(f.y, 1.0 - f.y));
+	float seam = (1.0 - smoothstep(0.0, 0.08, edge_dist)) * 0.5;
+	base = mix(base, texture(ocean_tex, uv + vec2(0.5)).rgb, seam);
+
 	// Relevo: a inclinação do brilho vira a normal da superfície.
 	float dx = luma(uv + vec2(texel.x, 0.0)) - luma(uv - vec2(texel.x, 0.0));
 	float dy = luma(uv + vec2(0.0, texel.y)) - luma(uv - vec2(0.0, texel.y));
