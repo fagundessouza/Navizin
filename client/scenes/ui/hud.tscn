@@ -1,10 +1,9 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/hud_controller.gd" id="1_ctrl"]
-[ext_resource type="PackedScene" path="res://scenes/ui/player_portrait.tscn" id="2_portrait"]
+[ext_resource type="PackedScene" path="res://scenes/ui/captain_status.tscn" id="2_captain"]
 [ext_resource type="PackedScene" path="res://scenes/ui/compass_hud.tscn" id="3_compass"]
 [ext_resource type="PackedScene" path="res://scenes/ui/minimap_hud.tscn" id="4_minimap"]
-[ext_resource type="PackedScene" path="res://scenes/ui/ship_status_bars.tscn" id="5_status"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hotbar.tscn" id="6_hotbar"]
 [ext_resource type="PackedScene" path="res://scenes/ui/system_menu_bar.tscn" id="7_menu"]
 [ext_resource type="PackedScene" path="res://scenes/ui/dialog_panel.tscn" id="8_dialog"]
@@ -19,12 +18,12 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_ctrl")
 
-[node name="PlayerPortrait" parent="." instance=ExtResource("2_portrait")]
+[node name="CaptainStatus" parent="." instance=ExtResource("2_captain")]
 layout_mode = 0
 offset_left = 16.0
 offset_top = 16.0
-offset_right = 224.0
-offset_bottom = 270.0
+offset_right = 396.0
+offset_bottom = 216.0
 
 [node name="CompassHUD" parent="." instance=ExtResource("3_compass")]
 layout_mode = 1
@@ -34,32 +33,18 @@ anchor_right = 0.5
 offset_left = -180.0
 offset_top = 16.0
 offset_right = 180.0
-offset_bottom = 76.0
+offset_bottom = 52.0
 
 [node name="MinimapHUD" parent="." instance=ExtResource("4_minimap")]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -184.0
+offset_left = -186.0
 offset_top = 16.0
 offset_right = -16.0
-offset_bottom = 192.0
+offset_bottom = 202.0
 grow_horizontal = 0
-
-[node name="ShipStatusBars" parent="." instance=ExtResource("5_status")]
-layout_mode = 1
-anchors_preset = 7
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
-anchor_bottom = 1.0
-offset_left = -283.0
-offset_top = -324.0
-offset_right = 283.0
-offset_bottom = -84.0
-grow_horizontal = 2
-grow_vertical = 0
 
 [node name="Hotbar" parent="." instance=ExtResource("6_hotbar")]
 

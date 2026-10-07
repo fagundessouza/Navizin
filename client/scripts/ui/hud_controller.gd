@@ -7,9 +7,6 @@ extends Control
 ## - barra de menus: 12 botões com atalho, som de clique e uma caixa de diálogo.
 
 const SLOT_COUNT: int = 8
-## Pixels de fita por grau. A fita tem 634 px e cobre a volta inteira.
-const TAPE_PX_PER_DEG: float = 634.0 / 360.0
-const TAPE_WIDTH: float = 634.0
 const FLASH_TIME: float = 0.25
 const HOVER_SCALE: Vector2 = Vector2(1.05, 1.05)
 const ICON_PATH: String = "res://assets/ui/icons/hot_%d.png"
@@ -39,12 +36,13 @@ var _hull_connected: bool = false
 var _open_menu: String = ""
 var _wind: Node = null
 
-@onready var _tape_a: TextureRect = $CompassHUD/TapeA
-@onready var _tape_b: TextureRect = $CompassHUD/TapeB
-@onready var _hull_fill: TextureProgressBar = $ShipStatusBars/HullFill
-@onready var _hull_label: Label = $ShipStatusBars/HullLabel
-@onready var _supply_fill: TextureProgressBar = $ShipStatusBars/SupplyFill
-@onready var _supply_label: Label = $ShipStatusBars/SupplyLabel
+@onready var _compass: CompassTape = $CompassHUD
+@onready var _hull_fill: TextureProgressBar = $CaptainStatus/HullFill
+@onready var _hull_label: Label = $CaptainStatus/HullLabel
+@onready var _supply_fill: TextureProgressBar = $CaptainStatus/SupplyFill
+@onready var _supply_label: Label = $CaptainStatus/SupplyLabel
+@onready var _wind_fill: TextureProgressBar = $CaptainStatus/WindFill
+@onready var _wind_label: Label = $CaptainStatus/WindLabel
 @onready var _cooldown_1: TextureProgressBar = $Hotbar/Slot1/Cooldown1
 @onready var _dialog: NinePatchRect = $DialogPanel
 @onready var _click: AudioStreamPlayer = $SystemMenuBar/ClickSound
@@ -70,6 +68,7 @@ func _process(_delta: float) -> void:
 		_connect_ship()
 	_update_compass()
 	_update_status()
+	_update_wind()
 	_update_cooldown()
 	if _open_menu == "MenuCompass":
 		_update_compass_body()
@@ -110,13 +109,18 @@ func _update_cooldown() -> void:
 
 ## Rumo do navio: 0 = Norte, cresce no sentido horário, como na bússola.
 func _update_compass() -> void:
-	var heading: float = 0.0
-	if _ship != null:
-		heading = fmod(rad_to_deg(_ship.rotation) + 90.0 + 360.0, 360.0)
-	var offset: float = fmod(heading * TAPE_PX_PER_DEG, TAPE_WIDTH)
-	# A fita anda para a esquerda quando o rumo cresce; a segunda cópia fecha a volta.
-	_tape_a.position.x = 180.0 - offset - TAPE_WIDTH * 0.5
-	_tape_b.position.x = _tape_a.position.x + TAPE_WIDTH
+	if _ship == null:
+		return
+	_compass.heading = fmod(rad_to_deg(_ship.rotation) + 90.0 + 360.0, 360.0)
+
+
+## Barra de vento: força atual do WindManager (0.3 a 1.5), com a direção em graus.
+func _update_wind() -> void:
+	var strength: float = _wind.wind_strength
+	_wind_fill.value = clampf(strength / 1.5, 0.0, 1.0)
+	var wdir: Vector2 = _wind.wind_direction
+	var degrees: int = int(fmod(rad_to_deg(wdir.angle()) + 90.0 + 360.0, 360.0))
+	_wind_label.text = "VENTO %d°  %.1f" % [degrees, strength]
 
 
 func _unhandled_input(event: InputEvent) -> void:
