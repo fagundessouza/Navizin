@@ -4,6 +4,7 @@
 [ext_resource type="Resource" path="res://data/ship_holandes_voador.tres" id="2_data"]
 [ext_resource type="Shader" path="res://assets/shaders/ship_outline.gdshader" id="4_outline"]
 [ext_resource type="Texture2D" path="res://assets/sprites/ships/holandes_voador/dir8/dir8_00.png" id="3_sprite"]
+[ext_resource type="Texture2D" path="res://assets/sprites/vfx/auras/dark_aura.png" id="5_aura"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_outline"]
 shader = ExtResource("4_outline")
@@ -24,9 +25,17 @@ monitorable = true
 [node name="CollisionShape2D" type="CollisionShape2D" parent="HullArea"]
 shape = SubResource("RectangleShape2D_hull")
 
+[node name="DarkAura" type="Sprite2D" parent="." unique_id=3087221445]
+show_behind_parent = true
+modulate = Color(1, 1, 1, 0.55)
+scale = Vector2(2.1, 2.1)
+texture = ExtResource("5_aura")
+
 [node name="Shadow" type="Sprite2D" parent="." unique_id=575220340]
 texture_filter = 1
 texture = ExtResource("3_sprite")
+
+[node name="SternMarker" type="Marker2D" parent="."]
 
 [node name="WaterTrailFX" type="GPUParticles2D" parent="." unique_id=319747898]
 emitting = false

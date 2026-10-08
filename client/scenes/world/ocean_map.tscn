@@ -18,6 +18,10 @@
 [ext_resource type="Material" path="res://shaders/materials/vfx_additive_material.tres" id="17_additive"]
 [ext_resource type="Texture2D" path="res://assets/sprites/vfx/lighting/torch_flame.png" id="19_torch"]
 [ext_resource type="Texture2D" path="res://assets/sprites/vfx/noise/water_noise_real.png" id="20_realnoise"]
+[ext_resource type="Texture2D" path="res://assets/sprites/vfx/decals/oil_slick.png" id="21_oil"]
+[ext_resource type="Texture2D" path="res://assets/sprites/vfx/decals/kelp_clump.png" id="22_kelp"]
+[ext_resource type="Texture2D" path="res://assets/sprites/vfx/decals/wreck_planks.png" id="23_wreck"]
+[ext_resource type="Texture2D" path="res://assets/sprites/vfx/decals/rock_small.png" id="24_rock"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_ocean"]
 shader = ExtResource("2_ocean")
@@ -193,6 +197,32 @@ z_index = 3
 y_sort_enabled = true
 tile_map_data = PackedByteArray("AAAAAAAAQwAAAAAAAAACAAAASwAAAAAAAAD+/wAATAAAAAAAAAAAAAIATQAAAAAAAAAAAP7/TgAAAAAAAAA=")
 tile_set = ExtResource("6_tileset")
+
+[node name="OilSlickDecal" type="Sprite2D" parent="World/Islands"]
+z_index = 2
+position = Vector2(-120, 140)
+scale = Vector2(0.45, 0.45)
+texture = ExtResource("21_oil")
+
+[node name="KelpDecal" type="Sprite2D" parent="World/Islands"]
+z_index = 2
+position = Vector2(150, -170)
+rotation = 0.3
+scale = Vector2(0.4, 0.4)
+texture = ExtResource("22_kelp")
+
+[node name="WreckDecal" type="Sprite2D" parent="World/Islands"]
+z_index = 2
+position = Vector2(-170, -70)
+rotation = -0.2
+scale = Vector2(0.35, 0.35)
+texture = ExtResource("23_wreck")
+
+[node name="RockDecal" type="Sprite2D" parent="World/Islands"]
+z_index = 2
+position = Vector2(110, 165)
+scale = Vector2(0.4, 0.4)
+texture = ExtResource("24_rock")
 
 [node name="LampLight" type="PointLight2D" parent="World/Islands" unique_id=637729338]
 position = Vector2(49, -2)

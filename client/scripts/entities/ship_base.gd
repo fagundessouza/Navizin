@@ -205,6 +205,11 @@ var _time: float = 0.0
 ## Casco, para detectar ilhas: um Area2D (não bloqueia sozinho, o script lê a sobreposição).
 @onready var _hull_area: Area2D = $HullArea
 @onready var _hull_shape: Shape2D = ($HullArea/CollisionShape2D as CollisionShape2D).shape
+@onready var _aura: Sprite2D = $DarkAura
+@onready var _stern_marker: Marker2D = $SternMarker
+## Velocidade do giro contínuo da aura sombria, em rad/s. Lento, para parecer mística,
+## não um enfeite girando rápido.
+const AURA_SPIN_SPEED: float = 0.35
 
 ## Texturas de efeito migradas de assets/sprites/vfx/: fumaça de pólvora com brasas
 ## (disparo e dano), esteira d'água e onda de proa, em vez do punhado gerado por código.
@@ -572,6 +577,8 @@ func _update_visual(delta: float) -> void:
 	var deg: float = rad_to_deg(global_rotation)
 	_show_frame(_nearest_frame(deg, _shown_index))
 	_apply_float()
+	# Gira sozinha, independente do rumo do navio: a aura não deve travar com o casco.
+	_aura.rotation += AURA_SPIN_SPEED * delta
 
 
 ## Frame mais próximo do rumo, em graus. Se `current` está dentro da histerese,
@@ -683,15 +690,16 @@ func _setup_wake() -> void:
 	fade_tex.gradient = fade
 	var active_mat := ParticleProcessMaterial.new()
 	active_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
-	active_mat.emission_box_extents = Vector3(data.hull_half_length * 0.35, 6.0, 0.0)
+	active_mat.emission_box_extents = Vector3(data.hull_half_length * 0.22, 5.0, 0.0)
 	active_mat.spread = 60.0
 	active_mat.gravity = Vector3.ZERO
 	active_mat.initial_velocity_min = 0.5
 	active_mat.initial_velocity_max = 3.0
 	active_mat.damping_min = 16.0
 	active_mat.damping_max = 24.0
-	active_mat.scale_min = 0.3 * SIZE_FACTOR
-	active_mat.scale_max = SIZE_FACTOR
+	# Contida sob o casco: proporcional ao navio, mas sem sobressair pelas laterais.
+	active_mat.scale_min = 0.35 * SIZE_FACTOR * 0.5
+	active_mat.scale_max = 0.35 * SIZE_FACTOR
 	active_mat.scale_curve = scale_tex
 	active_mat.color = Color(1.0, 1.0, 1.0, 1.0)
 	active_mat.color_ramp = fade_tex
@@ -705,6 +713,7 @@ func _setup_wake() -> void:
 	_wake.local_coords = false
 	# Atrás do casco: a espuma fica abaixo do sprite do navio.
 	_wake.show_behind_parent = true
+	_wake.z_index = -1
 	_wake.amount = 60
 	_wake.lifetime = 1.2
 	_wake.emitting = false
@@ -727,11 +736,14 @@ func _update_wake() -> void:
 	var back: Vector2 = Vector2.from_angle(rotation + PI) * STERN_REACH
 	if reversing:
 		back = -back
+	# SternMarker é filho do navio: ao atualizar sua posição local, o Godot já aplica a
+	# rotação do casco sozinho. A emissão (em coordenadas do mundo) soma o recuo da popa.
+	_stern_marker.position = base
 	var active_mat := _wake.process_material as ParticleProcessMaterial
 	active_mat.direction = Vector3(back.normalized().x, back.normalized().y, 0.0)
 	active_mat.initial_velocity_min = lerpf(0.5, 4.0, fraction)
 	active_mat.initial_velocity_max = lerpf(3.0, 9.0, fraction)
-	_wake.global_position = global_position + base + back
+	_wake.global_position = _stern_marker.global_position + back
 	_wake.amount_ratio = fraction
 	_update_bow_wave(fraction)
 	_wake.emitting = fraction > 0.02 and absf(speed) > WAKE_MIN_SPEED
@@ -840,16 +852,19 @@ func _setup_bow_wave() -> void:
 	bow_mat.initial_velocity_max = 50.0
 	bow_mat.damping_min = 40.0
 	bow_mat.damping_max = 60.0
-	bow_mat.scale_min = 0.22 * SIZE_FACTOR
-	bow_mat.scale_max = 0.42 * SIZE_FACTOR
-	bow_mat.color = Color(1.0, 1.0, 1.0, 0.55)
+	bow_mat.scale_min = 0.1 * SIZE_FACTOR
+	bow_mat.scale_max = 0.18 * SIZE_FACTOR
+	bow_mat.color = Color(1.0, 1.0, 1.0, 0.4)
 	bow_mat.angle_min = 0.0
 	bow_mat.angle_max = 0.0
 	_bow.process_material = bow_mat
 	_bow.texture = BOW_WAVE_TEXTURE
 	_bow.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	_bow.local_coords = false
-	_bow.amount = 30
+	# Antes (amount 30, escala quase cheia) empastava num só bloco sólido depois de um
+	# segundo de navegação, quando o acúmulo de partículas de `lifetime` chegava ao regime
+	# permanente. Menos partículas, menores, continuam legíveis como respingo.
+	_bow.amount = 10
 	_bow.lifetime = 0.9
 	_bow.emitting = false
 
