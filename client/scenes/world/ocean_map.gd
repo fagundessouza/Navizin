@@ -8,6 +8,17 @@ extends Node2D
 func _ready() -> void:
 	print("Navizin: mapa do oceano carregado.")
 	_add_captain_light($World/Ship)
+	_wire_tortuga_dock()
+
+
+## Liga a doca de Tortuga à tela da cidade: atracar mostra a tela, pedir pra sair
+## (E de novo, dentro da tela) esconde e libera o navio.
+func _wire_tortuga_dock() -> void:
+	var dock: Area2D = $World/TortugaHub/DockingArea
+	var city: Control = $HUD/TortugaCityHub
+	dock.docked.connect(func(_ship): city.visible = true)
+	dock.undocked.connect(func(): city.visible = false)
+	city.close_requested.connect(dock._undock)
 
 
 ## Luz de visão do capitão: um halo quente e suave preso ao navio do jogador. A área

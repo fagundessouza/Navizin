@@ -1,0 +1,47 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/sprites/environment/islands/tortuga_hub.png" id="1_tex"]
+[ext_resource type="Shader" path="res://assets/shaders/shoreline_dissolve.gdshader" id="2_shoreline"]
+[ext_resource type="Texture2D" path="res://assets/sprites/vfx/noise/water_noise_real.png" id="3_noise"]
+[ext_resource type="Script" path="res://scripts/world/tortuga_dock.gd" id="4_dock"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_tortuga"]
+shader = ExtResource("2_shoreline")
+shader_parameter/water_noise = ExtResource("3_noise")
+shader_parameter/noise_scale = 420.0
+shader_parameter/dissolve_width = 0.16
+shader_parameter/noise_strength = 0.55
+shader_parameter/water_tint = Color(0.08, 0.2, 0.26, 1)
+shader_parameter/drift = Vector2(0.01, 0.008)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_bay"]
+size = Vector2(1230, 380)
+
+[node name="IslandTortugaHub" type="Node2D"]
+scale = Vector2(1.2, 1.2)
+
+[node name="Sprite" type="Sprite2D" parent="."]
+material = SubResource("ShaderMaterial_tortuga")
+texture = ExtResource("1_tex")
+
+[node name="TortugaBody" type="StaticBody2D" parent="."]
+collision_layer = 1
+collision_mask = 0
+
+[node name="MainLand" type="CollisionPolygon2D" parent="TortugaBody"]
+polygon = PackedVector2Array(-708, -152, -618, -262, -468, -322, -318, -372, -168, -382, -18, -402, 132, -392, 282, -378, 432, -342, 522, -232, 542, -112, 482, -12, 332, -32, 182, -52, 32, -37, -118, -17, -268, -2, -418, 18, -568, 32, -678, -8, -738, -62)
+
+[node name="LeftArm" type="CollisionPolygon2D" parent="TortugaBody"]
+polygon = PackedVector2Array(-748, -52, -678, -52, -648, 28, -668, 128, -708, 218, -748, 168)
+
+[node name="RightArm" type="CollisionPolygon2D" parent="TortugaBody"]
+polygon = PackedVector2Array(692, -52, 732, -12, 742, 118, 702, 218, 652, 168, 662, 48)
+
+[node name="DockingArea" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 2
+script = ExtResource("4_dock")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="DockingArea"]
+position = Vector2(-3, 218)
+shape = SubResource("RectangleShape2D_bay")

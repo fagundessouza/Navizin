@@ -1,0 +1,168 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/tortuga_city_hub.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/ui/hotspots/transparent.png" id="2_blank"]
+[ext_resource type="Texture2D" path="res://assets/ui/hotspots/hover_outline.png" id="3_hover"]
+[ext_resource type="Texture2D" path="res://assets/sprites/environment/islands/tortuga_hub.png" id="4_bg"]
+[ext_resource type="PackedScene" path="res://scenes/ui/dialog_panel.tscn" id="5_dialog"]
+
+[node name="TortugaCityHub" type="Control"]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_script")
+
+[node name="Background" type="TextureRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("4_bg")
+expand_mode = 1
+stretch_mode = 5
+mouse_filter = 2
+
+[node name="Vignette" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.05, 0.08, 0.12, 0.22)
+mouse_filter = 2
+
+[node name="Hotspots" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Shipyard" type="TextureButton" parent="Hotspots"]
+offset_left = 491.0.0
+offset_top = 428.0.0
+offset_right = 641.0.0
+offset_bottom = 538.0.0
+texture_normal = ExtResource("2_blank")
+texture_hover = ExtResource("3_hover")
+ignore_texture_size = true
+stretch_mode = 1
+tooltip_text = "Estaleiro"
+
+[node name="Forge" type="TextureButton" parent="Hotspots"]
+offset_left = 318.0.0
+offset_top = 98.0.0
+offset_right = 448.0.0
+offset_bottom = 218.0.0
+texture_normal = ExtResource("2_blank")
+texture_hover = ExtResource("3_hover")
+ignore_texture_size = true
+stretch_mode = 1
+tooltip_text = "Forja"
+
+[node name="Tavern" type="TextureButton" parent="Hotspots"]
+offset_left = 126.0.0
+offset_top = 207.0.0
+offset_right = 266.0.0
+offset_bottom = 327.0.0
+texture_normal = ExtResource("2_blank")
+texture_hover = ExtResource("3_hover")
+ignore_texture_size = true
+stretch_mode = 1
+tooltip_text = "Taverna"
+
+[node name="Apothecary" type="TextureButton" parent="Hotspots"]
+offset_left = 416.0.0
+offset_top = 190.0.0
+offset_right = 526.0.0
+offset_bottom = 310.0.0
+texture_normal = ExtResource("2_blank")
+texture_hover = ExtResource("3_hover")
+ignore_texture_size = true
+stretch_mode = 1
+tooltip_text = "Boticário"
+
+[node name="BountyBoard" type="TextureButton" parent="Hotspots"]
+offset_left = 613.0.0
+offset_top = 290.0.0
+offset_right = 703.0.0
+offset_bottom = 410.0.0
+texture_normal = ExtResource("2_blank")
+texture_hover = ExtResource("3_hover")
+ignore_texture_size = true
+stretch_mode = 1
+tooltip_text = "Quadro de Recompensas"
+
+[node name="BlackMarket" type="TextureButton" parent="Hotspots"]
+offset_left = 870.0.0
+offset_top = 362.0.0
+offset_right = 1030.0.0
+offset_bottom = 472.0.0
+texture_normal = ExtResource("2_blank")
+texture_hover = ExtResource("3_hover")
+ignore_texture_size = true
+stretch_mode = 1
+tooltip_text = "Mercado Negro"
+
+[node name="GuildHall" type="TextureButton" parent="Hotspots"]
+offset_left = 838.0.0
+offset_top = 202.0.0
+offset_right = 978.0.0
+offset_bottom = 332.0.0
+texture_normal = ExtResource("2_blank")
+texture_hover = ExtResource("3_hover")
+ignore_texture_size = true
+stretch_mode = 1
+tooltip_text = "Salão da Guilda"
+
+[node name="Academy" type="TextureButton" parent="Hotspots"]
+offset_left = 928.0.0
+offset_top = 3.0.0
+offset_right = 1048.0.0
+offset_bottom = 123.0.0
+texture_normal = ExtResource("2_blank")
+texture_hover = ExtResource("3_hover")
+ignore_texture_size = true
+stretch_mode = 1
+tooltip_text = "Academia"
+
+[node name="Title" type="Label" parent="."]
+offset_left = 24.0
+offset_top = 16.0
+offset_right = 420.0
+offset_bottom = 56.0
+theme_override_colors/font_color = Color(0.95, 0.85, 0.55, 1)
+theme_override_font_sizes/font_size = 24
+text = "Tortuga"
+
+[node name="Hint" type="Label" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -260.0
+offset_top = -36.0
+offset_right = -16.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_colors/font_color = Color(0.8, 0.78, 0.7, 1)
+theme_override_font_sizes/font_size = 14
+text = "E para voltar ao navio"
+horizontal_alignment = 2
+
+[node name="InfoPanel" parent="." instance=ExtResource("5_dialog")]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -180.0
+offset_top = -160.0
+offset_right = 180.0
+offset_bottom = 160.0
