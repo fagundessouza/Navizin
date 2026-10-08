@@ -14,8 +14,11 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/environment/props/_tiles/prop_00.png" id="12_gus3s"]
 [ext_resource type="Texture2D" path="res://assets/sprites/environment/props/_tiles/prop_30.png" id="13_dh62x"]
 [ext_resource type="Shader" path="res://assets/shaders/shoreline_dissolve.gdshader" id="14_shoreline"]
-[ext_resource type="Texture2D" path="res://assets/sprites/vfx/noise/water_noise.png" id="15_noise"]
 [ext_resource type="Texture2D" path="res://assets/sprites/vfx/foam_dot.png" id="16_foam"]
+[ext_resource type="Material" path="res://shaders/materials/vfx_additive_material.tres" id="17_additive"]
+[ext_resource type="Texture2D" path="res://assets/sprites/vfx/lighting/god_rays.png" id="18_godrays"]
+[ext_resource type="Texture2D" path="res://assets/sprites/vfx/lighting/torch_flame.png" id="19_torch"]
+[ext_resource type="Texture2D" path="res://assets/sprites/vfx/noise/water_noise_real.png" id="20_realnoise"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_ocean"]
 shader = ExtResource("2_ocean")
@@ -40,8 +43,8 @@ glow_hdr_threshold = 0.95
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_shoreline"]
 shader = ExtResource("14_shoreline")
-shader_parameter/water_noise = ExtResource("15_noise")
-shader_parameter/noise_scale = 64.0
+shader_parameter/water_noise = ExtResource("20_realnoise")
+shader_parameter/noise_scale = 140.0
 shader_parameter/dissolve_width = 0.22
 shader_parameter/noise_strength = 0.6
 shader_parameter/water_tint = Color(0.1, 0.22, 0.28, 1)
@@ -87,9 +90,11 @@ size = Vector2(69.52, 22.26)
 size = Vector2(55.44, 38.36)
 
 [node name="OceanMap" type="Node2D" unique_id=516550437]
+y_sort_enabled = true
 script = ExtResource("1_map")
 
 [node name="Ocean" type="ColorRect" parent="." unique_id=1911683274]
+z_index = -10
 material = SubResource("ShaderMaterial_ocean")
 offset_left = -9332.0
 offset_top = -9748.0
@@ -97,8 +102,19 @@ offset_right = 10668.0
 offset_bottom = 10252.0
 mouse_filter = 2
 
+[node name="FogLayer" type="Parallax2D" parent="."]
+z_index = -5
+autoscroll = Vector2(6, 2)
+repeat_size = Vector2(940, 940)
+repeat_times = 3
+
+[node name="FogSprite" type="Sprite2D" parent="FogLayer"]
+modulate = Color(0.55, 0.65, 0.75, 0.35)
+texture = ExtResource("20_realnoise")
+scale = Vector2(2, 2)
+
 [node name="CanvasModulate" type="CanvasModulate" parent="." unique_id=1663882998]
-color = Color(0.102, 0.133, 0.2, 1)
+color = Color(0.071, 0.106, 0.169, 1)
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=960095480]
 environment = SubResource("Env_sea")
@@ -162,6 +178,14 @@ y_sort_enabled = true
 tile_map_data = PackedByteArray("AAAAAAAAQwAAAAAAAAACAAAASwAAAAAAAAD+/wAATAAAAAAAAAAAAAIATQAAAAAAAAAAAP7/TgAAAAAAAAA=")
 tile_set = ExtResource("6_tileset")
 
+[node name="GodRays" type="Sprite2D" parent="World/Islands"]
+material = ExtResource("17_additive")
+position = Vector2(60, -260)
+scale = Vector2(1.6, 1.6)
+modulate = Color(1, 1, 1, 0.45)
+texture = ExtResource("18_godrays")
+z_index = 12
+
 [node name="LampLight" type="PointLight2D" parent="World/Islands" unique_id=637729338]
 position = Vector2(49, -2)
 color = Color(1, 0.667, 0.267, 1)
@@ -207,3 +231,10 @@ texture = ExtResource("13_dh62x")
 [node name="CollisionShape2D2" type="CollisionShape2D" parent="World/Islands/LampProp" unique_id=1941919166]
 position = Vector2(0, 112.34)
 shape = SubResource("RectangleShape2D_ymw0h")
+
+[node name="FlameGlow" type="Sprite2D" parent="World/Islands/LampProp"]
+material = ExtResource("17_additive")
+position = Vector2(0, -95)
+scale = Vector2(0.4, 0.4)
+modulate = Color(1, 0.85, 0.6, 0.9)
+texture = ExtResource("19_torch")

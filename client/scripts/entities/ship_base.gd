@@ -143,7 +143,6 @@ const RAIL_HALF_WIDTH: float = 3.0
 @onready var _wake: GPUParticles2D = $WaterTrailFX
 @onready var _bow: GPUParticles2D = $BowWave
 @onready var _lantern: PointLight2D = $LanternGlow
-@onready var _chimney: GPUParticles2D = $ChimneySmoke
 @onready var _port_cannons: Node2D = $PortCannons
 @onready var _starboard_cannons: Node2D = $StarboardCannons
 
@@ -194,7 +193,6 @@ var _stern_base: Array[Vector2] = []
 var _stern_back: Array[Vector2] = []
 var _shake: float = 0.0
 var _camera: Camera2D = null
-var _puff: GradientTexture2D
 
 ## Rumo mostrado na tela: segue o rumo real com atraso, então a virada parece pesada.
 var _visual_heading: float = 0.0
@@ -203,6 +201,15 @@ var _shown_index: int = -1
 var _time: float = 0.0
 ## Casco, para detectar ilhas: um Area2D (não bloqueia sozinho, o script lê a sobreposição).
 @onready var _hull_area: Area2D = $HullArea
+
+## Texturas de efeito migradas de assets/sprites/vfx/: fumaça de pólvora com brasas
+## (disparo e dano), esteira d'água e onda de proa, em vez do punhado gerado por código.
+const SMOKE_EMBER_TEXTURE: Texture2D = preload("res://assets/sprites/vfx/battle/smoke_puff_ember.png")
+const SMOKE_SOFT_TEXTURE: Texture2D = preload("res://assets/sprites/vfx/battle/smoke_puff_soft.png")
+const WAKE_TEXTURE: Texture2D = preload("res://assets/sprites/vfx/wake/wake_foam_strip.png")
+const BOW_WAVE_TEXTURE: Texture2D = preload("res://assets/sprites/vfx/wake/bow_wave.png")
+## Abaixo desta velocidade a esteira não emite: o navio parado não deixa rastro.
+const WAKE_MIN_SPEED: float = 5.0
 
 
 func _ready() -> void:
@@ -216,7 +223,6 @@ func _ready() -> void:
 	_camera = get_node_or_null("Camera2D") as Camera2D
 	_build_stern_table()
 	_visual_heading = rotation
-	_puff = _make_puff_texture()
 	_shadow.modulate = Color(0.0, 0.0, 0.0, SHADOW_ALPHA)
 	_sprite.scale = Vector2.ONE * SPRITE_SCALE
 	_shadow.scale = Vector2.ONE * SPRITE_SCALE
@@ -228,7 +234,6 @@ func _ready() -> void:
 	hull = max_hull
 	hull_changed.emit(hull, max_hull)
 	_setup_lantern()
-	_setup_chimney()
 
 
 func _physics_process(delta: float) -> void:
@@ -665,11 +670,11 @@ func _setup_wake() -> void:
 	active_mat.scale_min = 0.3 * SIZE_FACTOR
 	active_mat.scale_max = 0.6 * SIZE_FACTOR
 	active_mat.scale_curve = scale_tex
-	active_mat.color = Color(0.9, 0.98, 1.0, 0.5)
+	active_mat.color = Color(1.0, 1.0, 1.0, 0.8)
 	active_mat.color_ramp = fade_tex
 	active_mat.lifetime_randomness = 0.45
 	_wake.process_material = active_mat
-	_wake.texture = _puff
+	_wake.texture = WAKE_TEXTURE
 	# Névoa suave: filtro linear, senão o Nearest do projeto a quebra em blocos.
 	_wake.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	# No referencial do casco: a popa e a deriva seguem a proa, em qualquer rumo.
@@ -717,7 +722,7 @@ func _update_wake() -> void:
 	_wake.global_position = global_position + base + back
 	_wake.amount_ratio = fraction
 	_update_bow_wave(fraction)
-	_wake.emitting = fraction > 0.02
+	_wake.emitting = fraction > 0.02 and absf(speed) > WAKE_MIN_SPEED
 
 
 ## Luz quente das lanternas: energia oscila de forma orgânica, sem repetição exata.
@@ -738,39 +743,6 @@ func _setup_lantern() -> void:
 
 
 ## Fumaça da chaminé: sobe devagar, abre e some, levada pelo vento do mapa.
-func _setup_chimney() -> void:
-	var grow := Curve.new()
-	grow.add_point(Vector2(0.0, 0.4))
-	grow.add_point(Vector2(1.0, 1.6))
-	var grow_tex := CurveTexture.new()
-	grow_tex.curve = grow
-	var fade := Gradient.new()
-	fade.set_color(0, Color(0.85, 0.85, 0.85, 0.35))
-	fade.set_color(1, Color(0.85, 0.85, 0.85, 0.0))
-	var fade_tex := GradientTexture1D.new()
-	fade_tex.gradient = fade
-	var active_mat := ParticleProcessMaterial.new()
-	active_mat.direction = Vector3(0.0, -1.0, 0.0)
-	active_mat.spread = 12.0
-	active_mat.gravity = Vector3(0.0, -10.0, 0.0)
-	active_mat.initial_velocity_min = 6.0
-	active_mat.initial_velocity_max = 12.0
-	active_mat.damping_min = 4.0
-	active_mat.damping_max = 8.0
-	active_mat.scale_min = 0.8
-	active_mat.scale_max = 1.2
-	active_mat.scale_curve = grow_tex
-	active_mat.color_ramp = fade_tex
-	active_mat.lifetime_randomness = 0.3
-	_chimney.process_material = active_mat
-	_chimney.texture = _puff
-	_chimney.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	_chimney.local_coords = false
-	_chimney.amount = 12
-	_chimney.lifetime = 2.2
-	_chimney.emitting = true
-
-
 ## Módulo de efeitos: o navio informa as ações (acelerar, virar, atirar) e cada efeito
 ## reage com os parâmetros de `FX_TUNING`. Sem ação, cada efeito volta ao repouso.
 const FX_TUNING: Dictionary = {
@@ -798,10 +770,6 @@ func _update_fx(delta: float) -> void:
 	var fraction: float = clampf(absf(speed) / maxf(data.max_speed, 1.0), 0.0, 1.0)
 	var wave: float = sin(_time * 3.1) * 0.6 + sin(_time * 7.3) * 0.4
 	_lantern.energy = FX_TUNING["lantern_base_energy"] + FX_TUNING["lantern_wave"] * wave + FX_TUNING["fire_kick_glow"] * _fx_fire
-	var smoke_mat := _chimney.process_material as ParticleProcessMaterial
-	var wind_vec: Vector2 = _wind.wind_direction * _wind.wind_strength
-	smoke_mat.gravity = Vector3(wind_vec.x * FX_TUNING["smoke_wind"] * 0.1, -10.0, 0.0)
-	_chimney.amount_ratio = 0.3 + 0.7 * fraction
 	_fx_turn = move_toward(_fx_turn, 0.0, delta * 2.0)
 	_fx_fire = move_toward(_fx_fire, 0.0, delta * 3.0)
 	var wake_mat := _wake.process_material as ParticleProcessMaterial
@@ -817,46 +785,39 @@ func _puff_smoke(side: int) -> void:
 
 ## Baforada rápida de fumaça cinza, que se dissipa e some sozinha.
 func _spawn_muzzle(at: Vector2) -> void:
+	_spawn_smoke_burst(at, SMOKE_EMBER_TEXTURE, 0.4 * SIZE_FACTOR, 0.3)
+
+
+## Baforada de fumaça num ponto do mundo: pólvora com brasas (disparo) ou mais leve
+## (casco avariado). Usa um sprite real do pacote de VFX, não mais o punhado gerado.
+func _spawn_smoke_burst(at: Vector2, tex: Texture2D, scale: float, lifetime: float) -> void:
 	var burst := GPUParticles2D.new()
 	var active_mat := ParticleProcessMaterial.new()
-	active_mat.spread = 180.0
-	active_mat.gravity = Vector3.ZERO
-	active_mat.initial_velocity_min = 8.0
-	active_mat.initial_velocity_max = 22.0
-	active_mat.damping_min = 40.0
-	active_mat.damping_max = 60.0
-	active_mat.scale_min = 0.6
-	active_mat.scale_max = 1.2
-	active_mat.color = Color(0.7, 0.7, 0.72, 0.55)
+	active_mat.spread = 50.0
+	active_mat.direction = Vector3(0.0, -1.0, 0.0)
+	active_mat.gravity = Vector3(0.0, -14.0, 0.0)
+	active_mat.initial_velocity_min = 6.0
+	active_mat.initial_velocity_max = 16.0
+	active_mat.damping_min = 20.0
+	active_mat.damping_max = 34.0
+	active_mat.scale_min = scale * 0.7
+	active_mat.scale_max = scale
+	active_mat.color = Color(1.0, 1.0, 1.0, 0.85)
 	burst.process_material = active_mat
-	burst.texture = _puff
+	burst.texture = tex
 	burst.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	burst.one_shot = true
-	burst.explosiveness = 1.0
-	burst.amount = 8
-	burst.lifetime = 0.6
+	burst.explosiveness = 0.8
+	burst.amount = 6
+	burst.lifetime = lifetime
 	burst.local_coords = false
 	get_parent().add_child(burst)
 	burst.global_position = at
 	burst.emitting = true
-	get_tree().create_timer(1.2).timeout.connect(burst.queue_free)
+	get_tree().create_timer(lifetime * 2.0).timeout.connect(burst.queue_free)
 
 
 ## Mancha redonda e macia usada como partícula de fumaça.
-func _make_puff_texture() -> GradientTexture2D:
-	var gradient := Gradient.new()
-	gradient.set_color(0, Color(1.0, 1.0, 1.0, 1.0))
-	gradient.set_color(1, Color(1.0, 1.0, 1.0, 0.0))
-	var texture := GradientTexture2D.new()
-	texture.gradient = gradient
-	texture.fill = GradientTexture2D.FILL_RADIAL
-	texture.fill_from = Vector2(0.5, 0.5)
-	texture.fill_to = Vector2(1.0, 0.5)
-	texture.width = 32
-	texture.height = 32
-	return texture
-
-
 ## Respingo da proa: a água é empurrada para os lados pelo casco. As partículas saem
 ## da proa, espalham-se para fora e crescem com o tamanho do galeão.
 func _setup_bow_wave() -> void:
@@ -869,9 +830,9 @@ func _setup_bow_wave() -> void:
 	bow_mat.damping_max = 60.0
 	bow_mat.scale_min = 0.22 * SIZE_FACTOR
 	bow_mat.scale_max = 0.42 * SIZE_FACTOR
-	bow_mat.color = Color(0.85, 0.96, 1.0, 0.35)
+	bow_mat.color = Color(1.0, 1.0, 1.0, 0.55)
 	_bow.process_material = bow_mat
-	_bow.texture = _puff
+	_bow.texture = BOW_WAVE_TEXTURE
 	_bow.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	_bow.local_coords = false
 	_bow.amount = 30
@@ -893,6 +854,8 @@ func _update_bow_wave(fraction: float) -> void:
 func apply_damage(amount: float) -> void:
 	hull = clampf(hull - maxf(amount, 0.0), 0.0, max_hull)
 	hull_changed.emit(hull, max_hull)
+	if amount > 0.0:
+		_spawn_smoke_burst(global_position, SMOKE_SOFT_TEXTURE, 0.3 * SIZE_FACTOR, 0.8)
 
 
 ## Fração de recarga da bordada mais lenta (0 = pronto, 1 = recém disparado).

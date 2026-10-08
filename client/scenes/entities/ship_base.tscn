@@ -69,6 +69,3 @@ color = Color(1, 0.72, 0.4, 1)
 energy = 0.8
 blend_mode = 0
 
-[node name="ChimneySmoke" type="GPUParticles2D" parent="."]
-position = Vector2(-18, -58)
-emitting = false

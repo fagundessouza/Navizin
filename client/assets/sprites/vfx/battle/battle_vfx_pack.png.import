@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://birxwj3ipecb6"
-path="res://.godot/imported/water_noise.png-53e1878d06e588a4d981a6fbafaee2b9.ctex"
+uid="uid://di68e5o487n3a"
+path="res://.godot/imported/battle_vfx_pack.png-5f71faf9d37f9d923db19d47307069f0.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/vfx/noise/water_noise.png"
-dest_files=["res://.godot/imported/water_noise.png-53e1878d06e588a4d981a6fbafaee2b9.ctex"]
+source_file="res://assets/sprites/vfx/battle/battle_vfx_pack.png"
+dest_files=["res://.godot/imported/battle_vfx_pack.png-5f71faf9d37f9d923db19d47307069f0.ctex"]
 
 [params]
 
