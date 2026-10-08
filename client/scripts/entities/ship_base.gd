@@ -194,8 +194,6 @@ signal hull_changed(hull_value: float, max_value: float)
 var _wind: Node = null
 var _prev_speed: float = 0.0
 ## Offsets da popa por entrada de `DIR_ENTRIES`: base (tela) e vetor de ré.
-var _stern_base: Array[Vector2] = []
-var _stern_back: Array[Vector2] = []
 var _shake: float = 0.0
 var _camera: Camera2D = null
 
@@ -212,11 +210,10 @@ var _time: float = 0.0
 ## (disparo e dano), esteira d'água e onda de proa, em vez do punhado gerado por código.
 const SMOKE_EMBER_TEXTURE: Texture2D = preload("res://assets/sprites/vfx/battle/smoke_puff_ember.png")
 const SMOKE_SOFT_TEXTURE: Texture2D = preload("res://assets/sprites/vfx/battle/smoke_puff_soft.png")
-const WAKE_TEXTURE: Texture2D = preload("res://assets/sprites/vfx/wake/wake_foam_strip.png")
+const WAKE_DOT_TEXTURE: Texture2D = preload("res://assets/sprites/vfx/foam/wake_dot.png")
 const BOW_WAVE_TEXTURE: Texture2D = preload("res://assets/sprites/vfx/wake/bow_wave.png")
-## Correção entre o ângulo nativo de cada imagem e a direção de deslocamento (calibrado
+## Correção entre o ângulo nativo da onda de proa e a direção de deslocamento (calibrado
 ## por captura: 0° do asset nem sempre é "para a direita" como o Godot espera).
-const WAKE_ANGLE_OFFSET_DEG: float = 0.0
 const BOW_ANGLE_OFFSET_DEG: float = -90.0
 ## Abaixo desta velocidade a esteira não emite: o navio parado não deixa rastro.
 const WAKE_MIN_SPEED: float = 5.0
@@ -231,7 +228,6 @@ func _ready() -> void:
 	# O sprite fica atrás do desenho do próprio navio (trilhos de mira).
 	_sprite.show_behind_parent = true
 	_camera = get_node_or_null("Camera2D") as Camera2D
-	_build_stern_table()
 	_visual_heading = rotation
 	_shadow.modulate = Color(0.0, 0.0, 0.0, SHADOW_ALPHA)
 	_sprite.scale = Vector2.ONE * SPRITE_SCALE
@@ -673,16 +669,15 @@ func _update_shake(delta: float) -> void:
 
 
 func _setup_wake() -> void:
-	# Espuma orgânica: partículas circulares, com giro aleatório, que crescem um
-	# pouco e somem suavemente. Vida varia de 0.6 a 1.6 s.
+	# Espuma redonda e suave: nasce pequena e fraca, cresce um pouco e some de vez
+	# até o fim da vida. Sem giro: o sprite já é um borrão circular, não uma faixa.
 	var scale_curve := Curve.new()
-	scale_curve.add_point(Vector2(0.0, 0.5))
-	scale_curve.add_point(Vector2(0.3, 1.0))
-	scale_curve.add_point(Vector2(1.0, 0.15))
+	scale_curve.add_point(Vector2(0.0, 0.3))
+	scale_curve.add_point(Vector2(1.0, 1.0))
 	var scale_tex := CurveTexture.new()
 	scale_tex.curve = scale_curve
 	var fade := Gradient.new()
-	fade.set_color(0, Color(1.0, 1.0, 1.0, 1.0))
+	fade.set_color(0, Color(1.0, 1.0, 1.0, 0.5))
 	fade.set_color(1, Color(1.0, 1.0, 1.0, 0.0))
 	var fade_tex := GradientTexture1D.new()
 	fade_tex.gradient = fade
@@ -695,18 +690,14 @@ func _setup_wake() -> void:
 	active_mat.initial_velocity_max = 3.0
 	active_mat.damping_min = 16.0
 	active_mat.damping_max = 24.0
-	active_mat.angle_min = 0.0
-	active_mat.angle_max = 0.0
-	active_mat.angular_velocity_min = 0.0
-	active_mat.angular_velocity_max = 0.0
 	active_mat.scale_min = 0.3 * SIZE_FACTOR
-	active_mat.scale_max = 0.6 * SIZE_FACTOR
+	active_mat.scale_max = SIZE_FACTOR
 	active_mat.scale_curve = scale_tex
-	active_mat.color = Color(1.0, 1.0, 1.0, 0.8)
+	active_mat.color = Color(1.0, 1.0, 1.0, 1.0)
 	active_mat.color_ramp = fade_tex
-	active_mat.lifetime_randomness = 0.45
+	active_mat.lifetime_randomness = 0.3
 	_wake.process_material = active_mat
-	_wake.texture = WAKE_TEXTURE
+	_wake.texture = WAKE_DOT_TEXTURE
 	# Névoa suave: filtro linear, senão o Nearest do projeto a quebra em blocos.
 	_wake.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	# No referencial do casco: a popa e a deriva seguem a proa, em qualquer rumo.
@@ -715,26 +706,8 @@ func _setup_wake() -> void:
 	# Atrás do casco: a espuma fica abaixo do sprite do navio.
 	_wake.show_behind_parent = true
 	_wake.amount = 60
-	_wake.lifetime = 1.1
+	_wake.lifetime = 1.2
 	_wake.emitting = false
-
-
-## Monta os offsets da popa para cada entrada de `DIR_ENTRIES`. A ré é o sentido
-## oposto à proa, na tela. Nas vistas laterais (proa para a direita ou esquerda) o
-## resultado é o mesmo offset de antes.
-func _build_stern_table() -> void:
-	_stern_base.clear()
-	_stern_back.clear()
-	for heading in FRAME_HEADING_DEG:
-		var angle: float = deg_to_rad(heading)
-		var bow_down: float = sin(angle)
-		var base: Vector2 = WAKE_OFFSET
-		if bow_down > 0.5:
-			base.y += STERN_DOWN_Y
-		elif bow_down < -0.5:
-			base.y += STERN_UP_Y
-		_stern_base.append(base)
-		_stern_back.append(Vector2.from_angle(angle + PI) * STERN_REACH)
 
 
 ## A espuma sai da popa, na linha d'água. Usa o offset da direção mostrada, e a
@@ -742,18 +715,20 @@ func _build_stern_table() -> void:
 func _update_wake() -> void:
 	var reversing: bool = speed < 0.0
 	var fraction: float = clampf(absf(speed) / maxf(data.max_speed, 1.0), 0.0, 1.0)
-	var back: Vector2 = _stern_back[_shown_index]
-	var base: Vector2 = _stern_base[_shown_index]
+	# Rotação contínua do casco, não o frame visual discreto (8 direções com histerese):
+	# usar o frame discreto fazia a popa pular entre posições fixas ao virar navegando,
+	# e o rastro saía em leque, com vários trechos retos em vez de uma curva lisa.
+	var bow_down: float = sin(rotation)
+	var base: Vector2 = WAKE_OFFSET
+	if bow_down > 0.5:
+		base.y += STERN_DOWN_Y
+	elif bow_down < -0.5:
+		base.y += STERN_UP_Y
+	var back: Vector2 = Vector2.from_angle(rotation + PI) * STERN_REACH
 	if reversing:
 		back = -back
-	# Frames são desenhados na tela, então a ré e a emissão são em coordenadas do mundo.
 	var active_mat := _wake.process_material as ParticleProcessMaterial
 	active_mat.direction = Vector3(back.normalized().x, back.normalized().y, 0.0)
-	# A imagem da esteira é uma faixa; gira com a direção de deslocamento, sem o giro
-	# aleatório de antes (que só passava despercebido no punhado redondo gerado).
-	var wake_angle_deg: float = rad_to_deg(back.angle()) + WAKE_ANGLE_OFFSET_DEG
-	active_mat.angle_min = wake_angle_deg
-	active_mat.angle_max = wake_angle_deg
 	active_mat.initial_velocity_min = lerpf(0.5, 4.0, fraction)
 	active_mat.initial_velocity_max = lerpf(3.0, 9.0, fraction)
 	_wake.global_position = global_position + base + back

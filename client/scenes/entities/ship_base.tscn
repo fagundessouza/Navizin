@@ -9,7 +9,7 @@
 shader = ExtResource("4_outline")
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_hull"]
-size = Vector2(234, 100)
+size = Vector2(260, 140)
 
 [node name="ShipBase" type="Node2D" unique_id=1944009318]
 script = ExtResource("1_ship")
