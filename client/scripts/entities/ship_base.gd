@@ -802,14 +802,16 @@ func _update_fx(delta: float) -> void:
 
 ## Clarão e fumaça na saída de cada canhão do bordo que atirou.
 func _puff_smoke(side: int) -> void:
+	# Um pouco pra fora da amurada, na direção do bordo, pra nascer saindo da boca do
+	# canhão, não de dentro do casco.
+	var nudge: Vector2 = Vector2(0.0, -14.0 if side == SIDE_PORT else 14.0).rotated(rotation)
 	for gun in _guns(side):
-		# Na linha do casco, distribuído ao longo do navio, e não na altura das velas.
-		_spawn_muzzle(global_position + WAKE_OFFSET + (gun as Node2D).position.x * Vector2.RIGHT.rotated(rotation))
+		_spawn_muzzle((gun as Node2D).global_position + nudge)
 
 
 ## Baforada rápida de fumaça cinza, que se dissipa e some sozinha.
 func _spawn_muzzle(at: Vector2) -> void:
-	_spawn_smoke_burst(at, SMOKE_EMBER_TEXTURE, 0.4 * SIZE_FACTOR, 0.3)
+	_spawn_smoke_burst(at, SMOKE_EMBER_TEXTURE, 0.18 * SIZE_FACTOR, 0.3)
 
 
 ## Baforada de fumaça num ponto do mundo: pólvora com brasas (disparo) ou mais leve
