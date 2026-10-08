@@ -36,6 +36,7 @@ texture_filter = 1
 texture = ExtResource("3_sprite")
 
 [node name="SternMarker" type="Marker2D" parent="."]
+top_level = true
 
 [node name="WaterTrailFX" type="GPUParticles2D" parent="." unique_id=319747898]
 emitting = false

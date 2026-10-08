@@ -579,6 +579,12 @@ func _update_visual(delta: float) -> void:
 	_apply_float()
 	# Gira sozinha, independente do rumo do navio: a aura não deve travar com o casco.
 	_aura.rotation += AURA_SPIN_SPEED * delta
+	# O sprite é desenhado sempre "em pé" (a rotação do nó cancela a do casco: ver
+	# _apply_float), então a direção que aparece na tela é só o rumo do frame mostrado,
+	# não a rotação contínua da física. Água e fumaça precisam seguir esse rumo visual,
+	# suavizado, para nascer exatamente onde o desenho mostra a popa e os canhões, em
+	# qualquer um dos 8 recortes — não um valor que só bate no instante exato da troca.
+	_visual_heading = lerp_angle(_visual_heading, deg_to_rad(FRAME_HEADING_DEG[_shown_index]), clampf(delta * 10.0, 0.0, 1.0))
 
 
 ## Frame mais próximo do rumo, em graus. Se `current` está dentro da histerese,
@@ -724,21 +730,21 @@ func _setup_wake() -> void:
 func _update_wake() -> void:
 	var reversing: bool = speed < 0.0
 	var fraction: float = clampf(absf(speed) / maxf(data.max_speed, 1.0), 0.0, 1.0)
-	# Rotação contínua do casco, não o frame visual discreto (8 direções com histerese):
-	# usar o frame discreto fazia a popa pular entre posições fixas ao virar navegando,
-	# e o rastro saía em leque, com vários trechos retos em vez de uma curva lisa.
-	var bow_down: float = sin(rotation)
+	# _visual_heading (o rumo do frame mostrado, suavizado) é o que aparece na tela, já
+	# que o sprite cancela a rotação contínua do casco. `base` não gira: é um deslocamento
+	# em eixos de tela, igual à arte desenhada "em pé".
+	var bow_down: float = sin(_visual_heading)
 	var base: Vector2 = WAKE_OFFSET
 	if bow_down > 0.5:
 		base.y += STERN_DOWN_Y
 	elif bow_down < -0.5:
 		base.y += STERN_UP_Y
-	var back: Vector2 = Vector2.from_angle(rotation + PI) * STERN_REACH
+	var back: Vector2 = Vector2.from_angle(_visual_heading + PI) * STERN_REACH
 	if reversing:
 		back = -back
-	# SternMarker é filho do navio: ao atualizar sua posição local, o Godot já aplica a
-	# rotação do casco sozinho. A emissão (em coordenadas do mundo) soma o recuo da popa.
-	_stern_marker.position = base
+	# SternMarker ignora a rotação do navio (top_level, ver _ready): sua posição global
+	# é só a origem do navio mais o deslocamento, nos eixos de tela, igual à arte.
+	_stern_marker.global_position = global_position + base
 	var active_mat := _wake.process_material as ParticleProcessMaterial
 	active_mat.direction = Vector3(back.normalized().x, back.normalized().y, 0.0)
 	active_mat.initial_velocity_min = lerpf(0.5, 4.0, fraction)
@@ -802,11 +808,14 @@ func _update_fx(delta: float) -> void:
 
 ## Clarão e fumaça na saída de cada canhão do bordo que atirou.
 func _puff_smoke(side: int) -> void:
-	# Um pouco pra fora da amurada, na direção do bordo, pra nascer saindo da boca do
-	# canhão, não de dentro do casco.
-	var nudge: Vector2 = Vector2(0.0, -14.0 if side == SIDE_PORT else 14.0).rotated(rotation)
+	# A posição do canhão na tela segue o frame mostrado (sprite "em pé"), não a rotação
+	# contínua: usar gun.global_position giraria com a física e sairia do canhão errado
+	# entre uma troca de frame e outra. Um pouco pra fora da amurada, na direção do
+	# bordo, pra nascer saindo da boca do canhão, não de dentro do casco.
+	var nudge: Vector2 = Vector2(0.0, -14.0 if side == SIDE_PORT else 14.0).rotated(_visual_heading)
 	for gun in _guns(side):
-		_spawn_muzzle((gun as Node2D).global_position + nudge)
+		var gun_pos: Vector2 = global_position + (gun as Node2D).position.rotated(_visual_heading)
+		_spawn_muzzle(gun_pos + nudge)
 
 
 ## Baforada rápida de fumaça cinza, que se dissipa e some sozinha.
@@ -828,7 +837,7 @@ func _spawn_smoke_burst(at: Vector2, tex: Texture2D, scale: float, lifetime: flo
 	active_mat.damping_max = 34.0
 	active_mat.scale_min = scale * 0.7
 	active_mat.scale_max = scale
-	active_mat.color = Color(1.0, 1.0, 1.0, 0.85)
+	active_mat.color = Color(1.0, 1.0, 1.0, 1.0)
 	burst.process_material = active_mat
 	burst.texture = tex
 	burst.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
@@ -873,7 +882,9 @@ func _setup_bow_wave() -> void:
 
 ## Posição da proa no mundo, e intensidade do respingo pela velocidade.
 func _update_bow_wave(fraction: float) -> void:
-	var forward: Vector2 = Vector2.RIGHT.rotated(rotation)
+	# Mesmo raciocínio da esteira: a proa visível na tela segue o frame mostrado, não a
+	# rotação contínua da física.
+	var forward: Vector2 = Vector2.from_angle(_visual_heading)
 	_bow.global_position = global_position + forward * data.hull_half_length * 0.9
 	var bow_mat := _bow.process_material as ParticleProcessMaterial
 	bow_mat.direction = Vector3(forward.x, forward.y, 0.0)

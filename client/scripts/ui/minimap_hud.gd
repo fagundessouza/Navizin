@@ -7,6 +7,8 @@ extends Control
 
 const MARKER_CENTER: Vector2 = Vector2(85.0, 105.0)
 const MARKER_COLOR: Color = Color(1.0, 0.85, 0.3, 1.0)
+## Raio do círculo visível do minimapa (a moldura vaza a partir daqui).
+const VIGNETTE_RADIUS: float = 67.0
 
 @onready var _viewport: SubViewport = $ViewportHolder/World
 @onready var _camera: Camera2D = $ViewportHolder/World/MinimapCamera
@@ -32,6 +34,17 @@ func _process(_delta: float) -> void:
 
 
 func _draw() -> void:
+	# Vinheta na borda do círculo: escurece gradualmente perto do anel de metal, pra o
+	# corte do mapa ao vivo se misturar na moldura em vez de parecer um recorte colado.
+	var steps: int = 20
+	for i in range(steps):
+		var t0: float = float(i) / steps
+		var t1: float = float(i + 1) / steps
+		var r0: float = VIGNETTE_RADIUS * (0.72 + 0.28 * t0)
+		var r1: float = VIGNETTE_RADIUS * (0.72 + 0.28 * t1)
+		var a: float = pow(t1, 2.2) * 0.85
+		draw_arc(MARKER_CENTER, (r0 + r1) * 0.5, 0.0, TAU, 48, Color(0.0, 0.02, 0.04, a), r1 - r0 + 1.0)
+
 	var heading: float = 0.0 if _ship == null else _ship.rotation
 	var tip: Vector2 = MARKER_CENTER + Vector2(9.0, 0.0).rotated(heading)
 	var left: Vector2 = MARKER_CENTER + Vector2(-5.0, 5.0).rotated(heading)
