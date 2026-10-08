@@ -25,6 +25,18 @@ func _wire_tortuga_dock() -> void:
 		game_hud.visible = true)
 	city.close_requested.connect(dock._undock)
 
+	# Clicar na ilha entra direto na cidade, de onde o navio estiver (sem precisar
+	# navegar até a baía primeiro). Reaproveita o mesmo estado de atracar/desatracar,
+	# então apertar E dentro da cidade continua funcionando normalmente.
+	var hover: Area2D = $World/TortugaHub/HoverArea
+	hover.clicked.connect(func():
+		if dock._docked:
+			return
+		var ship: Node2D = get_tree().get_first_node_in_group("player_ship")
+		if ship != null:
+			dock._ship_in_range = ship
+			dock._dock())
+
 
 ## Luz de visão do capitão: um halo quente e suave preso ao navio do jogador. A área
 ## perto do navio fica limpa, e a borda da tela escurece pela vinheta do mar.

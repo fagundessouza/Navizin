@@ -45,6 +45,7 @@ mouse_filter = 2
 
 [node name="FogLayer" type="Parallax2D" parent="." unique_id=179720299]
 z_index = -5
+scroll_offset = Vector2(-931, 0)
 repeat_size = Vector2(940, 940)
 autoscroll = Vector2(6, 2)
 repeat_times = 3
