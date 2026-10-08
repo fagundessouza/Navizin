@@ -201,6 +201,8 @@ var _visual_heading: float = 0.0
 ## Índice em `DIR_ENTRIES` da direção mostrada.
 var _shown_index: int = -1
 var _time: float = 0.0
+## Casco, para detectar ilhas: um Area2D (não bloqueia sozinho, o script lê a sobreposição).
+@onready var _hull_area: Area2D = $HullArea
 
 
 func _ready() -> void:
@@ -237,11 +239,23 @@ func _physics_process(delta: float) -> void:
 	_prev_speed = speed
 	_squash = lerpf(_squash, clampf(accel / maxf(data.acceleration, 1.0), -1.0, 1.0), minf(1.0, 8.0 * delta))
 	knockback = knockback.move_toward(Vector2.ZERO, data.recoil_damping * delta)
+	var before: Vector2 = position
 	position += Vector2.RIGHT.rotated(rotation) * speed * delta
 	position += knockback * delta
 	_apply_wind_drift(delta)
 	supply = maxf(0.0, supply - absf(speed) * SUPPLY_PER_PX * delta)
 	_clamp_to_world()
+	_stop_at_islands(before)
+
+
+## Casco contra terra: se a área do casco estiver sobre um corpo da camada de física das
+## ilhas, desfaz o avanço deste quadro e zera a velocidade. Simples (não desliza na pedra,
+## só para), mas evita que o navio atravesse falésias e construções.
+func _stop_at_islands(before: Vector2) -> void:
+	if _hull_area.get_overlapping_bodies().is_empty():
+		return
+	position = before
+	speed = 0.0
 
 
 func _process(delta: float) -> void:

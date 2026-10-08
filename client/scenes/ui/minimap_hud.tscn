@@ -1,14 +1,37 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/frames/minimap_frame.png" id="1_map"]
+[ext_resource type="Script" path="res://scripts/ui/minimap_hud.gd" id="2_script"]
 
-[node name="MinimapHUD" type="TextureRect"]
+[node name="MinimapHUD" type="Control"]
 custom_minimum_size = Vector2(170, 186)
 offset_left = -186.0
 offset_top = 16.0
 offset_right = -16.0
 offset_bottom = 202.0
 grow_horizontal = 0
+mouse_filter = 2
+script = ExtResource("2_script")
+
+[node name="ViewportHolder" type="SubViewportContainer" parent="."]
+offset_left = 18.0
+offset_top = 44.0
+offset_right = 152.0
+offset_bottom = 166.0
+mouse_filter = 2
+stretch = true
+
+[node name="World" type="SubViewport" parent="ViewportHolder"]
+transparent_bg = true
+handle_input_locally = false
+size = Vector2i(134, 122)
+
+[node name="MinimapCamera" type="Camera2D" parent="ViewportHolder/World"]
+zoom = Vector2(0.09, 0.09)
+
+[node name="Frame" type="TextureRect" parent="."]
+offset_right = 170.0
+offset_bottom = 186.0
 texture = ExtResource("1_map")
 expand_mode = 1
 stretch_mode = 5
