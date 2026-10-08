@@ -156,6 +156,11 @@ var speed: float = 0.0
 var angular_velocity: float = 0.0
 ## Abaixo desta velocidade (px/s) o casco está parado e o leme não gira.
 const STOP_SPEED: float = 1.0
+## Giro permitido para desencalhar quando o casco toca terra, mesmo sem velocidade.
+## Mais lento que o leme normal: dá para sair da pedra, não para girar livremente.
+const STUCK_TURN_RATE: float = 0.3
+## Verdadeiro quando o casco está tocando a física das ilhas neste quadro.
+var _touching_land: bool = false
 
 ## Impulso de recuo atual, em pixels por segundo.
 var knockback: Vector2 = Vector2.ZERO
@@ -201,6 +206,7 @@ var _shown_index: int = -1
 var _time: float = 0.0
 ## Casco, para detectar ilhas: um Area2D (não bloqueia sozinho, o script lê a sobreposição).
 @onready var _hull_area: Area2D = $HullArea
+@onready var _hull_shape: Shape2D = ($HullArea/CollisionShape2D as CollisionShape2D).shape
 
 ## Texturas de efeito migradas de assets/sprites/vfx/: fumaça de pólvora com brasas
 ## (disparo e dano), esteira d'água e onda de proa, em vez do punhado gerado por código.
@@ -208,6 +214,10 @@ const SMOKE_EMBER_TEXTURE: Texture2D = preload("res://assets/sprites/vfx/battle/
 const SMOKE_SOFT_TEXTURE: Texture2D = preload("res://assets/sprites/vfx/battle/smoke_puff_soft.png")
 const WAKE_TEXTURE: Texture2D = preload("res://assets/sprites/vfx/wake/wake_foam_strip.png")
 const BOW_WAVE_TEXTURE: Texture2D = preload("res://assets/sprites/vfx/wake/bow_wave.png")
+## Correção entre o ângulo nativo de cada imagem e a direção de deslocamento (calibrado
+## por captura: 0° do asset nem sempre é "para a direita" como o Godot espera).
+const WAKE_ANGLE_OFFSET_DEG: float = 0.0
+const BOW_ANGLE_OFFSET_DEG: float = -90.0
 ## Abaixo desta velocidade a esteira não emite: o navio parado não deixa rastro.
 const WAKE_MIN_SPEED: float = 5.0
 
@@ -237,6 +247,7 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	_touching_land = _overlaps_land(position)
 	_update_steering(delta)
 	fx_on_turn(angular_velocity / maxf(data.turn_speed, 0.001))
 	_update_speed(delta)
@@ -244,23 +255,39 @@ func _physics_process(delta: float) -> void:
 	_prev_speed = speed
 	_squash = lerpf(_squash, clampf(accel / maxf(data.acceleration, 1.0), -1.0, 1.0), minf(1.0, 8.0 * delta))
 	knockback = knockback.move_toward(Vector2.ZERO, data.recoil_damping * delta)
-	var before: Vector2 = position
-	position += Vector2.RIGHT.rotated(rotation) * speed * delta
-	position += knockback * delta
+	var motion: Vector2 = Vector2.RIGHT.rotated(rotation) * speed * delta + knockback * delta
+	_move_and_slide_islands(motion)
 	_apply_wind_drift(delta)
 	supply = maxf(0.0, supply - absf(speed) * SUPPLY_PER_PX * delta)
 	_clamp_to_world()
-	_stop_at_islands(before)
 
 
-## Casco contra terra: se a área do casco estiver sobre um corpo da camada de física das
-## ilhas, desfaz o avanço deste quadro e zera a velocidade. Simples (não desliza na pedra,
-## só para), mas evita que o navio atravesse falésias e construções.
-func _stop_at_islands(before: Vector2) -> void:
-	if _hull_area.get_overlapping_bodies().is_empty():
-		return
-	position = before
-	speed = 0.0
+## Testa, sem mover o navio, se o casco (na posição dada, com a rotação atual) sobrepõe
+## algum corpo da física das ilhas. Consulta direta ao espaço físico: ao contrário de
+## `Area2D.get_overlapping_bodies()`, não tem um quadro de atraso, então dá para testar
+## várias posições candidatas no mesmo quadro.
+func _overlaps_land(test_position: Vector2) -> bool:
+	var params := PhysicsShapeQueryParameters2D.new()
+	params.shape = _hull_shape
+	params.transform = Transform2D(rotation, test_position)
+	params.collision_mask = _hull_area.collision_mask
+	params.collide_with_bodies = true
+	params.collide_with_areas = false
+	return not get_world_2d().direct_space_state.intersect_shape(params, 1).is_empty()
+
+
+## Casco contra terra: desliza por eixo, em vez de parar de vez. Tenta X e depois Y; o
+## eixo que não bate numa pedra continua livre, então numa quina o navio desliza ao longo
+## da ilha em vez de grudar. Se os dois eixos baterem, o navio realmente não anda neste
+## quadro, mas a `_update_steering` ainda libera um giro lento de escape (`_touching_land`).
+func _move_and_slide_islands(motion: Vector2) -> void:
+	var start: Vector2 = position
+	var try_x: Vector2 = Vector2(start.x + motion.x, start.y)
+	if not _overlaps_land(try_x):
+		position.x = try_x.x
+	var try_y: Vector2 = Vector2(position.x, start.y + motion.y)
+	if not _overlaps_land(try_y):
+		position.y = try_y.y
 
 
 func _process(delta: float) -> void:
@@ -470,6 +497,11 @@ func _update_steering(delta: float) -> void:
 			steer = clampf(error * data.aim_responsiveness, -1.0, 1.0)
 
 	var rate: float = steering_rate(steer, speed, data.max_speed, data.turn_speed)
+	if _touching_land and absf(rate) < STUCK_TURN_RATE:
+		# Encalhado: sem vela não há giro normal, mas o jogador precisa conseguir
+		# virar a proa devagar para sair da pedra. Workaround explícito e limitado,
+		# só ativo tocando terra; não se aplica ao navio parado em mar aberto.
+		rate = steer * STUCK_TURN_RATE
 	# Sem velocidade o leme não gira o casco: a rotação anterior se desfaz pela inércia.
 	angular_velocity = move_toward(angular_velocity, rate, data.turn_acceleration * delta)
 	rotation += angular_velocity * delta
@@ -664,9 +696,9 @@ func _setup_wake() -> void:
 	active_mat.damping_min = 16.0
 	active_mat.damping_max = 24.0
 	active_mat.angle_min = 0.0
-	active_mat.angle_max = 360.0
-	active_mat.angular_velocity_min = -90.0
-	active_mat.angular_velocity_max = 90.0
+	active_mat.angle_max = 0.0
+	active_mat.angular_velocity_min = 0.0
+	active_mat.angular_velocity_max = 0.0
 	active_mat.scale_min = 0.3 * SIZE_FACTOR
 	active_mat.scale_max = 0.6 * SIZE_FACTOR
 	active_mat.scale_curve = scale_tex
@@ -717,6 +749,11 @@ func _update_wake() -> void:
 	# Frames são desenhados na tela, então a ré e a emissão são em coordenadas do mundo.
 	var active_mat := _wake.process_material as ParticleProcessMaterial
 	active_mat.direction = Vector3(back.normalized().x, back.normalized().y, 0.0)
+	# A imagem da esteira é uma faixa; gira com a direção de deslocamento, sem o giro
+	# aleatório de antes (que só passava despercebido no punhado redondo gerado).
+	var wake_angle_deg: float = rad_to_deg(back.angle()) + WAKE_ANGLE_OFFSET_DEG
+	active_mat.angle_min = wake_angle_deg
+	active_mat.angle_max = wake_angle_deg
 	active_mat.initial_velocity_min = lerpf(0.5, 4.0, fraction)
 	active_mat.initial_velocity_max = lerpf(3.0, 9.0, fraction)
 	_wake.global_position = global_position + base + back
@@ -831,6 +868,8 @@ func _setup_bow_wave() -> void:
 	bow_mat.scale_min = 0.22 * SIZE_FACTOR
 	bow_mat.scale_max = 0.42 * SIZE_FACTOR
 	bow_mat.color = Color(1.0, 1.0, 1.0, 0.55)
+	bow_mat.angle_min = 0.0
+	bow_mat.angle_max = 0.0
 	_bow.process_material = bow_mat
 	_bow.texture = BOW_WAVE_TEXTURE
 	_bow.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
@@ -846,6 +885,10 @@ func _update_bow_wave(fraction: float) -> void:
 	_bow.global_position = global_position + forward * data.hull_half_length * 0.9
 	var bow_mat := _bow.process_material as ParticleProcessMaterial
 	bow_mat.direction = Vector3(forward.x, forward.y, 0.0)
+	# O V do respingo tem uma ponta: gira para acompanhar a proa.
+	var bow_angle_deg: float = rad_to_deg(forward.angle()) + BOW_ANGLE_OFFSET_DEG
+	bow_mat.angle_min = bow_angle_deg
+	bow_mat.angle_max = bow_angle_deg
 	_bow.amount_ratio = fraction
 	_bow.emitting = fraction > 0.1
 
