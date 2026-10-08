@@ -27,18 +27,22 @@ uniform vec2 drift = vec2(0.015, 0.01);
 
 void fragment() {
 	vec4 tex = texture(TEXTURE, UV);
-	vec2 noise_uv = (SCREEN_UV * SCREEN_PIXEL_SIZE.y * 0.0) + UV; // mantém UV local ao tile
-	vec2 nuv = UV * (1.0 / SCREEN_PIXEL_SIZE.x) / noise_scale + TIME * drift;
+	// Referência fixa (não SCREEN_PIXEL_SIZE): a amostra do ruído não pode depender do
+	// zoom da câmera, senão o mesmo sprite dissolve diferente só por estar mais perto ou
+	// mais longe. 1280 é só uma constante de referência (uma largura de tela comum),
+	// não o tamanho real de nada.
+	vec2 nuv = UV * (1280.0 / noise_scale) + TIME * drift;
 	float n = texture(water_noise, nuv).r;
 
-	// A silhueta original já definida pelo alfa da arte: perto de onde ela cai a zero
-	// (a borda recortada), o ruído decide ponto a ponto se aquele pixel dissolve antes.
-	float edge = smoothstep(0.0, dissolve_width, tex.a);
-	float dissolved = smoothstep(0.5 - noise_strength * 0.5, 0.5 + noise_strength * 0.5, n * edge + (1.0 - edge) * n * 0.4);
+	// O ruído só DESLOCA o alfa original, não o substitui: um pixel bem interior
+	// (tex.a = 1) nunca dissolve, não importa o valor do ruído ali. Só a faixa que já
+	// estava perto da borda (tex.a baixo) é que pode cair pra transparente antes ou
+	// depois, dependendo do ruído -- é isso que dá o contorno orgânico.
+	float perturbed = tex.a + (n - 0.5) * noise_strength;
+	float alpha = smoothstep(0.0, dissolve_width, perturbed) * step(0.001, tex.a);
 
-	float alpha = tex.a * dissolved;
-	// Faixa de espuma/água na própria borda que sobra, para casar com o oceano por baixo.
-	float shoreline = (1.0 - edge) * dissolved;
+	// Faixa de espuma/água: onde a arte ainda tinha alfa, mas o ruído já dissolveu ali.
+	float shoreline = clamp(tex.a - alpha, 0.0, 1.0);
 	vec3 color = mix(tex.rgb, water_tint.rgb, shoreline * 0.65);
 	COLOR = vec4(color, alpha) * COLOR.a;
 }

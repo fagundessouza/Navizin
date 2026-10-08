@@ -16,8 +16,13 @@ func _ready() -> void:
 func _wire_tortuga_dock() -> void:
 	var dock: Area2D = $World/TortugaHub/DockingArea
 	var city: Control = $HUD/TortugaCityHub
-	dock.docked.connect(func(_ship): city.visible = true)
-	dock.undocked.connect(func(): city.visible = false)
+	var game_hud: Control = $HUD/HUD
+	dock.docked.connect(func(_ship):
+		city.visible = true
+		game_hud.visible = false)
+	dock.undocked.connect(func():
+		city.visible = false
+		game_hud.visible = true)
 	city.close_requested.connect(dock._undock)
 
 
