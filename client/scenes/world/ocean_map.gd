@@ -7,7 +7,7 @@ extends Node2D
 
 func _ready() -> void:
 	print("Navizin: mapa do oceano carregado.")
-	_add_captain_light($Ship)
+	_add_captain_light($World/Ship)
 
 
 ## Luz de visão do capitão: um halo quente e suave preso ao navio do jogador. A área
