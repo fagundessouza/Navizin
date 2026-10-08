@@ -1,10 +1,14 @@
-[gd_scene format=3 uid="uid://byy5veg5wcirx"]
+[gd_scene format=4]
 
-[ext_resource type="Script" uid="uid://bs77nrkke2352" path="res://scenes/world/ocean_map.gd" id="1_map"]
-[ext_resource type="Shader" uid="uid://dm8entpontmqi" path="res://assets/shaders/ocean.gdshader" id="2_ocean"]
-[ext_resource type="PackedScene" uid="uid://b2b46jxrkob82" path="res://scenes/entities/ship_base.tscn" id="3_ship"]
-[ext_resource type="Texture2D" uid="uid://bbaxt08n5ykk" path="res://assets/environment/ocean_tile.png" id="4_tile"]
+[ext_resource type="Script" path="res://scenes/world/ocean_map.gd" id="1_map"]
+[ext_resource type="Shader" path="res://assets/shaders/ocean.gdshader" id="2_ocean"]
+[ext_resource type="PackedScene" path="res://scenes/entities/ship_base.tscn" id="3_ship"]
+[ext_resource type="Texture2D" path="res://assets/environment/ocean_tile.png" id="4_tile"]
+[ext_resource type="Script" path="res://scripts/entities/ship_base.gd" id="5_7n7d4"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="5_hud"]
+[ext_resource type="TileSet" path="res://assets/tilesets/tile_set_world.tres" id="6_tileset"]
+[ext_resource type="Resource" path="res://data/ship_holandes_voador.tres" id="6_wlj7y"]
+[ext_resource type="Script" path="res://scripts/ui/hud_controller.gd" id="8_t4hlv"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_ocean"]
 shader = ExtResource("2_ocean")
@@ -19,7 +23,6 @@ shader_parameter/vignette_strength = 0.35
 shader_parameter/distort_amp = 2.5
 shader_parameter/foam_strength = 0.45
 
-
 [sub_resource type="Environment" id="Env_sea"]
 background_mode = 1
 background_color = Color(0.03, 0.07, 0.12, 1)
@@ -27,6 +30,17 @@ glow_enabled = true
 glow_intensity = 0.35
 glow_bloom = 0.05
 glow_hdr_threshold = 0.95
+
+[sub_resource type="Gradient" id="Gradient_7n7d4"]
+colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_wlj7y"]
+gradient = SubResource("Gradient_7n7d4")
+width = 128
+height = 128
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 0.5)
 
 [node name="OceanMap" type="Node2D" unique_id=516550437]
 script = ExtResource("1_map")
@@ -39,7 +53,9 @@ offset_right = 10000.0
 offset_bottom = 10000.0
 mouse_filter = 2
 
-[node name="Ship" parent="." unique_id=923919172 instance=ExtResource("3_ship")]
+[node name="Ship" type="Node2D" parent="." unique_id=923919172 instance=ExtResource("3_ship")]
+script = ExtResource("5_7n7d4")
+data = ExtResource("6_wlj7y")
 player_controlled = true
 
 [node name="Camera2D" type="Camera2D" parent="Ship" unique_id=234192159]
@@ -47,13 +63,48 @@ zoom = Vector2(1.3, 1.3)
 position_smoothing_enabled = true
 
 [node name="CanvasModulate" type="CanvasModulate" parent="." unique_id=1663882998]
-color = Color(0.82, 0.9, 1, 1)
+color = Color(0.102, 0.133, 0.2, 1)
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=960095480]
 environment = SubResource("Env_sea")
 
-[node name="HUD" type="CanvasLayer" parent="."]
+[node name="HUD" type="CanvasLayer" parent="." unique_id=160827352]
 
-[node name="HUD" parent="HUD" instance=ExtResource("5_hud")]
+[node name="HUD" type="Control" parent="HUD" unique_id=1978887585 instance=ExtResource("5_hud")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("8_t4hlv")
 
-[node name="Terrain" type="TileMapLayer" parent="."]
+[node name="Islands" type="Node2D" parent="." unique_id=455084630]
+position = Vector2(1800, -400)
+
+[node name="Deep_Water" type="TileMapLayer" parent="Islands" unique_id=627864054]
+tile_set = ExtResource("6_tileset")
+
+[node name="Coast_Sand" type="TileMapLayer" parent="Islands" unique_id=1285333820]
+z_index = 1
+tile_map_data = PackedByteArray("AAD9/wAAWAAAAAAAAAD+////WQAAAAAAAAD+/wAAWgAAAAAAAAD+/wEAWwAAAAAAAAD///7/XAAAAAAAAAD/////XQAAAAAAAAD//wAARwAAAAAAAAD//wEAXwAAAAAAAAD//wIAWAAAAAAAAAAAAP3/WQAAAAAAAAAAAP7/WgAAAAAAAAAAAP//RwAAAAAAAAAAAAAASAAAAAAAAAAAAAEASQAAAAAAAAAAAAIAXgAAAAAAAAAAAAMAXwAAAAAAAAABAP7/WAAAAAAAAAABAP//WQAAAAAAAAABAAAASQAAAAAAAAABAAEAWwAAAAAAAAABAAIAXAAAAAAAAAACAP//XQAAAAAAAAACAAAAXgAAAAAAAAACAAEAXwAAAAAAAAADAAAAWAAAAAAAAAA=")
+tile_set = ExtResource("6_tileset")
+
+[node name="Docks_Paths" type="TileMapLayer" parent="Islands" unique_id=468188173]
+z_index = 2
+tile_map_data = PackedByteArray("AAAEAAAAbQAAAAAAAAAFAAAAbgAAAAAAAAA=")
+tile_set = ExtResource("6_tileset")
+
+[node name="Cliffs_Buildings" type="TileMapLayer" parent="Islands" unique_id=407931572]
+z_index = 3
+y_sort_enabled = true
+tile_map_data = PackedByteArray("AAAAAAAAQwAAAAAAAAACAAAASwAAAAAAAAD+/wAATAAAAAAAAAAAAAIATQAAAAAAAAAAAP7/TgAAAAAAAAABAAEApwAAAAAAAAABAP//hQAAAAAAAAD//wEAowAAAAAAAAA=")
+tile_set = ExtResource("6_tileset")
+
+[node name="LampLight" type="PointLight2D" parent="Islands" unique_id=637729338]
+position = Vector2(-64, 2)
+color = Color(1, 0.667, 0.267, 1)
+energy = 1.1
+texture = SubResource("GradientTexture2D_wlj7y")
+texture_scale = 2.2
