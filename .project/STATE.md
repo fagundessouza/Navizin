@@ -3,7 +3,30 @@
 > Arquivo de contexto. Ao iniciar uma sessão nova, diga **"Carregar checkpoint"** e leia só este arquivo.
 > Ao final de cada sessão ou marco, diga **"Salvar checkpoint"** para atualizá-lo.
 
-## Checkpoint atual (2026-10-07) — branch `feature/issue-4-ship-movement`, PR #6 para `dev`
+## Checkpoint atual (2026-10-09) — branch nova `feature/town-hub-redesign`, a partir de `feature/issue-4-ship-movement`
+
+**Diretiva de arquitetura (prioridade da próxima sessão):** o mapa do oceano não vai mais acumular elementos gráficos e props de cidade dentro da mesma cena. Mudança para arquitetura multi-cena:
+- `ocean_map.tscn` cuida só de navegação e física do oceano.
+- Ao atracar numa ilha (ex.: Tortuga), o jogo transiciona/instancia uma cena dedicada `TownHub.tscn` — o navio "entra" no porto e some do oceano, em vez do overlay de `Control` que existe hoje (`TortugaCityHub` como filho de `HUD` dentro de `ocean_map.tscn`).
+- `TownHub.tscn` carrega a ilustração interativa da cidade com hotspots clicáveis, placas indicativas (estilo Seafight/MonsterGame) e modais de mercado/taverna/estaleiro.
+- Consequência prática: a doca, o letreiro, os postes de amarração e os barris adicionados nesta sessão (filhos diretos de `World` em `ocean_map.tscn`, ver abaixo) são candidatos a migrar para dentro de `TownHub.tscn` quando esse refactor acontecer — não foram desfeitos agora, só documentados aqui para a próxima sessão não duplicar trabalho.
+- Esta rodada foi só diagnóstico/implementação pontual (ver abaixo); a refatoração multi-cena em si **ainda não foi implementada**, fica para a próxima sessão partir exatamente desta estrutura.
+
+**Feito nesta rodada**
+- **Respingo da proa corrigido:** usava um decalque em V (`BOW_WAVE_TEXTURE`) desenhado para visão lateral só, girado por código — contra as 8 vistas pintadas à mão do navio, continuava "parecendo de lado" em qualquer ângulo que não fosse o perfil puro. Trocado pelo mesmo ponto redondo já usado na esteira de popa (`WAKE_DOT_TEXTURE`): redondo não tem ângulo errado possível. Diagnosticado ao vivo via Godot MCP Toolkit (leitura de propriedades do navio rodando, screenshots do runtime) nos ângulos 0°/45°/90°.
+- **Tortuga "colada":** ganhou sombra de contato (`GroundShadow`, gradiente radial) e espuma viva na costa (`ShoreFoam`, partículas em anel aditivo) — a ilustração pintada continua sendo o terreno, mas a água ao redor dela agora reage.
+- **Baía de Tortuga ganhou doca de verdade:** extraídas peças de duas pranchas de referência (`Meshy_AI_port_buildings_kit.png`, `Meshy_AI_nautical_props_kit.png`, achadas em `~/Downloads/`, nunca importadas) via um extrator de componentes conectados escrito em Python puro (sem numpy disponível no ambiente) — ferramenta em `/tmp` da sessão, não versionada, mas reaproveitável (gerou ~90 peças isoladas, só ~5 usadas até agora: doca, letreiro "TAVERN/DOCKS/SHIPYARD/MARKET", 2 postes de amarração, barris). Peças importadas em `client/assets/sprites/environment/islands/tortuga_kit/`, posicionadas como filhos diretos de `World` em `ocean_map.tscn` (não dentro de `TortugaHub`) para herdar o `y_sort_enabled` que já existia em `World` e ordenar corretamente contra o navio. Doca tem colisão (`StaticBody2D`).
+- Uma tentativa de taverna + torre extraídas do mesmo kit foi revertida: a ilustração original já tem prédios pintados ali, e as peças novas só se perdiam no meio sem ganho visual.
+- **Godot MCP Toolkit reconectado** (ferramenta de desenvolvimento, não faz parte do jogo): o bug era a ponte MCP resolvendo o projeto pela chave `/home/lucas/navizin` (raiz do repo) enquanto o editor real registra `/home/lucas/navizin/client` (onde fica o `project.godot`). Corrigido duplicando a entrada no registro (`~/.local/share/godot-mcp-toolkit/projects.json`). **Não commitar** `.mcp.json`, `addons/godot_mcp_toolkit/` nem a seção `[editor_plugins]`/autoload `MCPRuntimeServer` do `project.godot` — são tooling local, não parte do jogo versionado.
+
+**Pendências**
+1. Implementar a arquitetura multi-cena descrita acima (`TownHub.tscn` + transição de cena a partir do atracamento).
+2. Migrar `TortugaCityHub` (overlay `Control`) e os novos props da baía (doca/letreiro/postes/barris) para dentro da nova `TownHub.tscn`, se fizer sentido no novo fluxo.
+3. As outras 3 ilhas do plano original (Ilha das Cavernas, Vilarejo Pirata, Fortificação) e obstáculos de rocha no meio do oceano continuam fora de escopo, aguardando a arquitetura multi-cena estar pronta.
+
+---
+
+## Checkpoint anterior (2026-10-07) — branch `feature/issue-4-ship-movement`, PR #6 para `dev`
 
 **Último commit:** `23dcdbe` (mystic orb bars, Cinzel labels, retrato +25%).
 
