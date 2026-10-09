@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dsde8eppsfhf5"
-path="res://.godot/imported/holandes_voador_sheet.png-5c6807caed31dbc078b4efb493b19e86.ctex"
+uid="uid://b3vigm0ffgf7v"
+path="res://.godot/imported/dir16_06.png-1bcacd8884df2eb390f0cfd47d2fef10.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/ships/holandes_voador/holandes_voador_sheet.png"
-dest_files=["res://.godot/imported/holandes_voador_sheet.png-5c6807caed31dbc078b4efb493b19e86.ctex"]
+source_file="res://assets/sprites/ships/holandes_voador/dirs16/dir16_06.png"
+dest_files=["res://.godot/imported/dir16_06.png-1bcacd8884df2eb390f0cfd47d2fef10.ctex"]
 
 [params]
 

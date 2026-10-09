@@ -1,0 +1,210 @@
+[gd_scene load_steps=39 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/icons/wheel.png" id="i1"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/wheel_hover.png" id="h1"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/wheel_pressed.png" id="p1"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/anchor.png" id="i2"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/anchor_hover.png" id="h2"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/anchor_pressed.png" id="p2"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/cannonballs.png" id="i3"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/cannonballs_hover.png" id="h3"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/cannonballs_pressed.png" id="p3"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/crossbones.png" id="i4"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/crossbones_hover.png" id="h4"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/crossbones_pressed.png" id="p4"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/jolly_roger.png" id="i5"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/jolly_roger_hover.png" id="h5"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/jolly_roger_pressed.png" id="p5"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/rum.png" id="i6"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/rum_hover.png" id="h6"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/rum_pressed.png" id="p6"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/map.png" id="i7"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/map_hover.png" id="h7"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/map_pressed.png" id="p7"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/telescope.png" id="i8"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/telescope_hover.png" id="h8"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/telescope_pressed.png" id="p8"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/chest.png" id="i9"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/chest_hover.png" id="h9"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/chest_pressed.png" id="p9"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/skull.png" id="i10"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/skull_hover.png" id="h10"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/skull_pressed.png" id="p10"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/compass_rose.png" id="i11"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/compass_rose_hover.png" id="h11"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/compass_rose_pressed.png" id="p11"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/skull_crossbones.png" id="i12"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/skull_crossbones_hover.png" id="h12"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/skull_crossbones_pressed.png" id="p12"]
+[ext_resource type="AudioStream" path="res://assets/audio/ui_click.wav" id="99_click"]
+
+[sub_resource type="StyleBoxFlat" id="Shadow"]
+bg_color = Color(0.03, 0.05, 0.08, 0.55)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.82, 0.7, 0.42, 0.9)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_left = 6
+corner_radius_bottom_right = 6
+shadow_color = Color(0, 0, 0, 0.6)
+shadow_size = 10
+shadow_offset = Vector2(3, 5)
+
+[node name="SystemMenuBar" type="Control"]
+custom_minimum_size = Vector2(342, 118)
+layout_mode = 3
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -358.0
+offset_top = -134.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_horizontal = 0
+grow_vertical = 0
+
+[node name="Frame" type="Panel" parent="."]
+layout_mode = 0
+offset_right = 342.0
+offset_bottom = 118.0
+theme_override_styles/panel = SubResource("Shadow")
+mouse_filter = 2
+
+[node name="Grid" type="GridContainer" parent="."]
+layout_mode = 0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 334.0
+offset_bottom = 110.0
+columns = 6
+theme_override_constants/h_separation = 6
+theme_override_constants/v_separation = 6
+
+[node name="MenuShip" type="TextureButton" parent="Grid"]
+custom_minimum_size = Vector2(52, 52)
+layout_mode = 2
+tooltip_text = "Leme"
+texture_normal = ExtResource("i1")
+texture_hover = ExtResource("h1")
+texture_pressed = ExtResource("p1")
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="MenuAnchor" type="TextureButton" parent="Grid"]
+custom_minimum_size = Vector2(52, 52)
+layout_mode = 2
+tooltip_text = "Ancorar"
+texture_normal = ExtResource("i2")
+texture_hover = ExtResource("h2")
+texture_pressed = ExtResource("p2")
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="MenuAmmo" type="TextureButton" parent="Grid"]
+custom_minimum_size = Vector2(52, 52)
+layout_mode = 2
+tooltip_text = "Munição"
+texture_normal = ExtResource("i3")
+texture_hover = ExtResource("h3")
+texture_pressed = ExtResource("p3")
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="MenuCrew" type="TextureButton" parent="Grid"]
+custom_minimum_size = Vector2(52, 52)
+layout_mode = 2
+tooltip_text = "Tripulação"
+texture_normal = ExtResource("i4")
+texture_hover = ExtResource("h4")
+texture_pressed = ExtResource("p4")
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="MenuGuild" type="TextureButton" parent="Grid"]
+custom_minimum_size = Vector2(52, 52)
+layout_mode = 2
+tooltip_text = "Frota / Guilda"
+texture_normal = ExtResource("i5")
+texture_hover = ExtResource("h5")
+texture_pressed = ExtResource("p5")
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="MenuRum" type="TextureButton" parent="Grid"]
+custom_minimum_size = Vector2(52, 52)
+layout_mode = 2
+tooltip_text = "Consumíveis"
+texture_normal = ExtResource("i6")
+texture_hover = ExtResource("h6")
+texture_pressed = ExtResource("p6")
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="MenuMap" type="TextureButton" parent="Grid"]
+custom_minimum_size = Vector2(52, 52)
+layout_mode = 2
+tooltip_text = "Mapa do mundo"
+texture_normal = ExtResource("i7")
+texture_hover = ExtResource("h7")
+texture_pressed = ExtResource("p7")
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="MenuRecon" type="TextureButton" parent="Grid"]
+custom_minimum_size = Vector2(52, 52)
+layout_mode = 2
+tooltip_text = "Reconhecimento"
+texture_normal = ExtResource("i8")
+texture_hover = ExtResource("h8")
+texture_pressed = ExtResource("p8")
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="MenuInventory" type="TextureButton" parent="Grid"]
+custom_minimum_size = Vector2(52, 52)
+layout_mode = 2
+tooltip_text = "Inventário"
+texture_normal = ExtResource("i9")
+texture_hover = ExtResource("h9")
+texture_pressed = ExtResource("p9")
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="MenuProfile" type="TextureButton" parent="Grid"]
+custom_minimum_size = Vector2(52, 52)
+layout_mode = 2
+tooltip_text = "Perfis e títulos"
+texture_normal = ExtResource("i10")
+texture_hover = ExtResource("h10")
+texture_pressed = ExtResource("p10")
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="MenuCompass" type="TextureButton" parent="Grid"]
+custom_minimum_size = Vector2(52, 52)
+layout_mode = 2
+tooltip_text = "Rosa dos ventos"
+texture_normal = ExtResource("i11")
+texture_hover = ExtResource("h11")
+texture_pressed = ExtResource("p11")
+ignore_texture_size = true
+stretch_mode = 5
+
+[node name="MenuAlerts" type="TextureButton" parent="Grid"]
+custom_minimum_size = Vector2(52, 52)
+layout_mode = 2
+tooltip_text = "Alertas"
+texture_normal = ExtResource("i12")
+texture_hover = ExtResource("h12")
+texture_pressed = ExtResource("p12")
+ignore_texture_size = true
+stretch_mode = 5
+
+
+[node name="ClickSound" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("99_click")

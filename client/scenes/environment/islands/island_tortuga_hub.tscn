@@ -1,0 +1,123 @@
+[gd_scene load_steps=14 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/sprites/environment/islands/tortuga_hub.png" id="1_tex"]
+[ext_resource type="Shader" path="res://assets/shaders/shoreline_dissolve.gdshader" id="2_shoreline"]
+[ext_resource type="Texture2D" path="res://assets/sprites/vfx/noise/water_noise_real.png" id="3_noise"]
+[ext_resource type="Script" path="res://scripts/world/tortuga_dock.gd" id="4_dock"]
+[ext_resource type="Script" path="res://scripts/world/island_hover.gd" id="5_hover"]
+[ext_resource type="Shader" path="res://assets/shaders/neon_glow_outline.gdshader" id="6_glow"]
+[ext_resource type="Texture2D" path="res://assets/sprites/vfx/foam_dot.png" id="7_foam"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_tortuga"]
+shader = ExtResource("2_shoreline")
+shader_parameter/water_noise = ExtResource("3_noise")
+shader_parameter/noise_scale = 420.0
+shader_parameter/dissolve_width = 0.16
+shader_parameter/noise_strength = 0.55
+shader_parameter/water_tint = Color(0.08, 0.2, 0.26, 1)
+shader_parameter/drift = Vector2(0.01, 0.008)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_glow"]
+shader = ExtResource("6_glow")
+shader_parameter/glow_color = Color(1, 0.95, 0.15, 1)
+shader_parameter/glow_width = 140.0
+shader_parameter/glow_intensity = 1.0
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_bay"]
+size = Vector2(1230, 380)
+
+[sub_resource type="Gradient" id="Gradient_shadow"]
+colors = PackedColorArray(0, 0, 0, 0.42, 0, 0, 0, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_shadow"]
+gradient = SubResource("Gradient_shadow")
+width = 256
+height = 256
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 0.5)
+
+[sub_resource type="CanvasItemMaterial" id="CanvasItemMaterial_foam"]
+blend_mode = 1
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_foam"]
+emission_shape = 6
+emission_ring_axis = Vector3(0, 0, 1)
+emission_ring_height = 0.0
+emission_ring_radius = 560.0
+emission_ring_inner_radius = 540.0
+emission_ring_cone_angle = 90.0
+direction = Vector3(0, -1, 0)
+spread = 60.0
+initial_velocity_min = 1.0
+initial_velocity_max = 3.0
+damping_min = 3.0
+damping_max = 5.0
+gravity = Vector3(0, 0, 0)
+scale_min = 0.5
+scale_max = 1.0
+color = Color(0.85, 0.96, 1, 0.3)
+
+[node name="IslandTortugaHub" type="Node2D"]
+scale = Vector2(0.45, 0.45)
+
+[node name="GroundShadow" type="Sprite2D" parent="."]
+position = Vector2(-3, -70)
+scale = Vector2(3.1, 1.35)
+texture = SubResource("GradientTexture2D_shadow")
+
+[node name="Sprite" type="Sprite2D" parent="."]
+material = SubResource("ShaderMaterial_tortuga")
+texture = ExtResource("1_tex")
+
+[node name="ShoreFoam" type="GPUParticles2D" parent="."]
+position = Vector2(-3, -70)
+scale = Vector2(1.15, 0.5)
+material = SubResource("CanvasItemMaterial_foam")
+amount = 24
+texture = ExtResource("7_foam")
+lifetime = 1.6
+process_material = SubResource("ParticleProcessMaterial_foam")
+
+[node name="HoverGlow" type="Sprite2D" parent="."]
+visible = false
+modulate = Color(1, 1, 1, 1)
+material = SubResource("ShaderMaterial_glow")
+texture = ExtResource("1_tex")
+
+[node name="HoverArea" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 0
+script = ExtResource("5_hover")
+glow_path = NodePath("../HoverGlow")
+
+[node name="MainLand" type="CollisionPolygon2D" parent="HoverArea"]
+polygon = PackedVector2Array(-708, -152, -618, -262, -468, -322, -318, -372, -168, -382, -18, -402, 132, -392, 282, -378, 432, -342, 522, -232, 542, -112, 482, -12, 332, -32, 182, -52, 32, -37, -118, -17, -268, -2, -418, 18, -568, 32, -678, -8, -738, -62)
+
+[node name="LeftArm" type="CollisionPolygon2D" parent="HoverArea"]
+polygon = PackedVector2Array(-748, -52, -678, -52, -648, 28, -668, 128, -708, 218, -748, 168)
+
+[node name="RightArm" type="CollisionPolygon2D" parent="HoverArea"]
+polygon = PackedVector2Array(692, -52, 732, -12, 742, 118, 702, 218, 652, 168, 662, 48)
+
+[node name="TortugaBody" type="StaticBody2D" parent="."]
+collision_layer = 1
+collision_mask = 0
+
+[node name="MainLand" type="CollisionPolygon2D" parent="TortugaBody"]
+polygon = PackedVector2Array(-708, -152, -618, -262, -468, -322, -318, -372, -168, -382, -18, -402, 132, -392, 282, -378, 432, -342, 522, -232, 542, -112, 482, -12, 332, -32, 182, -52, 32, -37, -118, -17, -268, -2, -418, 18, -568, 32, -678, -8, -738, -62)
+
+[node name="LeftArm" type="CollisionPolygon2D" parent="TortugaBody"]
+polygon = PackedVector2Array(-748, -52, -678, -52, -648, 28, -668, 128, -708, 218, -748, 168)
+
+[node name="RightArm" type="CollisionPolygon2D" parent="TortugaBody"]
+polygon = PackedVector2Array(692, -52, 732, -12, 742, 118, 702, 218, 652, 168, 662, 48)
+
+[node name="DockingArea" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 2
+script = ExtResource("4_dock")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="DockingArea"]
+position = Vector2(-3, 218)
+shape = SubResource("RectangleShape2D_bay")

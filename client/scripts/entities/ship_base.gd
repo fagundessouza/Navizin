@@ -1,27 +1,928 @@
 extends Node2D
 ## Base de todos os navios (jogador e NPCs).
 ##
-## Guarda a identidade do navio e a direção atual. A animação dos frames
-## fica no nó `Sprite2D` filho, configurado com `hframes`.
+## Concentra a física (velas com inércia, leme suave, recuo, vento e maré), a
+## apresentação (vista do navio entre as 7 direções, balanço de flutuação,
+## sombra, esteira e fumaça) e o disparo lateral com carga de força.
+## Os atributos vêm do recurso `ShipData`.
+##
+## Controle do jogador:
+## - A proa segue o ponteiro do mouse. O leme trava enquanto um tiro carrega.
+## - W/S (ou setas) mudam o nível das velas.
+## - Bombordo: tecla Q ou botão esquerdo. Estibordo: tecla E ou botão direito.
+##   Segurar entra em modo de mira e carrega a força. Soltar dispara aquele bordo.
+##   Q e E juntos mantêm os dois em mira. A carga cheia dispara sozinha.
+##   Cada bateria tem cooldown próprio.
+## - A mira fica presa ao semiplano do bordo escolhido, entre a proa e a popa.
+## - Teclas 1 a 4 emitem `skill_triggered`. Ainda sem efeito.
+##
+## NPCs deixam `player_controlled` falso e recebem comandos de IA no futuro.
 
-## Nome de exibição do navio.
-@export var ship_name: String = "Navio"
+## Nível das velas. O valor é o sentido e a força do impulso.
+enum Sail { REVERSE = -1, STOPPED = 0, HALF = 1, FULL = 2 }
 
-## Quantidade de frames do spritesheet (ex.: 6 para o Holandês Voador).
-@export var frame_count: int = 6
 
-## Frames por segundo da animação das velas.
-@export var animation_fps: float = 8.0
+## Emitido ao pressionar uma tecla de habilidade. `skill_index` vai de 1 a 4.
+signal skill_triggered(skill_index: int)
 
+## Emitido a cada bordada disparada. `target` é a posição do ponteiro no mundo.
+signal primary_action_triggered(target: Vector2)
+
+## Emitido com o bordo (-1 bombordo, 1 estibordo) e a força (0 a 1).
+signal broadside_fired(side: int, power: float)
+
+const SIDE_PORT: int = -1
+const SIDE_STARBOARD: int = 1
+
+## Força mínima de qualquer bordada. Um toque rápido ainda sai como tiro visível.
+const TAP_MIN_POWER: float = 0.3
+
+## Os 8 frames do navio, de `dir8/dir8_NN.png`. Frame 0 é Sul (frente), 1 Sudeste,
+## 2 Leste, 3 Nordeste, 4 Norte (trás), 5 Noroeste, 6 Oeste, 7 Sudoeste.
+const FRAME_TEXTURES: Array[Texture2D] = [
+	preload("res://assets/sprites/ships/holandes_voador/dir8/dir8_00.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dir8/dir8_01.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dir8/dir8_02.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dir8/dir8_03.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dir8/dir8_04.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dir8/dir8_05.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dir8/dir8_06.png"),
+	preload("res://assets/sprites/ships/holandes_voador/dir8/dir8_07.png"),
+]
+
+## Rumo em graus (convenção do jogo, y para baixo) de cada frame: Sul = 90, Leste = 0,
+## Norte = -90, Oeste = 180.
+const FRAME_HEADING_DEG: Array[float] = [90.0, 45.0, 0.0, -45.0, -90.0, -135.0, 180.0, 135.0]
+
+## Escala do sprite e da sombra. Os frames novos são maiores que os antigos.
+## Escala do sprite e da sombra: 15% acima da escala anterior (0.23 × 1.15).
+const SPRITE_SCALE: float = 0.62
+
+## Fator de tamanho do navio em relação à escala antiga: canhões, esteira, sombra e
+## popa são escalados por ele para acompanhar o casco.
+const SIZE_FACTOR: float = 2.34
+
+## Histerese da troca de frame, em graus: só troca depois de passar da fronteira
+## por este valor. Evita piscar quando o rumo fica parado perto dela.
+const FRAME_HYSTERESIS_DEG: float = 10.0
+
+## Zona morta do leme, em radianos (~1°): abaixo disso a proa para de girar.
+const STEER_DEADBAND: float = 0.02
+
+
+## Quão rápido a vista acompanha o rumo real, em 1/s. Um valor menor deixa a
+## virada mais lenta e pesada.
+const VISUAL_TURN_RATE: float = 5.0
+
+## Balanço de flutuação: sobe e desce, deriva de lado e balança levemente.
+const BOB_AMPLITUDE: float = 1.2
+const BOB_PERIOD: float = 2.6
+const DRIFT_AMPLITUDE: float = 1.0
+const DRIFT_PERIOD: float = 4.1
+const SWAY_ANGLE: float = 0.012
+const SWAY_PERIOD: float = 3.7
+
+## Abertura da mira em torno da lateral, em radianos (±20°). Fora desse arco, o
+## tiro iria para a proa ou a popa, o que é proibido.
+const AIM_ARC: float = 0.35
+
+## Imperfeição do canhão: desvio angular e variação de velocidade por bala.
+const CANNON_SCATTER: float = 0.05
+const SHOT_SPEED_JITTER: float = 0.05
+
+## Recuo visual do sprite ao disparar, em pixels.
+const KICK_PX: float = 3.0
+const KICK_RECOVERY: float = 18.0
+
+## Vento: intensidade de referência, bônus a favor e penalidade contra.
+const WIND_DRIFT_PX: float = 14.0
+const WIND_BONUS: float = 0.35
+const WIND_PENALTY: float = 0.50
+
+## Distância lateral dos canhões ao centro do casco, em pixels.
+const GUN_LATERAL: float = 23.0
+
+## Convés na arte de vista lateral, em coordenadas de tela (não giram com o casco).
+## O centro do sprite fica na altura das velas; os tiros saem daqui, e não do mastro.
+const DECK_OFFSET: Vector2 = Vector2(0.0, 51.0)
+
+## Linha d'água, em coordenadas de tela: a espuma sai daqui, sob o casco.
+const WAKE_OFFSET: Vector2 = Vector2(0.0, 136.0)
+## Distância da popa ao ponto de emissão, em pixels de tela.
+const STERN_REACH: float = 94.0
+## Ajuste vertical da popa por frame: frames com a proa para baixo descem o ponto
+## de emissão até a borda inferior da popa; frames com a proa para cima sobem um pouco
+## para colar na base traseira.
+const STERN_DOWN_Y: float = -47.0
+const STERN_UP_Y: float = 23.0
+
+## Sombra: deslocamento no mundo e opacidade base.
+const SHADOW_OFFSET: Vector2 = Vector2(14.0, 23.0)
+const SHADOW_ALPHA: float = 0.3
+
+## Trilhos de mira, no estilo de combate naval: faixas paralelas translúcidas
+## saindo perpendiculares à lateral ativa.
+const RAIL_COLOR: Color = Color(1.0, 0.45, 0.15, 0.35)
+const RAIL_FAINT_COLOR: Color = Color(1.0, 0.45, 0.15, 0.12)
+const RAIL_HALF_WIDTH: float = 3.0
+
+## Atributos do navio.
+@export var data: ShipData
+
+## Área útil do mar. O navio não sai dela.
+@export var world_bounds: Rect2 = Rect2(-4000.0, -4000.0, 8000.0, 8000.0)
+
+## Se verdadeiro, lê o mouse e o teclado. NPCs deixam falso.
+@export var player_controlled: bool = false
+
+## Vento e maré, em pixels por segundo. Definido pelo mapa.
+
+
+@onready var _shadow: Sprite2D = $Shadow
 @onready var _sprite: Sprite2D = $Sprite2D
+@onready var _wake: GPUParticles2D = $WaterTrailFX
+@onready var _bow: GPUParticles2D = $BowWave
+@onready var _lantern: PointLight2D = $LanternGlow
+@onready var _port_cannons: Node2D = $PortCannons
+@onready var _starboard_cannons: Node2D = $StarboardCannons
 
-var _elapsed: float = 0.0
+## Nível atual das velas.
+var sail: Sail = Sail.STOPPED
+
+## Velocidade escalar para frente, em pixels por segundo. Negativa em ré.
+var speed: float = 0.0
+
+## Velocidade de giro atual, em radianos por segundo.
+var angular_velocity: float = 0.0
+## Abaixo desta velocidade (px/s) o casco está parado e o leme não gira.
+const STOP_SPEED: float = 1.0
+## Giro permitido para desencalhar quando o casco toca terra, mesmo sem velocidade.
+## Mais lento que o leme normal: dá para sair da pedra, não para girar livremente.
+const STUCK_TURN_RATE: float = 0.3
+## Verdadeiro quando o casco está tocando a física das ilhas neste quadro.
+var _touching_land: bool = false
+
+## Impulso de recuo atual, em pixels por segundo.
+var knockback: Vector2 = Vector2.ZERO
+
+## Índice da direção mostrada agora, de 0 a 15.
+var direction: int = 0
+
+## Estado de cada bateria, indexado por SIDE_PORT e SIDE_STARBOARD.
+var _charging: Dictionary = {SIDE_PORT: false, SIDE_STARBOARD: false}
+var _power: Dictionary = {SIDE_PORT: 0.0, SIDE_STARBOARD: 0.0}
+var _awaiting_release: Dictionary = {SIDE_PORT: false, SIDE_STARBOARD: false}
+var _cooldown: Dictionary = {SIDE_PORT: 0.0, SIDE_STARBOARD: 0.0}
+
+var _was_charging: bool = false
+var _kick: Vector2 = Vector2.ZERO
+## Squash & stretch: -1 desacelerando forte, +1 acelerando forte. Suavizado.
+var _squash: float = 0.0
+## Casco: pontos de vida do navio, mostrados na interface do capitão.
+@export var max_hull: float = 1000.0
+var hull: float = 1000.0
+## Suprimentos: consumidos ao navegar, regenerados em ilhas. Mostrados na barra do capitão.
+@export var max_supply: float = 1000.0
+var supply: float = 1000.0
+const SUPPLY_PER_PX: float = 0.02
+
+
+## Casco mudou: valor atual e máximo, para a interface do capitão.
+signal hull_changed(hull_value: float, max_value: float)
+
+## Vento global (autoload `WindManager`), obtido no _ready.
+var _wind: Node = null
+var _prev_speed: float = 0.0
+## Offsets da popa por entrada de `DIR_ENTRIES`: base (tela) e vetor de ré.
+var _shake: float = 0.0
+var _camera: Camera2D = null
+
+## Rumo mostrado na tela: segue o rumo real com atraso, então a virada parece pesada.
+var _visual_heading: float = 0.0
+## Índice em `DIR_ENTRIES` da direção mostrada.
+var _shown_index: int = -1
+var _time: float = 0.0
+## Casco, para detectar ilhas: um Area2D (não bloqueia sozinho, o script lê a sobreposição).
+@onready var _hull_area: Area2D = $HullArea
+@onready var _hull_shape: Shape2D = ($HullArea/CollisionShape2D as CollisionShape2D).shape
+@onready var _aura: Sprite2D = $DarkAura
+@onready var _stern_marker: Marker2D = $SternMarker
+## Velocidade do giro contínuo da aura sombria, em rad/s. Lento, para parecer mística,
+## não um enfeite girando rápido.
+const AURA_SPIN_SPEED: float = 0.35
+
+## Texturas de efeito migradas de assets/sprites/vfx/: fumaça de pólvora com brasas
+## (disparo e dano), esteira d'água e onda de proa, em vez do punhado gerado por código.
+const SMOKE_EMBER_TEXTURE: Texture2D = preload("res://assets/sprites/vfx/battle/smoke_puff_ember.png")
+const SMOKE_SOFT_TEXTURE: Texture2D = preload("res://assets/sprites/vfx/battle/smoke_puff_soft.png")
+const WAKE_DOT_TEXTURE: Texture2D = preload("res://assets/sprites/vfx/foam/wake_dot.png")
+## Abaixo desta velocidade a esteira não emite: o navio parado não deixa rastro.
+const WAKE_MIN_SPEED: float = 5.0
 
 
 func _ready() -> void:
-	_sprite.hframes = frame_count
+	_wind = get_node("/root/WindManager")
+	if data == null:
+		data = ShipData.new()
+	for node in [_sprite, _shadow]:
+		node.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	# O sprite fica atrás do desenho do próprio navio (trilhos de mira).
+	_sprite.show_behind_parent = true
+	_camera = get_node_or_null("Camera2D") as Camera2D
+	_visual_heading = rotation
+	_shadow.modulate = Color(0.0, 0.0, 0.0, SHADOW_ALPHA)
+	_sprite.scale = Vector2.ONE * SPRITE_SCALE
+	_shadow.scale = Vector2.ONE * SPRITE_SCALE
+	_show_frame(_nearest_frame(rad_to_deg(rotation), -1))
+	_setup_wake()
+	_setup_bow_wave()
+	if player_controlled:
+		add_to_group("player_ship")
+	hull = max_hull
+	hull_changed.emit(hull, max_hull)
+	_setup_lantern()
+
+
+func _physics_process(delta: float) -> void:
+	_touching_land = _overlaps_land(position)
+	_update_steering(delta)
+	fx_on_turn(angular_velocity / maxf(data.turn_speed, 0.001))
+	_update_speed(delta)
+	var accel: float = (speed - _prev_speed) / maxf(delta, 0.0001)
+	_prev_speed = speed
+	_squash = lerpf(_squash, clampf(accel / maxf(data.acceleration, 1.0), -1.0, 1.0), minf(1.0, 8.0 * delta))
+	knockback = knockback.move_toward(Vector2.ZERO, data.recoil_damping * delta)
+	var motion: Vector2 = Vector2.RIGHT.rotated(rotation) * speed * delta + knockback * delta
+	_move_and_slide_islands(motion)
+	_apply_wind_drift(delta)
+	supply = maxf(0.0, supply - absf(speed) * SUPPLY_PER_PX * delta)
+	_clamp_to_world()
+
+
+## Testa, sem mover o navio, se o casco (na posição dada, com a rotação atual) sobrepõe
+## algum corpo da física das ilhas. Consulta direta ao espaço físico: ao contrário de
+## `Area2D.get_overlapping_bodies()`, não tem um quadro de atraso, então dá para testar
+## várias posições candidatas no mesmo quadro.
+func _overlaps_land(test_position: Vector2) -> bool:
+	var params := PhysicsShapeQueryParameters2D.new()
+	params.shape = _hull_shape
+	params.transform = Transform2D(rotation, test_position)
+	params.collision_mask = _hull_area.collision_mask
+	params.collide_with_bodies = true
+	params.collide_with_areas = false
+	return not get_world_2d().direct_space_state.intersect_shape(params, 1).is_empty()
+
+
+## Casco contra terra: desliza por eixo, em vez de parar de vez. Tenta X e depois Y; o
+## eixo que não bate numa pedra continua livre, então numa quina o navio desliza ao longo
+## da ilha em vez de grudar. Se os dois eixos baterem, o navio realmente não anda neste
+## quadro, mas a `_update_steering` ainda libera um giro lento de escape (`_touching_land`).
+func _move_and_slide_islands(motion: Vector2) -> void:
+	var start: Vector2 = position
+	var try_x: Vector2 = Vector2(start.x + motion.x, start.y)
+	if not _overlaps_land(try_x):
+		position.x = try_x.x
+	var try_y: Vector2 = Vector2(position.x, start.y + motion.y)
+	if not _overlaps_land(try_y):
+		position.y = try_y.y
 
 
 func _process(delta: float) -> void:
-	_elapsed += delta
-	_sprite.frame = int(_elapsed * animation_fps) % frame_count
+	_update_visual(delta)
+	_update_wake()
+	_update_fx(delta)
+	_update_charge(delta)
+	_update_cooldown(delta)
+	_update_shake(delta)
+	_kick = _kick.move_toward(Vector2.ZERO, KICK_RECOVERY * delta)
+	# Redesenha durante a carga e também no quadro em que ela termina, para apagar os trilhos.
+	var charging: bool = _any_charging()
+	if charging or _was_charging:
+		queue_redraw()
+	_was_charging = charging
+
+
+func _draw() -> void:
+	for side in [SIDE_PORT, SIDE_STARBOARD]:
+		if _charging[side]:
+			_draw_rails(side, _power[side])
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not player_controlled:
+		return
+
+	if event.is_action_pressed("sail_up"):
+		sail = clampi(sail + 1, Sail.REVERSE, Sail.FULL) as Sail
+	elif event.is_action_pressed("sail_down"):
+		sail = clampi(sail - 1, Sail.REVERSE, Sail.FULL) as Sail
+
+	for skill_index in range(1, 5):
+		if event.is_action_pressed("skill_%d" % skill_index):
+			skill_triggered.emit(skill_index)
+
+	if event.is_action_pressed("broadside_port"):
+		_press_charge(SIDE_PORT)
+	elif event.is_action_released("broadside_port"):
+		_release_charge(SIDE_PORT)
+	elif event.is_action_pressed("broadside_starboard"):
+		_press_charge(SIDE_STARBOARD)
+	elif event.is_action_released("broadside_starboard"):
+		_release_charge(SIDE_STARBOARD)
+	elif event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			_mouse_charge(event.pressed, SIDE_PORT)
+		elif event.button_index == MOUSE_BUTTON_RIGHT:
+			_mouse_charge(event.pressed, SIDE_STARBOARD)
+
+
+## Direção da mira: do navio até o ponteiro, normalizada.
+## Retorna vetor zero sem jogador ou quando o ponteiro está dentro da zona morta.
+func get_aim_vector() -> Vector2:
+	if not player_controlled:
+		return Vector2.ZERO
+	var to_pointer: Vector2 = get_global_mouse_position() - global_position
+	if to_pointer.length() < data.aim_deadzone:
+		return Vector2.ZERO
+	return to_pointer.normalized()
+
+
+## Se o bordo está em mira, carregando a força.
+func is_charging(side: int) -> bool:
+	return _charging[side]
+
+
+## Força atual da carga do bordo, de 0.0 a 1.0.
+func charge_power(side: int) -> float:
+	return _power[side]
+
+
+## Segundos restantes até a bateria do bordo poder disparar de novo.
+func cooldown_left(side: int) -> float:
+	return _cooldown[side]
+
+
+## Dispara uma bordada pelo bordo escolhido, com força de 0.0 a 1.0.
+## Cria `cannon_count` projéteis em sequência, saindo dos canhões do bordo.
+## Não dispara se a bateria ainda está em cooldown.
+func fire_broadside(power: float, side: int) -> void:
+	if _cooldown[side] > 0.0:
+		return
+	power = clampf(power, 0.0, 1.0)
+	var limits: Vector2 = _sector_limits(side)
+	var aim: float = _aim_local(side)
+	var half_spread: float = lerpf(data.spread_min, data.spread_max, power)
+	var shot_speed: float = lerpf(data.projectile_speed_min, data.projectile_speed_max, power)
+	var guns: Array = _guns(side)
+
+	for i in range(data.cannon_count):
+		var scatter: float = randf_range(-CANNON_SCATTER, CANNON_SCATTER)
+		var local_angle: float = clampf(aim + randf_range(-half_spread, half_spread) + scatter, limits.x, limits.y)
+		var jitter: float = 1.0 + randf_range(-SHOT_SPEED_JITTER, SHOT_SPEED_JITTER)
+		var velocity: Vector2 = Vector2.from_angle(rotation + local_angle) * shot_speed * jitter
+		# Os canhões se revezam ao longo do casco.
+		var gun_index: int = i % guns.size()
+		get_tree().create_timer(i * data.volley_interval).timeout.connect(
+			_spawn_cannonball.bind(side, gun_index, velocity)
+		)
+
+	# O recuo é perpendicular ao casco, no sentido oposto ao bordo que atirou.
+	var barrel: Vector2 = Vector2(0.0, side).rotated(rotation)
+	knockback += -barrel * data.recoil_strength * power
+	_shake = maxf(_shake, power * data.shake_strength)
+	_kick += -barrel * KICK_PX * power
+	fx_on_fire(power)
+	_cooldown[side] = data.broadside_cooldown
+	_puff_smoke(side)
+
+	primary_action_triggered.emit(get_global_mouse_position())
+	broadside_fired.emit(side, power)
+
+
+## Segurar entra em mira e começa a carregar. Não dispara.
+func _press_charge(side: int) -> void:
+	if _charging[side] or _awaiting_release[side] or _cooldown[side] > 0.0:
+		return
+	_charging[side] = true
+	_power[side] = 0.0
+
+
+## Soltar dispara o bordo com a força acumulada, e só ele.
+func _release_charge(side: int) -> void:
+	if _charging[side]:
+		fire_broadside(maxf(_power[side], TAP_MIN_POWER), side)
+		_charging[side] = false
+		_power[side] = 0.0
+	_awaiting_release[side] = false
+
+
+func _mouse_charge(pressed: bool, side: int) -> void:
+	if pressed:
+		_press_charge(side)
+	else:
+		_release_charge(side)
+
+
+func _any_charging() -> bool:
+	return _charging[SIDE_PORT] or _charging[SIDE_STARBOARD]
+
+
+## Verdadeiro enquanto há carga ou um disparo automático aguardando soltar.
+func _any_holding() -> bool:
+	return _any_charging() or _awaiting_release[SIDE_PORT] or _awaiting_release[SIDE_STARBOARD]
+
+
+## Lateral da direção mostrada, no referencial do casco. A mira usa o ângulo da
+## vista (índice × 22.5°), para ficar alinhada ao desenho e não ao rumo contínuo.
+func _aim_local(side: int) -> float:
+	var shown: float = deg_to_rad(FRAME_HEADING_DEG[_shown_index])
+	return shown + _normal_local(side) - rotation
+
+
+## Lateral da direção mostrada, no referencial do casco.: bombordo aponta para -Y, estibordo para +Y.
+func _normal_local(side: int) -> float:
+	return -PI / 2.0 if side == SIDE_PORT else PI / 2.0
+
+
+## Limites do ângulo de tiro (em relação à proa): só ±20° em torno da lateral do bordo.
+func _sector_limits(side: int) -> Vector2:
+	var normal: float = -PI / 2.0 if side == SIDE_PORT else PI / 2.0
+	return Vector2(normal - AIM_ARC, normal + AIM_ARC)
+
+
+func _guns(side: int) -> Array:
+	return _port_cannons.get_children() if side == SIDE_PORT else _starboard_cannons.get_children()
+
+
+## Trilhos paralelos perpendiculares ao bordo, um por canhão. Crescem com a carga.
+## O trilho de alcance máximo fica como referência discreta.
+func _draw_rails(side: int, power: float) -> void:
+	var dir: Vector2 = Vector2.from_angle(_aim_local(side))
+	var length: float = lerpf(data.range_min, data.range_max, power)
+	var deck: Vector2 = DECK_OFFSET.rotated(-rotation)
+	for gun in _guns(side):
+		var start: Vector2 = (gun as Node2D).position + deck
+		_draw_rail(start, start + dir * data.range_max, RAIL_FAINT_COLOR, dir)
+		_draw_rail(start, start + dir * length, RAIL_COLOR, dir)
+
+
+func _draw_rail(from: Vector2, to: Vector2, color: Color, dir: Vector2) -> void:
+	var w: Vector2 = dir.orthogonal().normalized() * RAIL_HALF_WIDTH
+	var points: PackedVector2Array = PackedVector2Array([from - w, from + w, to + w, to - w])
+	draw_colored_polygon(points, color)
+
+
+func _spawn_cannonball(side: int, gun_index: int, velocity: Vector2) -> void:
+	var gun: Node2D = _guns(side)[gun_index] as Node2D
+	var ball := Cannonball.new()
+	ball.velocity = velocity
+	ball.lifetime = data.projectile_lifetime
+	get_parent().add_child(ball)
+	# Atrás do navio: na arte de lado, um tiro para bombordo sobe pelas velas e
+	# deve passar por trás delas, não por cima.
+	get_parent().move_child(ball, get_index())
+	ball.global_position = global_position + DECK_OFFSET + gun.position.rotated(rotation)
+
+
+func _update_steering(delta: float) -> void:
+	var steer: float = 0.0
+	# Com um tiro carregado, o leme trava: a proa não pode mudar o semiplano do bordo.
+	var aim: Vector2 = Vector2.ZERO if _any_holding() else get_aim_vector()
+	if aim != Vector2.ZERO:
+		var error: float = angle_difference(rotation, aim.angle())
+		if absf(error) > STEER_DEADBAND:
+			steer = clampf(error * data.aim_responsiveness, -1.0, 1.0)
+
+	var rate: float = steering_rate(steer, speed, data.max_speed, data.turn_speed)
+	if _touching_land and absf(rate) < STUCK_TURN_RATE:
+		# Encalhado: sem vela não há giro normal, mas o jogador precisa conseguir
+		# virar a proa devagar para sair da pedra. Workaround explícito e limitado,
+		# só ativo tocando terra; não se aplica ao navio parado em mar aberto.
+		rate = steer * STUCK_TURN_RATE
+	# Sem velocidade o leme não gira o casco: a rotação anterior se desfaz pela inércia.
+	angular_velocity = move_toward(angular_velocity, rate, data.turn_acceleration * delta)
+	rotation += angular_velocity * delta
+
+
+## Taxa de giro, em rad/s, pelo comando do leme e pela velocidade do navio.
+## Parado (abaixo de STOP_SPEED) não gira. Em movimento, a curva cresce com a velocidade:
+## a água só oferece resistência ao leme quando o casco anda.
+static func steering_rate(steer: float, current_speed: float, max_speed_value: float, turn_speed_value: float) -> float:
+	if absf(current_speed) < STOP_SPEED:
+		return 0.0
+	var ratio: float = clampf(absf(current_speed) / maxf(max_speed_value, 0.001), 0.0, 1.0)
+	return steer * turn_speed_value * ratio
+
+
+func _update_speed(delta: float) -> void:
+	var wind: float = _wind_factor()
+	var target: float = _target_speed() * wind
+	if absf(target) > absf(speed):
+		speed = move_toward(speed, target, data.acceleration * wind * delta)
+	elif target == 0.0:
+		# Sem comando: o atrito da água freia em proporção à velocidade, com inércia.
+		var drag: float = data.deceleration * 0.4 + data.water_drag * absf(speed)
+		speed = move_toward(speed, 0.0, drag * delta)
+	else:
+		speed = move_toward(speed, target, data.deceleration * delta)
+
+
+## Fator de vento sobre a velocidade, pelo produto escalar entre a proa e o vento
+## global. A favor: até +40%. Contra: até -50%, com a força do vento.
+func _wind_factor() -> float:
+	var along: float = _wind_along()
+	var strength: float = _wind.wind_strength
+	if along >= 0.0:
+		return 1.0 + WIND_BONUS * along * strength
+	return maxf(0.5, 1.0 + WIND_PENALTY * along * strength)
+
+
+## Produto escalar entre a proa e a direção do vento: +1 a favor, -1 contra.
+func _wind_along() -> float:
+	return Vector2.RIGHT.rotated(rotation).dot(_wind.wind_direction)
+
+
+## Vento contra: a componente lateral empurra o casco para o lado, obrigando a
+## navegar em zig-zag. Quanto mais forte o vento de frente, maior a deriva.
+func _apply_wind_drift(delta: float) -> void:
+	var forward: Vector2 = Vector2.RIGHT.rotated(rotation)
+	var along: float = _wind_along()
+	# Componente do vento perpendicular à proa: de través e contra, empurra o casco.
+	var lateral: Vector2 = _wind.wind_direction - forward * along
+	var weight: float = clampf(0.5 - along * 0.5, 0.0, 1.0)
+	position += lateral * WIND_DRIFT_PX * _wind.wind_strength * weight * delta
+
+
+func _target_speed() -> float:
+	var factor: float = data.effective_max_factor()
+	match sail:
+		Sail.REVERSE:
+			return -data.reverse_speed * factor
+		Sail.HALF:
+			return data.half_speed * factor
+		Sail.FULL:
+			return data.max_speed * factor
+		_:
+			return 0.0
+
+
+## Uma direção por vez, de 16, sem mudança de opacidade. A direção só troca
+## quando o rumo passa da fronteira com folga (histerese), para não piscar.
+func _update_visual(delta: float) -> void:
+	_time += delta
+	var deg: float = rad_to_deg(global_rotation)
+	_show_frame(_nearest_frame(deg, _shown_index))
+	_apply_float()
+	# Gira sozinha, independente do rumo do navio: a aura não deve travar com o casco.
+	_aura.rotation += AURA_SPIN_SPEED * delta
+	# O sprite é desenhado sempre "em pé" (a rotação do nó cancela a do casco: ver
+	# _apply_float), então a direção que aparece na tela é só o rumo do frame mostrado,
+	# não a rotação contínua da física. Água e fumaça precisam seguir esse rumo visual,
+	# suavizado, para nascer exatamente onde o desenho mostra a popa e os canhões, em
+	# qualquer um dos 8 recortes — não um valor que só bate no instante exato da troca.
+	_visual_heading = lerp_angle(_visual_heading, deg_to_rad(FRAME_HEADING_DEG[_shown_index]), clampf(delta * 10.0, 0.0, 1.0))
+
+
+## Frame mais próximo do rumo, em graus. Se `current` está dentro da histerese,
+## mantém o atual.
+func _nearest_frame(deg: float, current: int) -> int:
+	var best: int = 0
+	var best_dist: float = INF
+	for k in range(FRAME_HEADING_DEG.size()):
+		var d: float = _circ_dist(deg, FRAME_HEADING_DEG[k])
+		if d < best_dist:
+			best_dist = d
+			best = k
+	if current >= 0 and current != best:
+		var cur_dist: float = _circ_dist(deg, FRAME_HEADING_DEG[current])
+		if cur_dist <= best_dist + FRAME_HYSTERESIS_DEG:
+			return current
+	return best
+
+
+func _circ_dist(a: float, b: float) -> float:
+	return absf(wrapf(a - b, -180.0, 180.0))
+
+
+## Mostra o frame: um único sprite, opaco, sem espelhamento. A sombra segue o mesmo frame.
+func _show_frame(index: int) -> void:
+	_shown_index = index
+	var tex: Texture2D = FRAME_TEXTURES[index]
+	_sprite.texture = tex
+	_sprite.modulate.a = 1.0
+	_shadow.texture = tex
+
+
+## Balanço de flutuação: o navio sobe e desce, deriva de lado e balança. Mais
+## velocidade, mais balanço. A sombra fica no mesmo lugar e se afasta quando o
+## navio sobe.
+func _apply_float() -> void:
+	var fraction: float = clampf(absf(speed) / maxf(data.max_speed, 1.0), 0.0, 1.0)
+	var amp: float = 1.0 + 0.5 * fraction
+	# Flutuação sobre as ondas: relógio do sistema, como pedido.
+	var tick: float = sin(Time.get_ticks_msec() * 0.002)
+	var bob: float = tick * BOB_AMPLITUDE * amp
+	var drift: float = sin(_time * TAU / DRIFT_PERIOD) * DRIFT_AMPLITUDE * amp
+	var sway: float = tick * SWAY_ANGLE * amp
+
+	# O sprite é filho do nó, que gira com o rumo. Ele é contra-rotacionado para
+	# mostrar o frame da direção como está; a orientação já está no frame.
+	# Squash & stretch: comprime no impulso e estica quando ganha velocidade de cruzeiro.
+	var squash: Vector2 = Vector2(1.0 - 0.03 * _squash, 1.0 + 0.03 * _squash)
+	_sprite.scale = Vector2.ONE * SPRITE_SCALE * squash
+	_sprite.position = (Vector2(drift, bob) + _kick).rotated(-rotation)
+	_sprite.rotation = -rotation + sway
+
+	_shadow.position = (SHADOW_OFFSET + Vector2(0.0, -bob * 0.8)).rotated(-rotation)
+	_shadow.rotation = -rotation
+
+
+## Mantém o navio dentro da área útil do mar. Ao bater na borda, para.
+func _clamp_to_world() -> void:
+	if world_bounds.has_point(position):
+		return
+	position = Vector2(
+		clampf(position.x, world_bounds.position.x, world_bounds.end.x),
+		clampf(position.y, world_bounds.position.y, world_bounds.end.y)
+	)
+	speed = 0.0
+	knockback = Vector2.ZERO
+
+
+func _update_charge(delta: float) -> void:
+	for side in [SIDE_PORT, SIDE_STARBOARD]:
+		if not _charging[side]:
+			continue
+		_power[side] = minf(1.0, _power[side] + delta / data.charge_time)
+		if _power[side] >= 1.0:
+			# Carga cheia: dispara sozinho e espera o botão ser solto para armar de novo.
+			fire_broadside(1.0, side)
+			_charging[side] = false
+			_power[side] = 0.0
+			_awaiting_release[side] = true
+
+
+func _update_cooldown(delta: float) -> void:
+	for side in [SIDE_PORT, SIDE_STARBOARD]:
+		_cooldown[side] = maxf(0.0, _cooldown[side] - delta)
+
+
+func _update_shake(delta: float) -> void:
+	if _camera == null:
+		return
+	if _shake <= 0.0:
+		_camera.offset = Vector2.ZERO
+		return
+	_camera.offset = Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)) * _shake
+	_shake = move_toward(_shake, 0.0, data.shake_decay * delta)
+
+
+func _setup_wake() -> void:
+	# Espuma redonda e suave: nasce pequena e fraca, cresce um pouco e some de vez
+	# até o fim da vida. Sem giro: o sprite já é um borrão circular, não uma faixa.
+	var scale_curve := Curve.new()
+	scale_curve.add_point(Vector2(0.0, 0.3))
+	scale_curve.add_point(Vector2(1.0, 1.0))
+	var scale_tex := CurveTexture.new()
+	scale_tex.curve = scale_curve
+	var fade := Gradient.new()
+	fade.set_color(0, Color(1.0, 1.0, 1.0, 0.5))
+	fade.set_color(1, Color(1.0, 1.0, 1.0, 0.0))
+	var fade_tex := GradientTexture1D.new()
+	fade_tex.gradient = fade
+	var active_mat := ParticleProcessMaterial.new()
+	active_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	active_mat.emission_box_extents = Vector3(data.hull_half_length * 0.22, 5.0, 0.0)
+	active_mat.spread = 60.0
+	active_mat.gravity = Vector3.ZERO
+	active_mat.initial_velocity_min = 0.5
+	active_mat.initial_velocity_max = 3.0
+	active_mat.damping_min = 16.0
+	active_mat.damping_max = 24.0
+	# Contida sob o casco: proporcional ao navio, mas sem sobressair pelas laterais.
+	active_mat.scale_min = 0.35 * SIZE_FACTOR * 0.5
+	active_mat.scale_max = 0.35 * SIZE_FACTOR
+	active_mat.scale_curve = scale_tex
+	active_mat.color = Color(1.0, 1.0, 1.0, 1.0)
+	active_mat.color_ramp = fade_tex
+	active_mat.lifetime_randomness = 0.3
+	_wake.process_material = active_mat
+	_wake.texture = WAKE_DOT_TEXTURE
+	# Névoa suave: filtro linear, senão o Nearest do projeto a quebra em blocos.
+	_wake.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	# No referencial do casco: a popa e a deriva seguem a proa, em qualquer rumo.
+	# No mundo: a espuma fica onde foi solta e se dissolve aos poucos.
+	_wake.local_coords = false
+	# Atrás do casco: a espuma fica abaixo do sprite do navio.
+	_wake.show_behind_parent = true
+	_wake.z_index = -1
+	_wake.amount = 60
+	_wake.lifetime = 1.2
+	_wake.emitting = false
+
+
+## A espuma sai da popa, na linha d'água. Usa o offset da direção mostrada, e a
+## deriva segue a ré do frame. A quantidade acompanha a velocidade: parado, não emite.
+func _update_wake() -> void:
+	var reversing: bool = speed < 0.0
+	var fraction: float = clampf(absf(speed) / maxf(data.max_speed, 1.0), 0.0, 1.0)
+	# _visual_heading (o rumo do frame mostrado, suavizado) é o que aparece na tela, já
+	# que o sprite cancela a rotação contínua do casco. `base` não gira: é um deslocamento
+	# em eixos de tela, igual à arte desenhada "em pé".
+	var bow_down: float = sin(_visual_heading)
+	var base: Vector2 = WAKE_OFFSET
+	if bow_down > 0.5:
+		base.y += STERN_DOWN_Y
+	elif bow_down < -0.5:
+		base.y += STERN_UP_Y
+	var back: Vector2 = Vector2.from_angle(_visual_heading + PI) * STERN_REACH
+	if reversing:
+		back = -back
+	# SternMarker ignora a rotação do navio (top_level, ver _ready): sua posição global
+	# é só a origem do navio mais o deslocamento, nos eixos de tela, igual à arte.
+	_stern_marker.global_position = global_position + base
+	var active_mat := _wake.process_material as ParticleProcessMaterial
+	active_mat.direction = Vector3(back.normalized().x, back.normalized().y, 0.0)
+	active_mat.initial_velocity_min = lerpf(0.5, 4.0, fraction)
+	active_mat.initial_velocity_max = lerpf(3.0, 9.0, fraction)
+	_wake.global_position = _stern_marker.global_position + back
+	_wake.amount_ratio = fraction
+	_update_bow_wave(fraction)
+	_wake.emitting = fraction > 0.02 and absf(speed) > WAKE_MIN_SPEED
+
+
+## Luz quente das lanternas: energia oscila de forma orgânica, sem repetição exata.
+func _setup_lantern() -> void:
+	var grad := Gradient.new()
+	grad.set_color(0, Color(1.0, 1.0, 1.0, 1.0))
+	grad.set_color(1, Color(1.0, 1.0, 1.0, 0.0))
+	var tex := GradientTexture2D.new()
+	tex.gradient = grad
+	tex.fill = GradientTexture2D.FILL_RADIAL
+	tex.fill_from = Vector2(0.5, 0.5)
+	tex.fill_to = Vector2(1.0, 0.5)
+	tex.width = 128
+	tex.height = 128
+	_lantern.texture = tex
+	_lantern.texture_scale = 1.4
+	_lantern.blend_mode = Light2D.BLEND_MODE_ADD
+
+
+## Fumaça da chaminé: sobe devagar, abre e some, levada pelo vento do mapa.
+## Módulo de efeitos: o navio informa as ações (acelerar, virar, atirar) e cada efeito
+## reage com os parâmetros de `FX_TUNING`. Sem ação, cada efeito volta ao repouso.
+const FX_TUNING: Dictionary = {
+	"lantern_base_energy": 0.8,
+	"lantern_wave": 0.12,
+	"wake_turn_boost": 0.5,
+	"smoke_wind": 6.0,
+	"fire_kick_glow": 0.6,
+}
+var _fx_turn: float = 0.0
+var _fx_fire: float = 0.0
+
+
+## Ações do jogador que alimentam os efeitos. Chamadas pelo próprio navio.
+func fx_on_turn(amount: float) -> void:
+	_fx_turn = clampf(absf(amount), 0.0, 1.0)
+
+
+func fx_on_fire(power: float) -> void:
+	_fx_fire = maxf(_fx_fire, power)
+
+
+## Atualiza os efeitos a cada quadro, a partir do estado atual do navio.
+func _update_fx(delta: float) -> void:
+	var fraction: float = clampf(absf(speed) / maxf(data.max_speed, 1.0), 0.0, 1.0)
+	var wave: float = sin(_time * 3.1) * 0.6 + sin(_time * 7.3) * 0.4
+	_lantern.energy = FX_TUNING["lantern_base_energy"] + FX_TUNING["lantern_wave"] * wave + FX_TUNING["fire_kick_glow"] * _fx_fire
+	_fx_turn = move_toward(_fx_turn, 0.0, delta * 2.0)
+	_fx_fire = move_toward(_fx_fire, 0.0, delta * 3.0)
+	var wake_mat := _wake.process_material as ParticleProcessMaterial
+	wake_mat.initial_velocity_max = lerpf(3.0, 9.0, fraction) * (1.0 + FX_TUNING["wake_turn_boost"] * _fx_turn)
+
+
+## Clarão e fumaça na saída de cada canhão do bordo que atirou.
+func _puff_smoke(side: int) -> void:
+	# A posição do canhão na tela segue o frame mostrado (sprite "em pé"), não a rotação
+	# contínua: usar gun.global_position giraria com a física e sairia do canhão errado
+	# entre uma troca de frame e outra. Um pouco pra fora da amurada, na direção do
+	# bordo, pra nascer saindo da boca do canhão, não de dentro do casco.
+	var nudge: Vector2 = Vector2(0.0, -14.0 if side == SIDE_PORT else 14.0).rotated(_visual_heading)
+	for gun in _guns(side):
+		var gun_pos: Vector2 = global_position + (gun as Node2D).position.rotated(_visual_heading)
+		_spawn_muzzle(gun_pos + nudge)
+
+
+## Baforada rápida de fumaça cinza, que se dissipa e some sozinha.
+func _spawn_muzzle(at: Vector2) -> void:
+	_spawn_smoke_burst(at, SMOKE_EMBER_TEXTURE, 0.18 * SIZE_FACTOR, 0.3)
+
+
+## Baforada de fumaça num ponto do mundo: pólvora com brasas (disparo) ou mais leve
+## (casco avariado). Usa um sprite real do pacote de VFX, não mais o punhado gerado.
+func _spawn_smoke_burst(at: Vector2, tex: Texture2D, scale: float, lifetime: float) -> void:
+	var burst := GPUParticles2D.new()
+	var active_mat := ParticleProcessMaterial.new()
+	active_mat.spread = 50.0
+	active_mat.direction = Vector3(0.0, -1.0, 0.0)
+	active_mat.gravity = Vector3(0.0, -14.0, 0.0)
+	active_mat.initial_velocity_min = 6.0
+	active_mat.initial_velocity_max = 16.0
+	active_mat.damping_min = 20.0
+	active_mat.damping_max = 34.0
+	active_mat.scale_min = scale * 0.7
+	active_mat.scale_max = scale
+	# Translúcida desde o início (pólvora leve, não uma nuvem opaca), com fade-out rápido
+	# e suave até sumir de vez no fim da vida.
+	active_mat.color = Color(1.0, 1.0, 1.0, 0.3)
+	var fade := Gradient.new()
+	fade.set_color(0, Color(1.0, 1.0, 1.0, 1.0))
+	fade.set_color(1, Color(1.0, 1.0, 1.0, 0.0))
+	var fade_tex := GradientTexture1D.new()
+	fade_tex.gradient = fade
+	active_mat.color_ramp = fade_tex
+	burst.process_material = active_mat
+	burst.texture = tex
+	burst.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	burst.one_shot = true
+	burst.explosiveness = 0.8
+	burst.amount = 6
+	burst.lifetime = lifetime
+	burst.local_coords = false
+	get_parent().add_child(burst)
+	burst.global_position = at
+	burst.emitting = true
+	get_tree().create_timer(lifetime * 2.0).timeout.connect(burst.queue_free)
+
+
+## Mancha redonda e macia usada como partícula de fumaça.
+## Respingo da proa: a água é empurrada para os lados pelo casco. As partículas saem
+## da proa, espalham-se para fora e crescem com o tamanho do galeão.
+##
+## Usa o mesmo ponto redondo da esteira, não mais a textura em V. O navio tem 8 recortes
+## pintados à mão (vista de lado, de frente, em 3/4...), e um decalque em V só faz
+## sentido de um ângulo — girado matematicamente, continua "achatado" e parece sempre
+## de lado, não embaixo do casco, em qualquer vista que não seja o perfil puro. Um
+## estouro de pontos redondos não tem essa face "certa"; fica correto em qualquer uma
+## das 8 vistas, do mesmo jeito que a esteira de popa já ficava.
+func _setup_bow_wave() -> void:
+	var scale_curve := Curve.new()
+	scale_curve.add_point(Vector2(0.0, 0.4))
+	scale_curve.add_point(Vector2(1.0, 1.0))
+	var scale_tex := CurveTexture.new()
+	scale_tex.curve = scale_curve
+	var fade := Gradient.new()
+	fade.set_color(0, Color(1.0, 1.0, 1.0, 0.55))
+	fade.set_color(1, Color(1.0, 1.0, 1.0, 0.0))
+	var fade_tex := GradientTexture1D.new()
+	fade_tex.gradient = fade
+	var bow_mat := ParticleProcessMaterial.new()
+	bow_mat.spread = 55.0
+	bow_mat.gravity = Vector3.ZERO
+	bow_mat.initial_velocity_min = 16.0
+	bow_mat.initial_velocity_max = 40.0
+	bow_mat.damping_min = 30.0
+	bow_mat.damping_max = 50.0
+	bow_mat.scale_min = 0.22 * SIZE_FACTOR
+	bow_mat.scale_max = 0.4 * SIZE_FACTOR
+	bow_mat.scale_curve = scale_tex
+	bow_mat.color = Color(1.0, 1.0, 1.0, 1.0)
+	bow_mat.color_ramp = fade_tex
+	_bow.process_material = bow_mat
+	_bow.texture = WAKE_DOT_TEXTURE
+	_bow.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	_bow.local_coords = false
+	_bow.amount = 14
+	_bow.lifetime = 0.6
+	_bow.emitting = false
+
+
+## Posição da proa no mundo, e intensidade do respingo pela velocidade.
+func _update_bow_wave(fraction: float) -> void:
+	# Mesmo raciocínio da esteira: a proa visível na tela segue o frame mostrado, não a
+	# rotação contínua da física.
+	var forward: Vector2 = Vector2.from_angle(_visual_heading)
+	_bow.global_position = global_position + forward * data.hull_half_length * 0.9
+	var bow_mat := _bow.process_material as ParticleProcessMaterial
+	bow_mat.direction = Vector3(forward.x, forward.y, 0.0)
+	_bow.amount_ratio = fraction
+	_bow.emitting = fraction > 0.1
+
+
+## Aplica dano ao casco e avisa a interface. Sem dano automático ainda.
+func apply_damage(amount: float) -> void:
+	hull = clampf(hull - maxf(amount, 0.0), 0.0, max_hull)
+	hull_changed.emit(hull, max_hull)
+	if amount > 0.0:
+		_spawn_smoke_burst(global_position, SMOKE_SOFT_TEXTURE, 0.3 * SIZE_FACTOR, 0.8)
+
+
+## Fração de recarga da bordada mais lenta (0 = pronto, 1 = recém disparado).
+func broadside_ratio() -> float:
+	return maxf(_cooldown[SIDE_PORT], _cooldown[SIDE_STARBOARD]) / data.broadside_cooldown
+
+
+## Reabastece em ilha. Ainda sem ilhas no mapa, fica disponível para quando existirem.
+func regen_supply(amount: float) -> void:
+	supply = minf(max_supply, supply + amount)

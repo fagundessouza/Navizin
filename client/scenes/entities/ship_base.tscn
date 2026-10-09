@@ -1,11 +1,81 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene format=3 uid="uid://b2b46jxrkob82"]
 
-[ext_resource type="Script" path="res://scripts/entities/ship_base.gd" id="1_ship"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ships/holandes_voador/holandes_voador_sheet.png" id="2_sheet"]
+[ext_resource type="Script" uid="uid://bey8542iig5ai" path="res://scripts/entities/ship_base.gd" id="1_ship"]
+[ext_resource type="Resource" path="res://data/ship_holandes_voador.tres" id="2_data"]
+[ext_resource type="Shader" path="res://assets/shaders/ship_outline.gdshader" id="4_outline"]
+[ext_resource type="Texture2D" path="res://assets/sprites/ships/holandes_voador/dir8/dir8_00.png" id="3_sprite"]
+[ext_resource type="Texture2D" path="res://assets/sprites/vfx/auras/dark_aura.png" id="5_aura"]
 
-[node name="ShipBase" type="Node2D"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_outline"]
+shader = ExtResource("4_outline")
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_hull"]
+size = Vector2(260, 140)
+
+[node name="ShipBase" type="Node2D" unique_id=1944009318]
 script = ExtResource("1_ship")
-ship_name = "Holandês Voador"
+data = ExtResource("2_data")
 
-[node name="Sprite2D" type="Sprite2D" parent="."]
-texture = ExtResource("2_sheet")
+[node name="HullArea" type="Area2D" parent="."]
+collision_layer = 2
+collision_mask = 1
+monitoring = true
+monitorable = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HullArea"]
+shape = SubResource("RectangleShape2D_hull")
+
+[node name="DarkAura" type="Sprite2D" parent="." unique_id=3087221445]
+show_behind_parent = true
+modulate = Color(1, 1, 1, 0.55)
+scale = Vector2(2.1, 2.1)
+texture = ExtResource("5_aura")
+
+[node name="Shadow" type="Sprite2D" parent="." unique_id=575220340]
+texture_filter = 1
+texture = ExtResource("3_sprite")
+
+[node name="SternMarker" type="Marker2D" parent="."]
+top_level = true
+
+[node name="WaterTrailFX" type="GPUParticles2D" parent="." unique_id=319747898]
+emitting = false
+amount = 28
+lifetime = 1.1
+
+[node name="BowWave" type="GPUParticles2D" parent="."]
+emitting = false
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=225768888]
+material = SubResource("ShaderMaterial_outline")
+texture_filter = 1
+texture = ExtResource("3_sprite")
+
+[node name="PortCannons" type="Node2D" parent="." unique_id=965552933]
+
+[node name="Cannon1" type="Marker2D" parent="PortCannons" unique_id=618653788]
+position = Vector2(-58, -23)
+
+[node name="Cannon2" type="Marker2D" parent="PortCannons" unique_id=894698123]
+position = Vector2(0, -23)
+
+[node name="Cannon3" type="Marker2D" parent="PortCannons" unique_id=161923314]
+position = Vector2(58, -23)
+
+[node name="StarboardCannons" type="Node2D" parent="." unique_id=1609572892]
+
+[node name="Cannon1" type="Marker2D" parent="StarboardCannons" unique_id=1114127412]
+position = Vector2(-58, 23)
+
+[node name="Cannon2" type="Marker2D" parent="StarboardCannons" unique_id=269924]
+position = Vector2(0, 23)
+
+[node name="Cannon3" type="Marker2D" parent="StarboardCannons" unique_id=811385468]
+position = Vector2(58, 23)
+
+[node name="LanternGlow" type="PointLight2D" parent="."]
+position = Vector2(-30, 4)
+color = Color(1, 0.72, 0.4, 1)
+energy = 0.8
+blend_mode = 0
+

@@ -1,24 +1,122 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene format=3 uid="uid://byy5veg5wcirx"]
 
-[ext_resource type="Script" path="res://scenes/world/ocean_map.gd" id="1_map"]
-[ext_resource type="Shader" path="res://assets/shaders/ocean.gdshader" id="2_ocean"]
-[ext_resource type="PackedScene" path="res://scenes/entities/ship_base.tscn" id="3_ship"]
+[ext_resource type="Script" uid="uid://bs77nrkke2352" path="res://scenes/world/ocean_map.gd" id="1_map"]
+[ext_resource type="Shader" uid="uid://dm8entpontmqi" path="res://assets/shaders/ocean.gdshader" id="2_ocean"]
+[ext_resource type="PackedScene" uid="uid://b2b46jxrkob82" path="res://scenes/entities/ship_base.tscn" id="3_ship"]
+[ext_resource type="Texture2D" uid="uid://bbaxt08n5ykk" path="res://assets/environment/ocean_tile.png" id="4_tile"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="5_hud"]
+[ext_resource type="Texture2D" uid="uid://xmvr7qh5rul4" path="res://assets/sprites/vfx/noise/water_noise_real.png" id="20_realnoise"]
+[ext_resource type="PackedScene" path="res://scenes/environment/islands/island_tortuga_hub.tscn" id="25_tortuga"]
+[ext_resource type="PackedScene" path="res://scenes/ui/tortuga_city_hub.tscn" id="26_city"]
+[ext_resource type="Texture2D" path="res://assets/sprites/environment/islands/tortuga_kit/dock.png" id="27_dock"]
+[ext_resource type="Texture2D" path="res://assets/sprites/environment/islands/tortuga_kit/signpost.png" id="28_signpost"]
+[ext_resource type="Texture2D" path="res://assets/sprites/environment/islands/tortuga_kit/mooring_post_a.png" id="29_posta"]
+[ext_resource type="Texture2D" path="res://assets/sprites/environment/islands/tortuga_kit/mooring_post_b.png" id="30_postb"]
+[ext_resource type="Texture2D" path="res://assets/sprites/environment/islands/tortuga_kit/barrels.png" id="31_barrels"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_ocean"]
 shader = ExtResource("2_ocean")
+shader_parameter/ocean_tex = ExtResource("4_tile")
+shader_parameter/tile_size = 192.0
+shader_parameter/current_speed = Vector2(6, 2)
+shader_parameter/tide_strength = 0.08
+shader_parameter/tide_frequency = 0.12
+shader_parameter/relief = 1.2
+shader_parameter/glint_strength = 0.4
+shader_parameter/vignette_strength = 0.35
+shader_parameter/distort_amp = 2.5
+shader_parameter/foam_strength = 0.45
 
-[node name="OceanMap" type="Node2D"]
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_dock"]
+size = Vector2(100, 40)
+
+[sub_resource type="Environment" id="Env_sea"]
+background_mode = 1
+background_color = Color(0.03, 0.07, 0.12, 1)
+glow_enabled = true
+glow_intensity = 0.35
+glow_bloom = 0.05
+glow_hdr_threshold = 0.95
+
+[node name="OceanMap" type="Node2D" unique_id=516550437]
+y_sort_enabled = true
 script = ExtResource("1_map")
 
-[node name="Ocean" type="ColorRect" parent="."]
+[node name="Ocean" type="ColorRect" parent="." unique_id=1911683274]
+z_index = -10
 material = SubResource("ShaderMaterial_ocean")
-offset_left = -10000.0
-offset_top = -10000.0
-offset_right = 10000.0
-offset_bottom = 10000.0
+offset_left = -9332.0
+offset_top = -9748.0
+offset_right = 10668.0
+offset_bottom = 10252.0
 mouse_filter = 2
 
-[node name="Ship" parent="." instance=ExtResource("3_ship")]
+[node name="FogLayer" type="Parallax2D" parent="." unique_id=179720299]
+z_index = -5
+scroll_offset = Vector2(-931, 0)
+repeat_size = Vector2(940, 940)
+autoscroll = Vector2(6, 2)
+repeat_times = 3
 
-[node name="Camera2D" type="Camera2D" parent="Ship"]
+[node name="FogSprite" type="Sprite2D" parent="FogLayer" unique_id=1886085645]
+modulate = Color(0.55, 0.65, 0.75, 0.35)
+scale = Vector2(2, 2)
+texture = ExtResource("20_realnoise")
+
+[node name="CanvasModulate" type="CanvasModulate" parent="." unique_id=1663882998]
+color = Color(0.071, 0.106, 0.169, 1)
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=960095480]
+environment = SubResource("Env_sea")
+
+[node name="HUD" type="CanvasLayer" parent="." unique_id=160827352]
+
+[node name="HUD" parent="HUD" unique_id=1978887585 instance=ExtResource("5_hud")]
+
+[node name="TortugaCityHub" parent="HUD" unique_id=905490035 instance=ExtResource("26_city")]
+layout_mode = 3
+
+[node name="World" type="Node2D" parent="." unique_id=1736539682]
+y_sort_enabled = true
+
+[node name="Ship" parent="World" unique_id=923919172 instance=ExtResource("3_ship")]
+player_controlled = true
+
+[node name="Camera2D" type="Camera2D" parent="World/Ship" unique_id=234192159]
+zoom = Vector2(1.3, 1.3)
 position_smoothing_enabled = true
+
+[node name="TortugaHub" parent="World" unique_id=1048977831 instance=ExtResource("25_tortuga")]
+position = Vector2(1803, -414)
+
+[node name="TortugaDock" type="Sprite2D" parent="World"]
+position = Vector2(1801, -370)
+scale = Vector2(1.8, 1.8)
+texture = ExtResource("27_dock")
+
+[node name="DockBody" type="StaticBody2D" parent="World/TortugaDock"]
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="World/TortugaDock/DockBody"]
+shape = SubResource("RectangleShape2D_dock")
+
+[node name="TortugaSignpost" type="Sprite2D" parent="World"]
+position = Vector2(1650, -280)
+scale = Vector2(0.55, 0.55)
+texture = ExtResource("28_signpost")
+
+[node name="TortugaMooringPostA" type="Sprite2D" parent="World"]
+position = Vector2(1700, -335)
+scale = Vector2(0.42, 0.42)
+texture = ExtResource("29_posta")
+
+[node name="TortugaMooringPostB" type="Sprite2D" parent="World"]
+position = Vector2(1900, -335)
+scale = Vector2(0.42, 0.42)
+texture = ExtResource("30_postb")
+
+[node name="TortugaBarrels" type="Sprite2D" parent="World"]
+position = Vector2(1950, -295)
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("31_barrels")
