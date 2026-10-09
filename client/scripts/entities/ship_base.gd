@@ -216,10 +216,6 @@ const AURA_SPIN_SPEED: float = 0.35
 const SMOKE_EMBER_TEXTURE: Texture2D = preload("res://assets/sprites/vfx/battle/smoke_puff_ember.png")
 const SMOKE_SOFT_TEXTURE: Texture2D = preload("res://assets/sprites/vfx/battle/smoke_puff_soft.png")
 const WAKE_DOT_TEXTURE: Texture2D = preload("res://assets/sprites/vfx/foam/wake_dot.png")
-const BOW_WAVE_TEXTURE: Texture2D = preload("res://assets/sprites/vfx/wake/bow_wave.png")
-## Correção entre o ângulo nativo da onda de proa e a direção de deslocamento (calibrado
-## por captura: 0° do asset nem sempre é "para a direita" como o Godot espera).
-const BOW_ANGLE_OFFSET_DEG: float = -90.0
 ## Abaixo desta velocidade a esteira não emite: o navio parado não deixa rastro.
 const WAKE_MIN_SPEED: float = 5.0
 
@@ -863,28 +859,42 @@ func _spawn_smoke_burst(at: Vector2, tex: Texture2D, scale: float, lifetime: flo
 ## Mancha redonda e macia usada como partícula de fumaça.
 ## Respingo da proa: a água é empurrada para os lados pelo casco. As partículas saem
 ## da proa, espalham-se para fora e crescem com o tamanho do galeão.
+##
+## Usa o mesmo ponto redondo da esteira, não mais a textura em V. O navio tem 8 recortes
+## pintados à mão (vista de lado, de frente, em 3/4...), e um decalque em V só faz
+## sentido de um ângulo — girado matematicamente, continua "achatado" e parece sempre
+## de lado, não embaixo do casco, em qualquer vista que não seja o perfil puro. Um
+## estouro de pontos redondos não tem essa face "certa"; fica correto em qualquer uma
+## das 8 vistas, do mesmo jeito que a esteira de popa já ficava.
 func _setup_bow_wave() -> void:
+	var scale_curve := Curve.new()
+	scale_curve.add_point(Vector2(0.0, 0.4))
+	scale_curve.add_point(Vector2(1.0, 1.0))
+	var scale_tex := CurveTexture.new()
+	scale_tex.curve = scale_curve
+	var fade := Gradient.new()
+	fade.set_color(0, Color(1.0, 1.0, 1.0, 0.55))
+	fade.set_color(1, Color(1.0, 1.0, 1.0, 0.0))
+	var fade_tex := GradientTexture1D.new()
+	fade_tex.gradient = fade
 	var bow_mat := ParticleProcessMaterial.new()
-	bow_mat.spread = 70.0
+	bow_mat.spread = 55.0
 	bow_mat.gravity = Vector3.ZERO
-	bow_mat.initial_velocity_min = 20.0
-	bow_mat.initial_velocity_max = 50.0
-	bow_mat.damping_min = 40.0
-	bow_mat.damping_max = 60.0
-	bow_mat.scale_min = 0.1 * SIZE_FACTOR
-	bow_mat.scale_max = 0.18 * SIZE_FACTOR
-	bow_mat.color = Color(1.0, 1.0, 1.0, 0.4)
-	bow_mat.angle_min = 0.0
-	bow_mat.angle_max = 0.0
+	bow_mat.initial_velocity_min = 16.0
+	bow_mat.initial_velocity_max = 40.0
+	bow_mat.damping_min = 30.0
+	bow_mat.damping_max = 50.0
+	bow_mat.scale_min = 0.22 * SIZE_FACTOR
+	bow_mat.scale_max = 0.4 * SIZE_FACTOR
+	bow_mat.scale_curve = scale_tex
+	bow_mat.color = Color(1.0, 1.0, 1.0, 1.0)
+	bow_mat.color_ramp = fade_tex
 	_bow.process_material = bow_mat
-	_bow.texture = BOW_WAVE_TEXTURE
+	_bow.texture = WAKE_DOT_TEXTURE
 	_bow.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	_bow.local_coords = false
-	# Antes (amount 30, escala quase cheia) empastava num só bloco sólido depois de um
-	# segundo de navegação, quando o acúmulo de partículas de `lifetime` chegava ao regime
-	# permanente. Menos partículas, menores, continuam legíveis como respingo.
-	_bow.amount = 10
-	_bow.lifetime = 0.9
+	_bow.amount = 14
+	_bow.lifetime = 0.6
 	_bow.emitting = false
 
 
@@ -896,10 +906,6 @@ func _update_bow_wave(fraction: float) -> void:
 	_bow.global_position = global_position + forward * data.hull_half_length * 0.9
 	var bow_mat := _bow.process_material as ParticleProcessMaterial
 	bow_mat.direction = Vector3(forward.x, forward.y, 0.0)
-	# O V do respingo tem uma ponta: gira para acompanhar a proa.
-	var bow_angle_deg: float = rad_to_deg(forward.angle()) + BOW_ANGLE_OFFSET_DEG
-	bow_mat.angle_min = bow_angle_deg
-	bow_mat.angle_max = bow_angle_deg
 	_bow.amount_ratio = fraction
 	_bow.emitting = fraction > 0.1
 
