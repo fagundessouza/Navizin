@@ -8,6 +8,11 @@
 [ext_resource type="Texture2D" uid="uid://xmvr7qh5rul4" path="res://assets/sprites/vfx/noise/water_noise_real.png" id="20_realnoise"]
 [ext_resource type="PackedScene" path="res://scenes/environment/islands/island_tortuga_hub.tscn" id="25_tortuga"]
 [ext_resource type="PackedScene" path="res://scenes/ui/tortuga_city_hub.tscn" id="26_city"]
+[ext_resource type="Texture2D" path="res://assets/sprites/environment/islands/tortuga_kit/dock.png" id="27_dock"]
+[ext_resource type="Texture2D" path="res://assets/sprites/environment/islands/tortuga_kit/signpost.png" id="28_signpost"]
+[ext_resource type="Texture2D" path="res://assets/sprites/environment/islands/tortuga_kit/mooring_post_a.png" id="29_posta"]
+[ext_resource type="Texture2D" path="res://assets/sprites/environment/islands/tortuga_kit/mooring_post_b.png" id="30_postb"]
+[ext_resource type="Texture2D" path="res://assets/sprites/environment/islands/tortuga_kit/barrels.png" id="31_barrels"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_ocean"]
 shader = ExtResource("2_ocean")
@@ -21,6 +26,9 @@ shader_parameter/glint_strength = 0.4
 shader_parameter/vignette_strength = 0.35
 shader_parameter/distort_amp = 2.5
 shader_parameter/foam_strength = 0.45
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_dock"]
+size = Vector2(100, 40)
 
 [sub_resource type="Environment" id="Env_sea"]
 background_mode = 1
@@ -80,3 +88,35 @@ position_smoothing_enabled = true
 
 [node name="TortugaHub" parent="World" unique_id=1048977831 instance=ExtResource("25_tortuga")]
 position = Vector2(1803, -414)
+
+[node name="TortugaDock" type="Sprite2D" parent="World"]
+position = Vector2(1801, -370)
+scale = Vector2(1.8, 1.8)
+texture = ExtResource("27_dock")
+
+[node name="DockBody" type="StaticBody2D" parent="World/TortugaDock"]
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="World/TortugaDock/DockBody"]
+shape = SubResource("RectangleShape2D_dock")
+
+[node name="TortugaSignpost" type="Sprite2D" parent="World"]
+position = Vector2(1650, -280)
+scale = Vector2(0.55, 0.55)
+texture = ExtResource("28_signpost")
+
+[node name="TortugaMooringPostA" type="Sprite2D" parent="World"]
+position = Vector2(1700, -335)
+scale = Vector2(0.42, 0.42)
+texture = ExtResource("29_posta")
+
+[node name="TortugaMooringPostB" type="Sprite2D" parent="World"]
+position = Vector2(1900, -335)
+scale = Vector2(0.42, 0.42)
+texture = ExtResource("30_postb")
+
+[node name="TortugaBarrels" type="Sprite2D" parent="World"]
+position = Vector2(1950, -295)
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("31_barrels")
