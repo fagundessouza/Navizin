@@ -837,7 +837,15 @@ func _spawn_smoke_burst(at: Vector2, tex: Texture2D, scale: float, lifetime: flo
 	active_mat.damping_max = 34.0
 	active_mat.scale_min = scale * 0.7
 	active_mat.scale_max = scale
-	active_mat.color = Color(1.0, 1.0, 1.0, 1.0)
+	# Translúcida desde o início (pólvora leve, não uma nuvem opaca), com fade-out rápido
+	# e suave até sumir de vez no fim da vida.
+	active_mat.color = Color(1.0, 1.0, 1.0, 0.3)
+	var fade := Gradient.new()
+	fade.set_color(0, Color(1.0, 1.0, 1.0, 1.0))
+	fade.set_color(1, Color(1.0, 1.0, 1.0, 0.0))
+	var fade_tex := GradientTexture1D.new()
+	fade_tex.gradient = fade
+	active_mat.color_ramp = fade_tex
 	burst.process_material = active_mat
 	burst.texture = tex
 	burst.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
