@@ -3,14 +3,28 @@
 > Arquivo de contexto. Ao iniciar uma sessão nova, diga **"Carregar checkpoint"** e leia só este arquivo.
 > Ao final de cada sessão ou marco, diga **"Salvar checkpoint"** para atualizá-lo.
 
-## Checkpoint atual (2026-10-09) — branch nova `feature/town-hub-redesign`, a partir de `feature/issue-4-ship-movement`
+## Checkpoint atual (2026-10-11) — branch `feature/town-hub-redesign`
 
-**Diretiva de arquitetura (prioridade da próxima sessão):** o mapa do oceano não vai mais acumular elementos gráficos e props de cidade dentro da mesma cena. Mudança para arquitetura multi-cena:
-- `ocean_map.tscn` cuida só de navegação e física do oceano.
-- Ao atracar numa ilha (ex.: Tortuga), o jogo transiciona/instancia uma cena dedicada `TownHub.tscn` — o navio "entra" no porto e some do oceano, em vez do overlay de `Control` que existe hoje (`TortugaCityHub` como filho de `HUD` dentro de `ocean_map.tscn`).
-- `TownHub.tscn` carrega a ilustração interativa da cidade com hotspots clicáveis, placas indicativas (estilo Seafight/MonsterGame) e modais de mercado/taverna/estaleiro.
-- Consequência prática: a doca, o letreiro, os postes de amarração e os barris adicionados nesta sessão (filhos diretos de `World` em `ocean_map.tscn`, ver abaixo) são candidatos a migrar para dentro de `TownHub.tscn` quando esse refactor acontecer — não foram desfeitos agora, só documentados aqui para a próxima sessão não duplicar trabalho.
-- Esta rodada foi só diagnóstico/implementação pontual (ver abaixo); a refatoração multi-cena em si **ainda não foi implementada**, fica para a próxima sessão partir exatamente desta estrutura.
+**Arquitetura multi-cena: IMPLEMENTADA (parte de código) nesta rodada.** A diretiva do checkpoint anterior (2026-10-09) foi executada:
+- `ocean_map.tscn` só cuida de navegação/física. Não existe mais overlay de cidade escondido dentro dele.
+- Atracar troca de cena de verdade (`get_tree().change_scene_to_file`) para `res://scenes/cities/island_tortuga_hub.tscn` — o navio é descarregado junto com `ocean_map.tscn`, não "congela escondido" como antes.
+- `GameManager` (autoload) guarda `saved_ship_position`/`saved_hull`/`saved_supply` na saída e `ocean_map.gd._restore_ship_state()` reaplica no `_ready()` seguinte, com `-1.0` como sentinela de "nada salvo".
+- Interação por tecla **F** (ação `interact`, `project.godot`), substituindo o **E** hardcoded de antes (E já era `broadside_starboard`, um atalho sobrecarregado). `tortuga_dock.gd` foi reescrito: não guarda mais estado de "atracado/desatracado" — só emite `ship_entered_range`/`ship_left_range` (liga um aviso "Pressione F para atracar" no HUD) e `interact_requested(ship)`. Quem decide o que fazer é `ocean_map.gd`.
+- Clicar na ilha (mecânica já existente, brilho neon no hover) continua funcionando — aciona o mesmo `_enter_tortuga()`.
+- **Conflito de tecla achado e corrigido:** F já era o atalho do menu "Frota e Guilda" no HUD (`hud_controller.gd`). Trocado para **G** (mnemônico: Guilda), já que esse menu ainda está "em construção" e F passou a ser o principal (atracar).
+- Cena da cidade relocada de `scenes/ui/tortuga_city_hub.tscn` (overlay) para `scenes/cities/island_tortuga_hub.tscn` (cena própria, script em `scripts/cities/`). Mantidos os 8 hotspots (`TextureButton` com hover+diálogo) já existentes — não foram reescritos como `Area2D`/`CityHubHotspot.gd` conforme um pedido mais recente sugeriu; o padrão existente (hover com textura + tooltip + diálogo "em construção") já cobria a mesma função e troquei de cena em vez de descartar esse trabalho. Se o padrão `Area2D` específico for mesmo necessário (ex.: pra ganhar movimento de câmera dentro da cidade depois), fica pra avaliar com o usuário.
+- **Verificação:** compilação headless completa sem erros; teste unitário isolado de `tortuga_dock.gd` (4 casos: entra no alcance, interage com F, sai do alcance, não interage sem navio por perto) passa. A ponte MCP ficou instável durante a sessão (provável efeito colateral de eu ter editado o arquivo de registro dela manualmente enquanto o jogo real tentava se re-registrar) e não deu pra fazer o teste dinâmico completo ao vivo (F dentro do jogo rodando) — recomendo o usuário testar manualmente no editor antes de considerar fechado.
+
+**Pendente da diretiva de arquitetura:**
+- Seção 2 (redesenho visual: ilha maciça com baía em C/U via `TileMapLayer_Islands`, farol na entrada) **não implementada** — depende do tileset de penhasco/costa novo, que ainda não existe. Prompts prontos pra gerar no Meshy AI em `.project/ART_PROMPTS.md`.
+- Seção 1 (fundo panorâmico sem prédios embutidos) também depende de gerar a arte nova — prompt também em `ART_PROMPTS.md`.
+- A doca/letreiro/postes/barris adicionados no checkpoint anterior continuam em `ocean_map.tscn` (mundo aberto, baía), não na cena da cidade — fazem sentido lá (são a chegada física), a cena da cidade é o que se vê depois de entrar.
+
+---
+
+## Checkpoint anterior (2026-10-09) — branch nova `feature/town-hub-redesign`, a partir de `feature/issue-4-ship-movement`
+
+**Diretiva de arquitetura:** o mapa do oceano não vai mais acumular elementos gráficos e props de cidade dentro da mesma cena. Mudança para arquitetura multi-cena -- **executada no checkpoint seguinte (2026-10-11), ver acima.**
 
 **Feito nesta rodada**
 - **Respingo da proa corrigido:** usava um decalque em V (`BOW_WAVE_TEXTURE`) desenhado para visão lateral só, girado por código — contra as 8 vistas pintadas à mão do navio, continuava "parecendo de lado" em qualquer ângulo que não fosse o perfil puro. Trocado pelo mesmo ponto redondo já usado na esteira de popa (`WAKE_DOT_TEXTURE`): redondo não tem ângulo errado possível. Diagnosticado ao vivo via Godot MCP Toolkit (leitura de propriedades do navio rodando, screenshots do runtime) nos ângulos 0°/45°/90°.

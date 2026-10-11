@@ -21,7 +21,7 @@ const MENUS: Dictionary = {
 	"MenuAnchor": {"key": KEY_N, "title": "Ancorar", "body": "Recolhe as velas e para o navio. Ativado pelo botão de âncora."},
 	"MenuAmmo": {"key": KEY_B, "title": "Munição", "body": "Escolha entre balas normais, encadeadas e incendiárias. Em construção."},
 	"MenuCrew": {"key": KEY_C, "title": "Tripulação", "body": "Marinheiros, moral e funções a bordo. Em construção."},
-	"MenuGuild": {"key": KEY_F, "title": "Frota e Guilda", "body": "Sua frota, bandeira e guilda pirata. Em construção."},
+	"MenuGuild": {"key": KEY_G, "title": "Frota e Guilda", "body": "Sua frota, bandeira e guilda pirata. Em construção."},
 	"MenuRum": {"key": KEY_R, "title": "Consumíveis", "body": "Poções, rum e rações para uso rápido. Em construção."},
 	"MenuMap": {"key": KEY_M, "title": "Mapa do Mundo", "body": "Carta náutica com ilhas e rotas. Em construção."},
 	"MenuRecon": {"key": KEY_T, "title": "Reconhecimento", "body": "Visão aumentada e bússola em tela cheia. Em construção."},

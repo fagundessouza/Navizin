@@ -1,14 +1,17 @@
 class_name TortugaDock
 extends Area2D
-## Doca de Tortuga: cobre o canal de água da baía interna. Quando o casco do navio
-## entra na área e o jogador aperta E, a navegação congela e a tela da cidade abre.
-## Apertar E de novo (já na tela da cidade) desatraca e devolve o navio.
+## Gatilho de porto na baía de Tortuga: cobre o canal de água da baía interna.
+##
+## Não troca de tela sozinho -- só rastreia se o navio está no alcance e emite
+## sinais. Quem decide o que fazer com isso (mostrar aviso, trocar de cena) é
+## `ocean_map.gd`, pra este script não conhecer HUD nem caminho de cena nenhum.
 
-signal docked(ship: Node2D)
-signal undocked
+signal ship_entered_range
+signal ship_left_range
+## Pedido de entrar no porto: tecla de interação apertada com o navio no alcance.
+signal interact_requested(ship: Node2D)
 
 var _ship_in_range: Node2D = null
-var _docked: bool = false
 
 
 func _ready() -> void:
@@ -23,41 +26,17 @@ func _on_area_entered(area: Area2D) -> void:
 	var ship: Node2D = area.get_parent() as Node2D
 	if ship != null and ship.is_in_group("player_ship"):
 		_ship_in_range = ship
+		ship_entered_range.emit()
 
 
 func _on_area_exited(area: Area2D) -> void:
 	if area.get_parent() == _ship_in_range:
 		_ship_in_range = null
+		ship_left_range.emit()
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	var key := event as InputEventKey
-	if key == null or not key.pressed or key.echo or key.keycode != KEY_E:
+	if _ship_in_range == null or not event.is_action_pressed("interact"):
 		return
-	if _docked:
-		_undock()
-	elif _ship_in_range != null:
-		_dock()
-	else:
-		return
-	# Consome o evento: sem isto, a mesma tecla também chega à tela da cidade que
-	# acabou de abrir (ou fechar) neste mesmo despacho, e ela reage de novo --
-	# atraca e desatraca no mesmo aperto de E.
+	interact_requested.emit(_ship_in_range)
 	get_viewport().set_input_as_handled()
-
-
-func _dock() -> void:
-	_docked = true
-	# Congela a navegação: zera a vela e a velocidade, sem tirar o jogador do mapa.
-	if "sail" in _ship_in_range:
-		_ship_in_range.sail = 0  # Sail.STOPPED
-	_ship_in_range.speed = 0.0
-	_ship_in_range.set_physics_process(false)
-	docked.emit(_ship_in_range)
-
-
-func _undock() -> void:
-	_docked = false
-	if _ship_in_range != null:
-		_ship_in_range.set_physics_process(true)
-	undocked.emit()

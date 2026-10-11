@@ -1,9 +1,13 @@
 class_name TortugaCityHub
 extends Control
-## Tela da cidade de Tortuga: a ilustração inteira como fundo, com 8 pontos de
+## Cena do porto de Tortuga: a ilustração inteira como fundo, com pontos de
 ## interação invisíveis (realçados só no hover) sobre os prédios certos.
-
-signal close_requested
+##
+## Cena própria (`res://scenes/cities/island_tortuga_hub.tscn`), não mais um
+## overlay escondido dentro de `ocean_map.tscn`: `ocean_map.gd` troca para esta
+## cena ao atracar (`get_tree().change_scene_to_file`), e sair daqui troca de
+## volta para o oceano. O navio não existe enquanto esta cena está ativa --
+## `GameManager` guarda a posição/casco/suprimento dele pra restaurar na volta.
 
 const DESCRIPTIONS: Dictionary = {
 	"Shipyard": "O esqueleto de um navio em construção. Compra e reparo de embarcações. Em construção.",
@@ -37,14 +41,16 @@ func _on_hotspot_pressed(location: String) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not visible:
-		return
-	var key := event as InputEventKey
-	if key == null or not key.pressed or key.echo:
-		return
-	if key.keycode == KEY_ESCAPE and _info.visible:
+	if event.is_action_pressed("ui_cancel") and _info.visible:
 		_info.visible = false
 		get_viewport().set_input_as_handled()
-	elif key.keycode == KEY_E and not _info.visible:
-		close_requested.emit()
+	elif event.is_action_pressed("interact") and not _info.visible:
+		_return_to_ocean()
 		get_viewport().set_input_as_handled()
+
+
+## Troca de volta pra cena do oceano. `ocean_map.gd` reaplica o estado do navio
+## salvo em `GameManager` (`saved_hull`/`saved_supply`/`saved_ship_position`) no
+## próprio `_ready()`, lendo o que foi guardado ao entrar no porto.
+func _return_to_ocean() -> void:
+	get_tree().change_scene_to_file("res://scenes/world/ocean_map.tscn")
