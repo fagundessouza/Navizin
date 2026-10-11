@@ -3,6 +3,23 @@
 > Arquivo de contexto. Ao iniciar uma sessão nova, diga **"Carregar checkpoint"** e leia só este arquivo.
 > Ao final de cada sessão ou marco, diga **"Salvar checkpoint"** para atualizá-lo.
 
+## Checkpoint atual (2026-10-11b) — branch `feature/town-hub-redesign`
+
+Três correções pontuais sobre o checkpoint anterior (mesmo dia, rodada seguinte):
+
+**1) Crash corrigido:** "Cannot call method 'set_input_as_handled' on a null value" em `tortuga_dock.gd:42`. Causa provável: `interact_requested.emit()` dispara `ocean_map.gd._enter_tortuga()` → `change_scene_to_file()` antes de `get_viewport().set_input_as_handled()` rodar na mesma função -- arriscado mesmo com a troca de cena sendo deferida pelo Godot. Corrigido invertendo a ordem (consome o input ANTES de emitir) e com checagem de nulo explícita. Também zera `_ship_in_range` antes do emit, pra uma segunda tecla F não disparar `change_scene_to_file` de novo enquanto a primeira troca ainda não aconteceu. `ocean_map.gd._enter_tortuga` agora confere o retorno de `change_scene_to_file` e loga erro se falhar, em vez de falhar silencioso.
+
+**2) Aviso "Pressione F" reposicionado:** estava embaixo, sobrepondo a hotbar. Movido pro topo-centro, logo abaixo da bússola (`anchor` topo em vez de embaixo), com sombra no texto pra legibilidade contra o mar.
+
+**3) Ilha de Tortuga: escala e posição refeitas.** Problema: ilha pequena demais, dava pra circular em poucos segundos, sem sensação de lugar de verdade. Mudanças em `ocean_map.tscn`/`island_tortuga_hub.tscn`:
+- Escala da ilha: `0.45` → `1.0` (~2,2× maior). Todos os polígonos de colisão (`TortugaBody`) escalam junto automaticamente, por serem filhos do mesmo nó raiz.
+- Posição: `(1803, -414)` → `(1200, -3700)`. A ponta norte da ilha agora fica em y≈-4102, além do `world_bounds` (-4000) -- a massa de terra literalmente "vaza" o limite navegável do mapa, como pedido.
+- Doca/letreiro/postes/barris (filhos diretos de `World`, não escalam com a ilha) recalculados pra nova posição e escala (fator ×2,22), mantendo a mesma proporção visual dentro da baía.
+- **Verificado de verdade rodando o jogo** (não só compilação): captura ampla confirma a ilha preenchendo boa parte do enquadramento; teste de colisão (navio em `sail=FULL` tentando atravessar o flanco oeste por 4s de jogo) andou só ~122 unidades antes de parar -- bem menos que os ~480 que percorreria livre, confirmando que o casco bate e para na rocha, não atravessa.
+- **Achado técnico de harness:** `godot4 --script` (SceneTree customizado) não inicializa autoloads -- qualquer cena que referencie `GameManager` etc. falha a compilar nesse modo. Contornado registrando um autoload temporário (`scripts/_tmp_test_runner.gd`, removido depois do teste, não versionado) que roda dentro do boot normal do jogo (`--rendering-method gl_compatibility`, sem `--headless`, que precisa de uma janela real pra capturar `get_texture()`).
+
+---
+
 ## Checkpoint atual (2026-10-11) — branch `feature/town-hub-redesign`
 
 **Arquitetura multi-cena: IMPLEMENTADA (parte de código) nesta rodada.** A diretiva do checkpoint anterior (2026-10-09) foi executada:

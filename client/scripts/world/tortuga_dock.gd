@@ -38,5 +38,13 @@ func _on_area_exited(area: Area2D) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if _ship_in_range == null or not event.is_action_pressed("interact"):
 		return
-	interact_requested.emit(_ship_in_range)
-	get_viewport().set_input_as_handled()
+	# Consome o evento ANTES de emitir: quem ouve `interact_requested` troca de cena
+	# (`ocean_map.gd._enter_tortuga`), e isso pode descarregar este próprio nó. Chamar
+	# `get_viewport()` depois do emit arrisca pegá-lo nulo -- era exatamente o crash
+	# "Cannot call method 'set_input_as_handled' on a null value".
+	var viewport: Viewport = get_viewport()
+	if viewport != null:
+		viewport.set_input_as_handled()
+	var ship := _ship_in_range
+	_ship_in_range = null
+	interact_requested.emit(ship)

@@ -49,7 +49,9 @@ func _enter_tortuga(ship: Node2D) -> void:
 	GameManager.saved_ship_position = ship.global_position
 	GameManager.saved_hull = ship.hull
 	GameManager.saved_supply = ship.supply
-	get_tree().change_scene_to_file("res://scenes/cities/island_tortuga_hub.tscn")
+	var err := get_tree().change_scene_to_file("res://scenes/cities/island_tortuga_hub.tscn")
+	if err != OK:
+		push_error("Falha ao trocar para a cena da cidade de Tortuga: código %d" % err)
 
 
 ## Luz de visão do capitão: um halo quente e suave preso ao navio do jogador. A área

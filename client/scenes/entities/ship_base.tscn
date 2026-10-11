@@ -2,32 +2,32 @@
 
 [ext_resource type="Script" uid="uid://bey8542iig5ai" path="res://scripts/entities/ship_base.gd" id="1_ship"]
 [ext_resource type="Resource" path="res://data/ship_holandes_voador.tres" id="2_data"]
-[ext_resource type="Shader" path="res://assets/shaders/ship_outline.gdshader" id="4_outline"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ships/holandes_voador/dir8/dir8_00.png" id="3_sprite"]
-[ext_resource type="Texture2D" path="res://assets/sprites/vfx/auras/dark_aura.png" id="5_aura"]
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_outline"]
-shader = ExtResource("4_outline")
+[ext_resource type="Texture2D" uid="uid://bax8onqf6japg" path="res://assets/sprites/ships/holandes_voador/dir8/dir8_00.png" id="3_sprite"]
+[ext_resource type="Shader" uid="uid://1uqte43m3ycf" path="res://assets/shaders/ship_outline.gdshader" id="4_outline"]
+[ext_resource type="Texture2D" uid="uid://bmeo5o5hefwtf" path="res://assets/sprites/vfx/auras/dark_aura.png" id="5_aura"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_hull"]
 size = Vector2(260, 140)
 
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_outline"]
+shader = ExtResource("4_outline")
+shader_parameter/outline_color = Color(0.04, 0.09, 0.14, 0.9)
+shader_parameter/outline_width = 1.0
+
 [node name="ShipBase" type="Node2D" unique_id=1944009318]
+position = Vector2(712, 379)
 script = ExtResource("1_ship")
 data = ExtResource("2_data")
 
-[node name="HullArea" type="Area2D" parent="."]
+[node name="HullArea" type="Area2D" parent="." unique_id=463283725]
 collision_layer = 2
-collision_mask = 1
-monitoring = true
-monitorable = true
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="HullArea"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HullArea" unique_id=1896117665]
 shape = SubResource("RectangleShape2D_hull")
 
-[node name="DarkAura" type="Sprite2D" parent="." unique_id=3087221445]
-show_behind_parent = true
+[node name="DarkAura" type="Sprite2D" parent="." unique_id=-1207745851]
 modulate = Color(1, 1, 1, 0.55)
+show_behind_parent = true
 scale = Vector2(2.1, 2.1)
 texture = ExtResource("5_aura")
 
@@ -35,7 +35,7 @@ texture = ExtResource("5_aura")
 texture_filter = 1
 texture = ExtResource("3_sprite")
 
-[node name="SternMarker" type="Marker2D" parent="."]
+[node name="SternMarker" type="Marker2D" parent="." unique_id=28772808]
 top_level = true
 
 [node name="WaterTrailFX" type="GPUParticles2D" parent="." unique_id=319747898]
@@ -43,12 +43,12 @@ emitting = false
 amount = 28
 lifetime = 1.1
 
-[node name="BowWave" type="GPUParticles2D" parent="."]
+[node name="BowWave" type="GPUParticles2D" parent="." unique_id=946905731]
 emitting = false
 
 [node name="Sprite2D" type="Sprite2D" parent="." unique_id=225768888]
-material = SubResource("ShaderMaterial_outline")
 texture_filter = 1
+material = SubResource("ShaderMaterial_outline")
 texture = ExtResource("3_sprite")
 
 [node name="PortCannons" type="Node2D" parent="." unique_id=965552933]
@@ -73,9 +73,7 @@ position = Vector2(0, 23)
 [node name="Cannon3" type="Marker2D" parent="StarboardCannons" unique_id=811385468]
 position = Vector2(58, 23)
 
-[node name="LanternGlow" type="PointLight2D" parent="."]
+[node name="LanternGlow" type="PointLight2D" parent="." unique_id=287361595]
 position = Vector2(-30, 4)
 color = Color(1, 0.72, 0.4, 1)
 energy = 0.8
-blend_mode = 0
-
