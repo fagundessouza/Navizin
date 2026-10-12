@@ -1,0 +1,122 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/cities/trade_modal.gd" id="1_script"]
+
+[node name="TradeModal" type="PanelContainer"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -280.0
+offset_top = -210.0
+offset_right = 280.0
+offset_bottom = 210.0
+script = ExtResource("1_script")
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 16
+
+[node name="VBox" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Header" type="HBoxContainer" parent="Margin/VBox"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Margin/VBox/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.95, 0.85, 0.55, 1)
+theme_override_font_sizes/font_size = 22
+text = "Loja"
+
+[node name="CloseButton" type="Button" parent="Margin/VBox/Header"]
+layout_mode = 2
+text = "X"
+
+[node name="Tabs" type="HBoxContainer" parent="Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Tab1" type="Button" parent="Margin/VBox/Tabs"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Categoria 1"
+
+[node name="Tab2" type="Button" parent="Margin/VBox/Tabs"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Categoria 2"
+
+[node name="Pages" type="Control" parent="Margin/VBox"]
+custom_minimum_size = Vector2(0, 260)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Page1" type="VBoxContainer" parent="Margin/VBox/Pages"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 10
+
+[node name="ItemsPlaceholder" type="Label" parent="Margin/VBox/Pages/Page1"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0.6, 0.58, 0.54, 1)
+text = "Em breve."
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Actions" type="HBoxContainer" parent="Margin/VBox/Pages/Page1"]
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="BuyButton" type="Button" parent="Margin/VBox/Pages/Page1/Actions"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+text = "Comprar"
+
+[node name="SellButton" type="Button" parent="Margin/VBox/Pages/Page1/Actions"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+text = "Vender"
+
+[node name="Page2" type="VBoxContainer" parent="Margin/VBox/Pages"]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 10
+
+[node name="ItemsPlaceholder" type="Label" parent="Margin/VBox/Pages/Page2"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0.6, 0.58, 0.54, 1)
+text = "Em breve."
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Actions" type="HBoxContainer" parent="Margin/VBox/Pages/Page2"]
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="BuyButton" type="Button" parent="Margin/VBox/Pages/Page2/Actions"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+text = "Comprar"
+
+[node name="SellButton" type="Button" parent="Margin/VBox/Pages/Page2/Actions"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+text = "Vender"

@@ -3,6 +3,18 @@
 > Arquivo de contexto. Ao iniciar uma sessão nova, diga **"Carregar checkpoint"** e leia só este arquivo.
 > Ao final de cada sessão ou marco, diga **"Salvar checkpoint"** para atualizá-lo.
 
+## Checkpoint atual (2026-10-11g) — branch `feature/town-hub-redesign`
+
+**Fundo cinza, 2 artes dedicadas novas, e sistema de modal de comércio reutilizável.**
+
+- **Cinza nas bordas:** `rendering/environment/defaults/default_clear_color` em `project.godot` virou preto puro. `island_tortuga_hub.tscn` ganhou um `ColorRect` preto atrás da arte (`BlackBackdrop`) e uma vinheta de verdade (`assets/shaders/vignette.gdshader`, escurece progressivamente até os cantos, não é só um tingimento plano como o `Vignette` que já existia). A causa mais provável não era nenhum mismatch de proporção (a arte já é 16:9 igual o viewport) -- é letterboxing quando a janela do jogador não fica exatamente 16:9. As três camadas resolvem isso em qualquer proporção de janela.
+- **Boticário e Ferreiro ganharam arte dedicada de verdade:** antes o Boticário dividia fundo com a Guilda dos Capitães (mesmo arquivo). Agora usa `apothecary_lab_v2.png` (caldeirão borbulhando verde, frascos roxos/verdes, crânios) e o Ferreiro usa `blacksmith_forge.png` (forja ao ar livre com vulcão ativo ao fundo), achados em `~/Downloads/` com nome próprio -- não mais um `image_<uuid>.png` genérico. A Guilda continua usando o estúdio gótico sozinha agora (Boticário não compartilha mais).
+- **`scenes/ui/trade_modal.tscn` + `scripts/cities/trade_modal.gd`** (novo, reutilizável): painel modal centralizado, 2 abas configuráveis por `@export`, cada uma com um placeholder "Em breve" e botões Comprar/Vender -- sem lógica de inventário ainda, só a estrutura. `city_district_base.gd._wire_shop()` liga um botão "Abrir Loja" ao modal SE a cena tiver os dois nós (`OpenShopButton` + `TradeModal`); se não tiver, não faz nada -- não quebra as cenas sem loja.
+- **Aplicado em 6 dos 8 distritos** (Taverna, Ferreiro, Estaleiro, Boticário, Baú do Tesouro, Mercado Feirante), cada um com abas temáticas (ex. Ferreiro: "Canhões"/"Blindagem do Casco"; Boticário: "Poções de Cura"/"Elixires Raros"). **Deliberadamente sem modal:** Mural de Recompensas e Guilda dos Capitães -- não são loja (quadro de contratos e salão de reputação/frota), forçar Comprar/Vender ali não faria sentido. Pode ganhar sua própria UI (não de comércio) depois.
+- **Verificado rodando o jogo de verdade:** captura da ilha confirma vinheta sem cinza nenhum; abrir a Forja mostra o modal com título/abas corretos, troca de aba funciona, fechar esconde de novo -- 7 checagens, todas passaram.
+
+---
+
 ## Checkpoint atual (2026-10-11f) — branch `feature/town-hub-redesign`
 
 **Reorganização de nomes/fundos, taxonomia dos distritos virou 8.**

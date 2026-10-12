@@ -1,9 +1,13 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/cities/island_tortuga_hub.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/ui/hotspots/transparent.png" id="2_blank"]
 [ext_resource type="Texture2D" path="res://assets/ui/hotspots/hover_outline.png" id="3_hover"]
 [ext_resource type="Texture2D" path="res://assets/sprites/environment/islands/tortuga_hub.png" id="4_bg"]
+[ext_resource type="Shader" path="res://assets/shaders/vignette.gdshader" id="5_vignette"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_vignette"]
+shader = ExtResource("5_vignette")
 
 [node name="IslandTortugaHub" type="Control"]
 anchors_preset = 15
@@ -13,6 +17,15 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_script")
+
+[node name="BlackBackdrop" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+mouse_filter = 2
 
 [node name="Background" type="TextureRect" parent="."]
 anchors_preset = 15
@@ -32,6 +45,16 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.05, 0.08, 0.12, 0.22)
+mouse_filter = 2
+
+[node name="EdgeVignette" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+material = SubResource("ShaderMaterial_vignette")
+color = Color(1, 1, 1, 1)
 mouse_filter = 2
 
 [node name="Hotspots" type="Control" parent="."]

@@ -1,7 +1,8 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/cities/city_district_base.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/sprites/environment/districts/harbor_background.png" id="2_bg"]
+[ext_resource type="PackedScene" path="res://scenes/ui/trade_modal.tscn" id="3_modal"]
 
 [node name="MarketBazaarDistrict" type="Control"]
 anchors_preset = 15
@@ -83,3 +84,16 @@ text = "Mapa da Ilha"
 [node name="BackToSea" type="Button" parent="Buttons"]
 layout_mode = 2
 text = "Voltar ao Mar"
+
+[node name="OpenShopButton" type="Button" parent="."]
+offset_left = 24.0
+offset_top = 148.0
+offset_right = 168.0
+offset_bottom = 180.0
+text = "Abrir Mercado"
+
+[node name="TradeModal" parent="." instance=ExtResource("3_modal")]
+visible = false
+shop_title = "Mercado Feirante de Tortuga"
+tab_1_name = "Suprimentos"
+tab_2_name = "Bugigangas"

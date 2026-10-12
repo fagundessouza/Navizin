@@ -26,6 +26,17 @@ func _ready() -> void:
 	_body.text = district_body
 	$Buttons/BackToIsland.pressed.connect(_on_back_to_island)
 	$Buttons/BackToSea.pressed.connect(_on_back_to_sea)
+	_wire_shop()
+
+
+## Liga o botão "Abrir Loja" ao `TradeModal`, só nos distritos que têm os dois
+## nós (Mural de Recompensas e Guilda não são loja, não têm essa dupla).
+func _wire_shop() -> void:
+	var button: Button = get_node_or_null("OpenShopButton")
+	var modal: Control = get_node_or_null("TradeModal")
+	if button == null or modal == null:
+		return
+	button.pressed.connect(modal.open)
 
 
 func _unhandled_input(event: InputEvent) -> void:
