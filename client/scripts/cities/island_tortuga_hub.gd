@@ -44,9 +44,14 @@ func _on_hotspot_pressed(location: String) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("interact"):
-		_return_to_ocean()
-		get_viewport().set_input_as_handled()
+	if not event.is_action_pressed("interact"):
+		return
+	# Consome o evento ANTES de trocar de cena: o mesmo bug de `tortuga_dock.gd`
+	# (`get_viewport()` podendo vir nulo se chamado depois do `change_scene_to_file`).
+	var viewport: Viewport = get_viewport()
+	if viewport != null:
+		viewport.set_input_as_handled()
+	_return_to_ocean()
 
 
 ## Troca de volta pra cena do oceano. `ocean_map.gd` reaplica o estado do navio

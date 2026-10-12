@@ -25,9 +25,14 @@ func _ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_cancel"):
-		_on_back_to_island()
-		get_viewport().set_input_as_handled()
+	if not event.is_action_pressed("ui_cancel"):
+		return
+	# Mesma ordem seca de `tortuga_dock.gd`/`island_tortuga_hub.gd`: consumir o
+	# evento ANTES de trocar de cena, nunca depois.
+	var viewport: Viewport = get_viewport()
+	if viewport != null:
+		viewport.set_input_as_handled()
+	_on_back_to_island()
 
 
 ## Volta pro mapa da ilha (um nível acima na hierarquia: oceano -> ilha -> bairro).
