@@ -96,4 +96,4 @@ text = "Abrir Feira"
 visible = false
 shop_title = "Feira de Suprimentos"
 tabs = PackedStringArray("Alimentos e Bebidas", "Suprimentos de Bordo")
-action_buttons = PackedStringArray("Comprar", "Vender")
+action_buttons = PackedStringArray()

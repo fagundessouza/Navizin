@@ -3,6 +3,17 @@
 > Arquivo de contexto. Ao iniciar uma sessão nova, diga **"Carregar checkpoint"** e leia só este arquivo.
 > Ao final de cada sessão ou marco, diga **"Salvar checkpoint"** para atualizá-lo.
 
+## Checkpoint atual (2026-10-12f) — branch `feature/town-hub-redesign`
+
+**Pin da Feira de Suprimentos reposicionado, modal sem Comprar/Vender.**
+
+- O pin estava no farol/torre do topo (posição herdada do antigo hotspot "Academy", nunca tinha sido revisada). Movido pra região das barracas/tendas de comércio no cais inferior, perto da água da baía -- conferido por amostragem (99% de pixel opaco na nova posição).
+- `supply_market_district.tscn`: `action_buttons` vazio (tira Comprar/Vender, mesmo tratamento já dado à Taverna). Fundo confirmado correto (`dark_port.png` = `image_3560056b`, tendas com peixe seco e placa "The Black Tide" -- já estava certo desde a rodada anterior, só confirmado de novo). Sobreposição de botões já resolvida genericamente pelo fix do checkpoint anterior (`TradeModal.opened/closed`), nenhuma mudança extra precisou aqui.
+
+**Verificado rodando o jogo de verdade:** hover no pin novo mostra tooltip "Feira de Suprimentos" na posição certa (barracas, não mais na torre); modal confirma 2 abas sem botões de ação e sem sobreposição com os botões de navegação.
+
+---
+
 ## Checkpoint atual (2026-10-12e) — branch `feature/town-hub-redesign`
 
 **Camadas de UI, reposição da Caverna do Tesouro (de verdade desta vez), e sistema de marcadores visuais no mapa da ilha.**

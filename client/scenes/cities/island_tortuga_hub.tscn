@@ -143,10 +143,10 @@ district_function = "Sua frota, guilda e reputação"
 icon = ExtResource("13_guildhall")
 
 [node name="SupplyMarket" parent="Hotspots" instance=ExtResource("6_pin")]
-offset_left = 964.0
-offset_top = 39.0
-offset_right = 1012.0
-offset_bottom = 87.0
+offset_left = 1001.0
+offset_top = 472.0
+offset_right = 1049.0
+offset_bottom = 520.0
 district_id = "SupplyMarket"
 district_name = "Feira de Suprimentos"
 district_function = "Comida, bebida e suprimentos de bordo"
