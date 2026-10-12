@@ -3,6 +3,21 @@
 > Arquivo de contexto. Ao iniciar uma sessão nova, diga **"Carregar checkpoint"** e leia só este arquivo.
 > Ao final de cada sessão ou marco, diga **"Salvar checkpoint"** para atualizá-lo.
 
+## Checkpoint atual (2026-10-12g) — branch `feature/town-hub-redesign`
+
+**Barra de menus do HUD reestruturada: de 13 ícones soltos (a maioria sem função, só texto "Em construção") pra 6 botões com destino próprio.**
+
+- `system_menu_bar.tscn`: grid reduzido de 3 linhas/13 ícones pra 1 linha/6 ícones (painel 342x184 → 342x68). Mapeamento final: Navio (galeão, reaproveitado de `pins/icon_shipyard.png`) / Diário de Bordo (pergaminho, novo recorte da prancha em `processed/hud/icon_scroll_missions.png`) / Ficha do Capitão (baú, ícone antigo já pronto com hover+pressed) / Life Skills (bússola, ícone antigo já pronto) / Salão das Frotas (bandeira do kraken, `processed/tab_banner_kraken.png` -- mais específica que o jolly_roger genérico que tinha antes) / Configurações (engrenagem, inalterado).
+- Removidos como botão próprio: leme isolado, âncora avulsa, munição, tripulação solta, rum, mapa do mundo, reconhecimento, perfis/títulos, alertas soltos. Tripulação virou aba dentro do Navio; Alertas virou aba dentro do Diário de Bordo; o resto não tinha função clara o bastante pra manter ícone fixo. "Ancorar" (recolher vela) continua funcionando pela tecla N em `_unhandled_input`, só perdeu o botão -- não é mais ação rápida nesse grid, que virou só de janelas.
+- `CaptainPanel` (`scripts/ui/captain_panel.gd` + `scenes/ui/captain_panel.tscn`, novo): mesmo padrão de N abas em código do `TradeModal`, mas sem o cabeçalho de saudação de NPC (não faz sentido o jogador "ser cumprimentado" na própria ficha). `tab_bodies` dá uma frase própria por aba em vez do "Em breve" genérico. Usado em 3 instâncias no `hud.tscn`: Navio (abas Casco/Peças, Habilidades Passivas, Tripulação), Diário de Bordo (abas Diário de Bordo, Histórico de Combate) e Ficha do Capitão (abas Brincos/Anéis/Colares/Cintos/Trajes).
+- `LifeSkillsPanel` (`scripts/ui/life_skills_panel.gd` + `scenes/ui/life_skills_panel.tscn`, novo): interface de barras de proficiência estilo BDO/Albion -- 6 ofícios (Pesca, Coleta, Comércio, Navegação, Culinária, Alquimia), cada um com nome + barra + nível, construídos em código a partir de uma constante `SKILLS` com valores de demonstração (sem XP real rastreado ainda).
+- Salão das Frotas e Configurações continuam na caixa de diálogo simples já existente (`DialogPanel`, só título+corpo) -- não precisavam de abas, e a Guilda já existe como distrito físico em Tortuga (esse botão é só um atalho informativo vindo do mar, não teleporta pro distrito).
+- `hud_controller.gd` reescrito: `MENUS` virou dois dicionários (`SIMPLE_MENUS` pros 2 que usam o diálogo genérico, `DEDICATED_KEYS` pros 4 com painel próprio, resolvidos em `_dedicated_panels` no `_ready()`), um único fluxo de abrir/fechar (`_on_menu_pressed`/`_close_panel`) cobre os dois tipos. Removido o `_update_compass_body()` (texto de vento ao vivo) junto com o botão de bússola antigo, que não existe mais como "Rosa dos Ventos".
+
+**Verificado rodando o jogo de verdade:** grid confirmado com exatamente 6 botões; os 4 painéis com aba abrem e fecham certo; os 2 diálogos simples mostram título/corpo certos; capturas de tela confirmam os 6 ícones legíveis e o layout dos painéis (abas do Navio, Ficha do Capitão com 5 abas, barras de Life Skills, diálogo da Guilda).
+
+---
+
 ## Checkpoint atual (2026-10-12f) — branch `feature/town-hub-redesign`
 
 **Pin da Feira de Suprimentos reposicionado, modal sem Comprar/Vender.**

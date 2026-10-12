@@ -7,6 +7,8 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/hotbar.tscn" id="6_hotbar"]
 [ext_resource type="PackedScene" path="res://scenes/ui/system_menu_bar.tscn" id="7_menu"]
 [ext_resource type="PackedScene" path="res://scenes/ui/dialog_panel.tscn" id="8_dialog"]
+[ext_resource type="PackedScene" path="res://scenes/ui/captain_panel.tscn" id="9_captainpanel"]
+[ext_resource type="PackedScene" path="res://scenes/ui/life_skills_panel.tscn" id="10_lifeskills"]
 
 [node name="HUD" type="Control"]
 layout_mode = 3
@@ -65,3 +67,25 @@ offset_left = -180.0
 offset_top = -264.0
 offset_right = 180.0
 offset_bottom = 56.0
+
+[node name="ShipPanel" parent="." instance=ExtResource("9_captainpanel")]
+layout_mode = 1
+panel_title = "Status do Navio"
+tabs = PackedStringArray("Casco/Peças", "Habilidades Passivas", "Tripulação")
+tab_bodies = PackedStringArray("Casco, velas e proa -- resistência, velocidade e carga de cada peça equipada. Em construção.", "Habilidades do navio, como a Névoa de Fuga. Em construção.", "Marinheiros, moral e funções a bordo. Em construção.")
+
+[node name="MissionsPanel" parent="." instance=ExtResource("9_captainpanel")]
+layout_mode = 1
+panel_title = "Diário de Bordo"
+tabs = PackedStringArray("Diário de Bordo", "Histórico de Combate")
+tab_bodies = PackedStringArray("Missões ativas e concluídas, ilha a ilha. Em construção.", "Abalroamentos vencidos, navios afundados e avisos de casco baixo. Em construção.")
+
+[node name="AccessoriesPanel" parent="." instance=ExtResource("9_captainpanel")]
+layout_mode = 1
+offset_left = -300.0
+offset_right = 300.0
+panel_title = "Ficha do Capitão"
+tabs = PackedStringArray("Brincos", "Anéis", "Colares", "Cintos", "Trajes")
+
+[node name="LifeSkillsPanel" parent="." instance=ExtResource("10_lifeskills")]
+layout_mode = 1

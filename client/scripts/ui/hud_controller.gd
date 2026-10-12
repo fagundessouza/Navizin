@@ -4,7 +4,16 @@ extends Control
 ## - barras de casco e de suprimentos, lidas do navio a cada quadro;
 ## - bússola: a fita desliza pelo rumo do navio;
 ## - hotbar: ícones dos slots, recarga da bordada no slot 1, teclas 1 a 8;
-## - barra de menus: 12 botões com atalho, som de clique e uma caixa de diálogo.
+## - barra de menus: 6 botões com destino próprio (painel com abas, painel de
+##   proficiências ou a caixa de diálogo simples), atalho de teclado e som de clique.
+##
+## Reduzida de 13 pra 6 ícones: tirado leme isolado, âncora avulsa, munição,
+## tripulação solta, rum, mapa, reconhecimento e alertas soltos como botões
+## próprios -- cada um ou virou aba dentro de um painel maior (Tripulação ->
+## aba do Navio; Alertas -> aba do Diário de Bordo) ou não tinha função clara
+## o bastante pra justificar um ícone fixo. "Ancorar" continua funcionando
+## pela tecla N, só não tem mais botão (não fazia sentido num grid que agora
+## é só de JANELAS, não de ações rápidas).
 
 const SLOT_COUNT: int = 8
 const FLASH_TIME: float = 0.25
@@ -14,28 +23,27 @@ const ICON_PATH: String = "res://assets/ui/icons/hot_%d.png"
 ## Ícones da hotbar por slot: 1 munição, 2 rum, 3 pistola, 4 espada.
 const SLOT_ICON_COUNT: int = 4
 
-## Menus: nome do botão, tecla de atalho, título e texto. Janelas ainda sem conteúdo
-## mostram "em construção" para não parecer funcional.
-const MENUS: Dictionary = {
-	"MenuShip": {"key": KEY_L, "title": "Leme e Navio", "body": "Estatísticas do navio: casco, velocidade, carga e suprimentos. Em construção."},
-	"MenuAnchor": {"key": KEY_N, "title": "Ancorar", "body": "Recolhe as velas e para o navio. Ativado pelo botão de âncora."},
-	"MenuAmmo": {"key": KEY_B, "title": "Munição", "body": "Escolha entre balas normais, encadeadas e incendiárias. Em construção."},
-	"MenuCrew": {"key": KEY_C, "title": "Tripulação", "body": "Marinheiros, moral e funções a bordo. Em construção."},
-	"MenuGuild": {"key": KEY_G, "title": "Frota e Guilda", "body": "Sua frota, bandeira e guilda pirata. Em construção."},
-	"MenuRum": {"key": KEY_R, "title": "Consumíveis", "body": "Poções, rum e rações para uso rápido. Em construção."},
-	"MenuMap": {"key": KEY_M, "title": "Mapa do Mundo", "body": "Carta náutica com ilhas e rotas. Em construção."},
-	"MenuRecon": {"key": KEY_T, "title": "Reconhecimento", "body": "Visão aumentada e bússola em tela cheia. Em construção."},
-	"MenuInventory": {"key": KEY_I, "title": "Inventário", "body": "Inventário do capitão e porão do navio. Em construção."},
-	"MenuProfile": {"key": KEY_P, "title": "Perfis e Títulos", "body": "Conquistas e reputação nos mares. Em construção."},
-	"MenuCompass": {"key": KEY_V, "title": "Rosa dos Ventos", "body": ""},
-	"MenuAlerts": {"key": KEY_K, "title": "Alertas", "body": "Avisos de perigo e de casco baixo. Em construção."},
-	"MenuSettings": {"key": KEY_O, "title": "Configurações", "body": "Vídeo, áudio e controles. Em construção."},
+## Botões sem painel dedicado ainda: usam a caixa de diálogo genérica (só
+## título + corpo), igual ao sistema antigo.
+const SIMPLE_MENUS: Dictionary = {
+	"MenuGuild": {"key": KEY_G, "title": "Salão das Frotas", "body": "Sua frota, bandeira e guilda pirata. Veja o salão completo na Guilda de Tortuga. Em construção."},
+	"MenuSettings": {"key": KEY_O, "title": "Configurações", "body": "Resolução, áudio e escala de UI. Em construção."},
+}
+
+## Botões com painel próprio (`CaptainPanel`/`LifeSkillsPanel` na cena) -- só
+## a tecla de atalho fica aqui, o nó em si é resolvido em `_ready()`.
+const DEDICATED_KEYS: Dictionary = {
+	"MenuShip": KEY_L,
+	"MenuMissions": KEY_J,
+	"MenuAccessories": KEY_C,
+	"MenuLifeSkills": KEY_V,
 }
 
 var _ship: Node2D = null
 var _hull_connected: bool = false
 var _open_menu: String = ""
 var _wind: Node = null
+var _dedicated_panels: Dictionary = {}
 
 @onready var _compass: CompassTape = $CompassHUD
 @onready var _hull_fill: TextureProgressBar = $CaptainStatus/HullFill
@@ -52,6 +60,12 @@ var _wind: Node = null
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_wind = get_node("/root/WindManager")
+	_dedicated_panels = {
+		"MenuShip": $ShipPanel,
+		"MenuMissions": $MissionsPanel,
+		"MenuAccessories": $AccessoriesPanel,
+		"MenuLifeSkills": $LifeSkillsPanel,
+	}
 	for k in range(1, SLOT_COUNT + 1):
 		var highlight: ColorRect = get_node("Hotbar/Slot%d/Highlight%d" % [k, k])
 		highlight.visible = false
@@ -71,8 +85,6 @@ func _process(_delta: float) -> void:
 	_update_status()
 	_update_wind()
 	_update_cooldown()
-	if _open_menu == "MenuCompass":
-		_update_compass_body()
 
 
 ## Procura o navio do jogador e liga o sinal de casco uma única vez.
@@ -131,44 +143,50 @@ func _unhandled_input(event: InputEvent) -> void:
 	if key.keycode == KEY_ESCAPE and _open_menu != "":
 		_close_panel()
 		return
+	if key.keycode == KEY_N:
+		if _ship != null:
+			_ship.set("sail", 0)
+		return
 	var index: int = key.keycode - KEY_1
 	if index >= 0 and index < SLOT_COUNT:
 		_flash_slot(index + 1)
 		return
-	for menu_name in MENUS:
-		if MENUS[menu_name]["key"] == key.keycode:
+	for menu_name in SIMPLE_MENUS:
+		if SIMPLE_MENUS[menu_name]["key"] == key.keycode:
+			_on_menu_pressed(menu_name)
+			return
+	for menu_name in DEDICATED_KEYS:
+		if DEDICATED_KEYS[menu_name] == key.keycode:
 			_on_menu_pressed(menu_name)
 			return
 
 
-## Clique numa janela: abre, troca ou fecha. Mostra o som de clique.
+## Clique numa janela: abre, troca ou fecha. Mostra o som de clique. Os 4
+## botões com painel próprio (`_dedicated_panels`) abrem/fecham o painel deles;
+## os outros 2 continuam na caixa de diálogo genérica de título + corpo.
 func _on_menu_pressed(menu_name: String) -> void:
 	_click.play()
-	if menu_name == "MenuAnchor":
-		if _ship != null:
-			_ship.set("sail", 0)
-		return
 	if _open_menu == menu_name:
 		_close_panel()
 		return
+	if _open_menu != "":
+		_close_panel()
 	_open_menu = menu_name
-	_dialog.get_node("Title").text = MENUS[menu_name]["title"]
-	_dialog.get_node("Body").text = MENUS[menu_name]["body"]
+	if _dedicated_panels.has(menu_name):
+		_dedicated_panels[menu_name].open()
+		return
+	var info: Dictionary = SIMPLE_MENUS[menu_name]
+	_dialog.get_node("Title").text = info["title"]
+	_dialog.get_node("Body").text = info["body"]
 	_dialog.visible = true
-	if menu_name == "MenuCompass":
-		_update_compass_body()
 
 
 func _close_panel() -> void:
+	if _dedicated_panels.has(_open_menu):
+		_dedicated_panels[_open_menu].close()
+	else:
+		_dialog.visible = false
 	_open_menu = ""
-	_dialog.visible = false
-
-
-## Texto da rosa dos ventos: direção e força do vento atual.
-func _update_compass_body() -> void:
-	var wdir: Vector2 = _wind.wind_direction
-	var degrees: int = int(fmod(rad_to_deg(wdir.angle()) + 90.0 + 360.0, 360.0))
-	_dialog.get_node("Body").text = "Vento de %d° (rumo do vento).\nForça: %.1f de 1.5." % [degrees, _wind.wind_strength]
 
 
 ## Botão em hover cresce um pouco; sai ao tirar o mouse.
