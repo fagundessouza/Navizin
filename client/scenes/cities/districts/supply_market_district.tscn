@@ -1,10 +1,10 @@
 [gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/cities/city_district_base.gd" id="1_script"]
-[ext_resource type="Texture2D" path="res://assets/sprites/environment/districts/harbor_background.png" id="2_bg"]
+[ext_resource type="Texture2D" path="res://assets/sprites/environment/districts/interiors/dark_port.png" id="2_bg"]
 [ext_resource type="PackedScene" path="res://scenes/ui/trade_modal.tscn" id="3_modal"]
 
-[node name="MarketBazaarDistrict" type="Control"]
+[node name="SupplyMarketDistrict" type="Control"]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -12,8 +12,8 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_script")
-district_title = "Mercado Feirante de Tortuga"
-district_body = "Barracas de pólvora, biscoito de viagem e bugigangas ao longo do cais. Em construção."
+district_title = "Feira de Suprimentos"
+district_body = "Peixe seco, barris e fogueiras sob as tendas do cais -- comida, bebida e suprimentos de bordo. Em construção."
 
 [node name="Background" type="TextureRect" parent="."]
 anchors_preset = 15
@@ -90,10 +90,10 @@ offset_left = 24.0
 offset_top = 148.0
 offset_right = 168.0
 offset_bottom = 180.0
-text = "Abrir Mercado"
+text = "Abrir Feira"
 
 [node name="TradeModal" parent="." instance=ExtResource("3_modal")]
 visible = false
-shop_title = "Mercado Feirante de Tortuga"
-tab_1_name = "Suprimentos"
-tab_2_name = "Bugigangas"
+shop_title = "Feira de Suprimentos"
+tabs = PackedStringArray("Alimentos e Bebidas", "Suprimentos de Bordo")
+action_buttons = PackedStringArray("Comprar", "Vender")

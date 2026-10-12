@@ -121,15 +121,15 @@ stretch_mode = 1
 tooltip_text = "Mercado Central / Marketplace"
 
 [node name="TreasureVault" type="TextureButton" parent="Hotspots"]
-offset_left = 870.0
-offset_top = 362.0
-offset_right = 1030.0
-offset_bottom = 472.0
+offset_left = 1160.0
+offset_top = 420.0
+offset_right = 1265.0
+offset_bottom = 540.0
 texture_normal = ExtResource("2_blank")
 texture_hover = ExtResource("3_hover")
 ignore_texture_size = true
 stretch_mode = 1
-tooltip_text = "Feira de Suprimentos"
+tooltip_text = "Caverna do Tesouro e Contrabando"
 
 [node name="GuildHall" type="TextureButton" parent="Hotspots"]
 offset_left = 838.0
@@ -142,7 +142,7 @@ ignore_texture_size = true
 stretch_mode = 1
 tooltip_text = "Salão das Frotas"
 
-[node name="MarketBazaar" type="TextureButton" parent="Hotspots"]
+[node name="SupplyMarket" type="TextureButton" parent="Hotspots"]
 offset_left = 928.0
 offset_top = 3.0
 offset_right = 1048.0
@@ -151,7 +151,7 @@ texture_normal = ExtResource("2_blank")
 texture_hover = ExtResource("3_hover")
 ignore_texture_size = true
 stretch_mode = 1
-tooltip_text = "Mercado Feirante de Tortuga"
+tooltip_text = "Feira de Suprimentos"
 
 [node name="Title" type="Label" parent="."]
 offset_left = 24.0

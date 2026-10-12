@@ -20,6 +20,9 @@ extends Control
 ## "BountyBoard" (nome do nó, histórico) agora abre o Mercado Central /
 ## Marketplace -- o quadro de procurados que dava nome a esse hotspot mudou de
 ## endereço, virou uma aba dentro da Taverna (ver `tavern_district.tscn`).
+## "SupplyMarket" (antigo "MarketBazaar") é a Feira de Suprimentos de verdade,
+## com arte própria agora -- "TreasureVault" voltou a ser só a Caverna do
+## Tesouro (as duas tinham ficado misturadas numa rodada anterior).
 const DISTRICT_SCENES: Dictionary = {
 	"Shipyard": "res://scenes/cities/districts/shipyard_district.tscn",
 	"Forge": "res://scenes/cities/districts/blacksmith_district.tscn",
@@ -28,7 +31,7 @@ const DISTRICT_SCENES: Dictionary = {
 	"BountyBoard": "res://scenes/cities/districts/marketplace_district.tscn",
 	"TreasureVault": "res://scenes/cities/districts/treasure_vault_district.tscn",
 	"GuildHall": "res://scenes/cities/districts/captains_guild_district.tscn",
-	"MarketBazaar": "res://scenes/cities/districts/market_bazaar_district.tscn",
+	"SupplyMarket": "res://scenes/cities/districts/supply_market_district.tscn",
 }
 const FALLBACK_SCENE: String = "res://scenes/cities/city_district_base.tscn"
 

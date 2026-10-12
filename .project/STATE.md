@@ -3,6 +3,21 @@
 > Arquivo de contexto. Ao iniciar uma sessão nova, diga **"Carregar checkpoint"** e leia só este arquivo.
 > Ao final de cada sessão ou marco, diga **"Salvar checkpoint"** para atualizá-lo.
 
+## Checkpoint atual (2026-10-12b) — branch `feature/town-hub-redesign`
+
+**Desfeita uma confusão de 2 rodadas atrás: Feira de Suprimentos e Caverna do Tesouro viraram o mesmo hotspot sem querer.**
+
+No checkpoint `2026-10-11f`, troquei o título de `treasure_vault_district.tscn` pra "Feira de Suprimentos" sem perceber que isso colidia com o conceito que já existia em `market_bazaar_district.tscn` ("Mercado Feirante de Tortuga"). O pedido desta rodada deixou isso explícito ao pedir os dois como coisas separadas, com arquivos de cena diferentes.
+
+- **Posição do hotspot da Caverna do Tesouro ajustada.** O pedido queria ele "no recanto rochoso da base, abaixo do cais e da feira" -- conferi a arte da ilha e não existe nenhuma boca de caverna literalmente desenhada em lugar nenhum (a ilha não tem esse detalhe pintado). Usei o ponto mais rochoso e dramático disponível (penhasco com cachoeira, perto do farol, canto direito) em vez de inventar uma posição sem base visual.
+- **`treasure_vault_district.tscn` voltou a ser só a Caverna do Tesouro:** título "Caverna do Tesouro e Contrabando", abas do modal de volta pra "Itens Recuperados"/"Contrabando". Fundo continua `market_cavern.png` (nunca mudou, estava certo desde o início).
+- **`market_bazaar_district.tscn` → renomeado pra `supply_market_district.tscn`**, essa sim a Feira de Suprimentos de verdade: fundo trocado de `harbor_background.png` (genérico) pra `dark_port.png` (o porto com a banca de peixe seco e a placa "The Black Tide" -- a imagem `image_3560056b`, que ESTAVA certa desde quando identifiquei pela primeira vez, só nunca tinha sido usada em lugar nenhum porque ficou órfã depois de trocas anteriores). Ganhou modal próprio agora (não tinha nenhum): abas "Alimentos e Bebidas"/"Suprimentos de Bordo".
+- Hotspot/nó renomeado de "MarketBazaar" pra "SupplyMarket" em `island_tortuga_hub.tscn` e no dicionário `DISTRICT_SCENES`.
+
+**Verificado rodando o jogo de verdade:** Caverna do Tesouro e Feira de Suprimentos abertos separadamente, título/abas/fundo corretos em cada um, sem mais sobreposição de conceito.
+
+---
+
 ## Checkpoint atual (2026-10-12) — branch `feature/town-hub-redesign`
 
 **Reestruturação de nomes pra refletir as mecânicas futuras (Marketplace estilo BDO, Crafting estilo Albion, Contratos estilo Prospectors) + modal generalizado pra N abas.**
