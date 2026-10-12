@@ -3,6 +3,18 @@
 > Arquivo de contexto. Ao iniciar uma sessão nova, diga **"Carregar checkpoint"** e leia só este arquivo.
 > Ao final de cada sessão ou marco, diga **"Salvar checkpoint"** para atualizá-lo.
 
+## Checkpoint atual (2026-10-12c) — branch `feature/town-hub-redesign`
+
+**Abertura direta do modal + saudação por reputação + moldura metalizada.**
+
+- **Sem clique extra:** `city_district_base.gd._wire_shop()` agora chama `modal.open()` direto no `_ready()`, além de ligar o botão -- entrar no distrito já mostra a loja/estação aberta, sem precisar clicar em "Abrir X" primeiro. O botão continua existindo, só que agora é pra REABRIR se o jogador fechar o modal e quiser ver de novo.
+- **`scripts/autoload/reputation_manager.gd`** (novo autoload, stub explícito): `player_title`/`reputation_tier` fixos por ora (sem XP/progressão de verdade), `get_greeting()` devolve uma frase de saudação variando por título ("Grumete" → "Flagelo dos Sete Mares"). `TradeModal` chama isso toda vez que abre.
+- **Faixa de saudação no topo do modal:** retrato (`portrait_frame.png`, já existia no projeto) + `GreetingLabel` dinâmico. **Limitação de stub assumida:** o retrato é o mesmo pirata genérico em todo distrito (Taverna, Boticário, Ferreiro...) -- não tem arte de NPC por local ainda, só o placeholder.
+- **Moldura metalizada de verdade:** `dialog_panel.png` (também já existia, nunca tinha sido reaproveitado num modal de distrito) virou o `StyleBoxTexture` do `TradeModal` -- caveira com véu de morcego no topo, âncora embaixo, cantos de metal ornamentados. Botões (abas + ação + fechar) ganharam contorno escuro no texto e um leve brilho/aumento de cor no hover via tween, tudo aplicado em código já que os botões são criados dinamicamente.
+- **Verificado rodando o jogo de verdade:** entrar no Boticário já mostra o modal aberto, com a saudação certa ("Ah, Capitão! Sempre um prazer fazer negócio.") e a moldura nova -- fechar e reabrir pelo botão também confirmado funcionando.
+
+---
+
 ## Checkpoint atual (2026-10-12b) — branch `feature/town-hub-redesign`
 
 **Desfeita uma confusão de 2 rodadas atrás: Feira de Suprimentos e Caverna do Tesouro viraram o mesmo hotspot sem querer.**

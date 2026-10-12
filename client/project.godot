@@ -25,6 +25,7 @@ GameManager="*res://scripts/autoload/game_manager.gd"
 NetworkClient="*res://scripts/autoload/network_client.gd"
 WindManager="*res://scripts/singletons/wind_manager.gd"
 SceneTransitionManager="*res://scripts/autoload/scene_transition_manager.gd"
+ReputationManager="*res://scripts/autoload/reputation_manager.gd"
 
 [display]
 
@@ -89,6 +90,6 @@ interact={
 [rendering]
 
 textures/canvas_textures/default_texture_filter=0
+environment/defaults/default_clear_color=Color(0, 0, 0, 1)
 2d/snap/snap_2d_transforms_to_pixel=true
 2d/snap/snap_2d_vertices_to_pixel=true
-environment/defaults/default_clear_color=Color(0, 0, 0, 1)

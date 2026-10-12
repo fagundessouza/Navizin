@@ -29,14 +29,17 @@ func _ready() -> void:
 	_wire_shop()
 
 
-## Liga o botão "Abrir Loja" ao `TradeModal`, só nos distritos que têm os dois
-## nós (Mural de Recompensas e Guilda não são loja, não têm essa dupla).
+## Abre o `TradeModal` IMEDIATAMENTE ao entrar no distrito -- nada de clicar
+## num botão primeiro, só nos distritos que têm os dois nós (Mural de
+## Recompensas e Guilda não são loja, não têm essa dupla). O botão continua
+## ligado, pra reabrir o modal se o jogador fechar e quiser ver de novo.
 func _wire_shop() -> void:
 	var button: Button = get_node_or_null("OpenShopButton")
 	var modal: Control = get_node_or_null("TradeModal")
 	if button == null or modal == null:
 		return
 	button.pressed.connect(modal.open)
+	modal.open()
 
 
 func _unhandled_input(event: InputEvent) -> void:
