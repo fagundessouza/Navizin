@@ -12,8 +12,8 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_script")
-district_title = "Baú do Tesouro e Contrabando"
-district_body = "Baús, tesouros e mercadorias contrabandeadas numa caverna sob a ilha. Em construção."
+district_title = "Feira de Suprimentos"
+district_body = "Comida, bebida e suprimentos de bordo, guardados na adega-caverna sob a ilha. Em construção."
 
 [node name="Background" type="TextureRect" parent="."]
 anchors_preset = 15
@@ -90,10 +90,10 @@ offset_left = 24.0
 offset_top = 148.0
 offset_right = 168.0
 offset_bottom = 180.0
-text = "Abrir Baú"
+text = "Abrir Feira"
 
 [node name="TradeModal" parent="." instance=ExtResource("3_modal")]
 visible = false
-shop_title = "Baú do Tesouro e Contrabando"
-tab_1_name = "Itens Recuperados"
-tab_2_name = "Contrabando"
+shop_title = "Feira de Suprimentos"
+tabs = PackedStringArray("Comida e Bebida", "Suprimentos de Bordo")
+action_buttons = PackedStringArray("Comprar", "Vender")

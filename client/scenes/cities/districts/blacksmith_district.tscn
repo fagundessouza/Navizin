@@ -12,8 +12,8 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_script")
-district_title = "Forja e Ferreiro Naval"
-district_body = "O calor da forja nunca esfria. Armas e peças de canhão. Em construção."
+district_title = "Forja Naval"
+district_body = "Estação de fabrico de armas do capitão, armaduras, pólvora e munição -- madeira a diamante, conforme o material. Em construção."
 
 [node name="Background" type="TextureRect" parent="."]
 anchors_preset = 15
@@ -94,6 +94,7 @@ text = "Abrir Forja"
 
 [node name="TradeModal" parent="." instance=ExtResource("3_modal")]
 visible = false
-shop_title = "Forja e Ferreiro Naval"
-tab_1_name = "Canhões"
-tab_2_name = "Blindagem do Casco"
+shop_title = "Forja Naval"
+tabs = PackedStringArray("Armas e Armaduras do Capitão", "Pólvora e Munição")
+action_buttons = PackedStringArray("Fabricar")
+resource_hint = "Madeira · Ferro · Aço · Prata · Ouro · Pérola · Obsidiana · Adamantina · Diamante"

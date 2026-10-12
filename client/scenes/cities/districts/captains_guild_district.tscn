@@ -11,8 +11,8 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_script")
-district_title = "Salão da Guilda dos Capitães"
-district_body = "Bandeiras tremulam sobre a vila costeira. Sua guilda, sua frota e sua reputação entre os capitães. Em construção."
+district_title = "Salão das Frotas"
+district_body = "Bandeiras tremulam sobre a vila costeira. Sua frota, sua guilda e sua reputação entre os capitães. Em construção."
 
 [node name="Background" type="TextureRect" parent="."]
 anchors_preset = 15

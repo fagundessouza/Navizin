@@ -85,7 +85,7 @@ texture_normal = ExtResource("2_blank")
 texture_hover = ExtResource("3_hover")
 ignore_texture_size = true
 stretch_mode = 1
-tooltip_text = "Forja"
+tooltip_text = "Forja Naval"
 
 [node name="Tavern" type="TextureButton" parent="Hotspots"]
 offset_left = 126.0
@@ -118,7 +118,7 @@ texture_normal = ExtResource("2_blank")
 texture_hover = ExtResource("3_hover")
 ignore_texture_size = true
 stretch_mode = 1
-tooltip_text = "Mural de Recompensas e Contratos"
+tooltip_text = "Mercado Central / Marketplace"
 
 [node name="TreasureVault" type="TextureButton" parent="Hotspots"]
 offset_left = 870.0
@@ -129,7 +129,7 @@ texture_normal = ExtResource("2_blank")
 texture_hover = ExtResource("3_hover")
 ignore_texture_size = true
 stretch_mode = 1
-tooltip_text = "Baú do Tesouro e Contrabando"
+tooltip_text = "Feira de Suprimentos"
 
 [node name="GuildHall" type="TextureButton" parent="Hotspots"]
 offset_left = 838.0
@@ -140,7 +140,7 @@ texture_normal = ExtResource("2_blank")
 texture_hover = ExtResource("3_hover")
 ignore_texture_size = true
 stretch_mode = 1
-tooltip_text = "Salão da Guilda dos Capitães"
+tooltip_text = "Salão das Frotas"
 
 [node name="MarketBazaar" type="TextureButton" parent="Hotspots"]
 offset_left = 928.0

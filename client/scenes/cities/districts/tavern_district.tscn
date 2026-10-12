@@ -13,7 +13,7 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_script")
 district_title = "Taverna do Oculto"
-district_body = "Rum, rumores e tripulação para contratar sob a caveira pintada na parede. Em construção."
+district_body = "Rum, rumores e tripulação sob a caveira pintada na parede -- mural de procurados, leilão de escoltas, fretes e boatos das ilhas. Em construção."
 
 [node name="Background" type="TextureRect" parent="."]
 anchors_preset = 15
@@ -94,6 +94,8 @@ text = "Abrir Taverna"
 
 [node name="TradeModal" parent="." instance=ExtResource("3_modal")]
 visible = false
+offset_left = -360.0
+offset_right = 360.0
 shop_title = "Taverna do Oculto"
-tab_1_name = "Bebidas"
-tab_2_name = "Tripulação"
+tabs = PackedStringArray("Bebidas", "Tripulação", "Quadro de Procurados", "Contratos de Serviço")
+action_buttons = PackedStringArray("Comprar", "Vender")

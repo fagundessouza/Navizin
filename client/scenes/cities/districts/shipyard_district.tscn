@@ -12,8 +12,8 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_script")
-district_title = "Estaleiro e Reparos"
-district_body = "O esqueleto de um navio em construção. Compra e reparo de embarcações. Em construção."
+district_title = "Estaleiro"
+district_body = "Estação de fabrico e aprimoramento de navios -- velas, cascos e proas. Em construção."
 
 [node name="Background" type="TextureRect" parent="."]
 anchors_preset = 15
@@ -94,6 +94,6 @@ text = "Abrir Estaleiro"
 
 [node name="TradeModal" parent="." instance=ExtResource("3_modal")]
 visible = false
-shop_title = "Estaleiro e Reparos"
-tab_1_name = "Cascos e Reparos"
-tab_2_name = "Velas e Mastros"
+shop_title = "Estaleiro"
+tabs = PackedStringArray("Velas", "Cascos e Proas")
+action_buttons = PackedStringArray("Fabricar")

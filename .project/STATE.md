@@ -3,6 +3,31 @@
 > Arquivo de contexto. Ao iniciar uma sessão nova, diga **"Carregar checkpoint"** e leia só este arquivo.
 > Ao final de cada sessão ou marco, diga **"Salvar checkpoint"** para atualizá-lo.
 
+## Checkpoint atual (2026-10-12) — branch `feature/town-hub-redesign`
+
+**Reestruturação de nomes pra refletir as mecânicas futuras (Marketplace estilo BDO, Crafting estilo Albion, Contratos estilo Prospectors) + modal generalizado pra N abas.**
+
+**Conflito real encontrado e resolvido sem adivinhar:** o pedido descrevia dois destinos diferentes pro mesmo ponto físico do mapa -- "Praça Central (antes Mural de Recompensas)" devia virar "Mercado Central/Marketplace" (item 1, com especificação completa de abas em outro lugar do pedido), e separadamente "Praça Central/Estátua" devia virar "Distrito de Profissões e Treinamento" (sem nenhum detalhe em lugar nenhum do documento). Conferi a posição da estátua na arte da ilha (recorte visual) contra as coordenadas do hotspot "Mural de Recompensas" -- é o MESMO lugar. Não existe hotspot livre pra um 9º distrito. Implementei o Marketplace (instrução concreta e detalhada) e **deixei "Distrito de Profissões e Treinamento" de fora** -- não inventei um nono ponto no mapa sem base nem na arte nem no texto.
+
+**`TradeModal` generalizado** (`scripts/cities/trade_modal.gd` + `scenes/ui/trade_modal.tscn`): de 2 abas fixas (`Tab1`/`Tab2` na cena) pra N abas construídas em código a partir de `@export tabs: PackedStringArray`, com `action_buttons` configurável (1 ou 2 botões) e `resource_hint` opcional (linha de texto, ex. lista de materiais). Mesmo componente agora serve loja simples (Comprar/Vender), estação de crafting (só Fabricar + lista de materiais) e marketplace (Nova Ordem) -- só muda a configuração por instância, não o código.
+
+**Renomeações aplicadas:**
+- `bounty_board_district.tscn` → **renomeado o arquivo** pra `marketplace_district.tscn` ("Mercado Central / Marketplace", abas "Ordens de Pré-Compra"/"Ordens de Pré-Venda", botão "Nova Ordem"). O quadro de procurados que dava nome a esse hotspot mudou de endereço.
+- `tavern_district.tscn`: ganhou 2 abas a mais (agora 4: Bebidas, Tripulação, Quadro de Procurados, Contratos de Serviço) -- é pra cá que o antigo mural de recompensas se mudou. Modal alargado (560px → 720px) pra caber as 4 sem apertar.
+- `treasure_vault_district.tscn`: "Baú do Tesouro e Contrabando" → "Feira de Suprimentos" (comida/bebida/suprimentos). **Descompasso temático que ficou em aberto:** o fundo continua sendo a caverna de baús de ouro -- combinava com "tesouro", não combina tão bem com "feira de suprimentos". Sem arte nova pra isso, mantive o fundo e só troquei o texto.
+- `blacksmith_district.tscn`: "Forja e Ferreiro Naval" → "Forja Naval", virou estação de crafting (abas "Armas e Armaduras do Capitão"/"Pólvora e Munição", botão único "Fabricar", `resource_hint` com a escala de materiais completa: Madeira · Ferro · Aço · Prata · Ouro · Pérola · Obsidiana · Adamantina · Diamante).
+- `shipyard_district.tscn`: "Estaleiro e Reparos" → "Estaleiro", crafting (abas "Velas"/"Cascos e Proas", só "Fabricar").
+- `apothecary_district.tscn`: crafting (abas "Poções e Elixires"/"Remédios da Tripulação", só "Fabricar").
+- `captains_guild_district.tscn`: "Salão da Guilda dos Capitães" → "Salão das Frotas" (só texto, sem modal -- não é loja nem crafting).
+- `market_bazaar_district.tscn`: não mencionado no pedido, mantido como está.
+- Tooltips dos hotspots em `island_tortuga_hub.tscn` e o dicionário `DISTRICT_SCENES` em `island_tortuga_hub.gd` atualizados pra bater.
+
+**Verificado rodando o jogo de verdade:** Marketplace, Taverna (4 abas) e Forja (botão Fabricar + dica de materiais) abertos e capturados -- título, abas e layout corretos nos três, sem overlap mesmo com 4 abas.
+
+**Pendências novas:** "Distrito de Profissões e Treinamento" sem local nem especificação; descompasso de arte na Feira de Suprimentos; nenhuma lógica de receita/preço/inventário em lugar nenhum (toda a reestruturação foi só taxonomia + UI).
+
+---
+
 ## Checkpoint atual (2026-10-11g) — branch `feature/town-hub-redesign`
 
 **Fundo cinza, 2 artes dedicadas novas, e sistema de modal de comércio reutilizável.**

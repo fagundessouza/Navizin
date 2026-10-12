@@ -1,9 +1,10 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/cities/city_district_base.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/sprites/environment/districts/interiors/coastal_bonfire.png" id="2_bg"]
+[ext_resource type="PackedScene" path="res://scenes/ui/trade_modal.tscn" id="3_modal"]
 
-[node name="BountyBoardDistrict" type="Control"]
+[node name="MarketplaceDistrict" type="Control"]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -11,8 +12,8 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_script")
-district_title = "Mural de Recompensas e Contratos"
-district_body = "Cartazes de recompensa por cabeças conhecidas, pregados perto da fogueira na praia -- a um passo da Taverna, na praça central. Contratos e caça a procurados. Em construção."
+district_title = "Mercado Central / Marketplace"
+district_body = "A estátua na praça central virou ponto de encontro de comerciantes -- ordens de compra e venda à distância, por preço que só se revela ao fechar negócio. Em construção."
 
 [node name="Background" type="TextureRect" parent="."]
 anchors_preset = 15
@@ -83,3 +84,16 @@ text = "Mapa da Ilha"
 [node name="BackToSea" type="Button" parent="Buttons"]
 layout_mode = 2
 text = "Voltar ao Mar"
+
+[node name="OpenShopButton" type="Button" parent="."]
+offset_left = 24.0
+offset_top = 148.0
+offset_right = 168.0
+offset_bottom = 180.0
+text = "Abrir Leilão"
+
+[node name="TradeModal" parent="." instance=ExtResource("3_modal")]
+visible = false
+shop_title = "Mercado Central / Marketplace"
+tabs = PackedStringArray("Ordens de Pré-Compra", "Ordens de Pré-Venda")
+action_buttons = PackedStringArray("Nova Ordem")

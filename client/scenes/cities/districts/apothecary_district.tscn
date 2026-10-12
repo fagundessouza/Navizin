@@ -13,7 +13,7 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_script")
 district_title = "Boticário"
-district_body = "Um brilho verde-pântano escapa pelas janelas. Poções e curas. Em construção."
+district_body = "Estação de fabrico de poções, elixires e remédios contra as doenças da tripulação. Em construção."
 
 [node name="Background" type="TextureRect" parent="."]
 anchors_preset = 15
@@ -95,5 +95,5 @@ text = "Abrir Boticário"
 [node name="TradeModal" parent="." instance=ExtResource("3_modal")]
 visible = false
 shop_title = "Boticário"
-tab_1_name = "Poções de Cura"
-tab_2_name = "Elixires Raros"
+tabs = PackedStringArray("Poções e Elixires", "Remédios da Tripulação")
+action_buttons = PackedStringArray("Fabricar")
