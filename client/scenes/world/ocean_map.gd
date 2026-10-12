@@ -43,15 +43,16 @@ func _wire_tortuga_dock() -> void:
 			_enter_tortuga(ship))
 
 
-## Salva o estado do navio em `GameManager` e troca para a cena da cidade de
-## Tortuga. O navio em si não sobrevive à troca -- só o que `GameManager` guarda.
+## Salva o estado do navio em `GameManager`, esconde o casco (simula ele
+## ancorando) e troca pro mapa da ilha com o fade de nevoeiro. O navio em si
+## não sobrevive à troca -- só o que `GameManager` guarda.
 func _enter_tortuga(ship: Node2D) -> void:
 	GameManager.saved_ship_position = ship.global_position
 	GameManager.saved_hull = ship.hull
 	GameManager.saved_supply = ship.supply
-	var err := get_tree().change_scene_to_file("res://scenes/cities/island_tortuga_hub.tscn")
-	if err != OK:
-		push_error("Falha ao trocar para a cena da cidade de Tortuga: código %d" % err)
+	ship.visible = false
+	ship.set_physics_process(false)
+	SceneTransitionManager.change_scene("res://scenes/cities/island_tortuga_hub.tscn")
 
 
 ## Luz de visão do capitão: um halo quente e suave preso ao navio do jogador. A área

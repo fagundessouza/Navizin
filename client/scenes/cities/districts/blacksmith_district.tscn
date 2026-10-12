@@ -1,0 +1,131 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/cities/city_district_base.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/sprites/environment/districts/harbor_background.png" id="2_bg"]
+[ext_resource type="Texture2D" path="res://assets/sprites/environment/districts/blacksmith.png" id="3_building"]
+[ext_resource type="Script" path="res://scripts/cities/building_fx.gd" id="4_fx"]
+[ext_resource type="Texture2D" path="res://assets/sprites/vfx/battle/smoke_puff_soft.png" id="5_smoke"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_hover"]
+size = Vector2(820, 860)
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_chimney"]
+direction = Vector3(0, -1, 0)
+spread = 10.0
+gravity = Vector3(0, -16, 0)
+initial_velocity_min = 6.0
+initial_velocity_max = 12.0
+scale_min = 0.4
+scale_max = 0.7
+color = Color(0.55, 0.55, 0.58, 0.3)
+
+[node name="BlacksmithDistrict" type="Control"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_script")
+district_title = "Forja e Ferreiro Naval"
+district_body = "O calor da forja nunca esfria. Armas e peças de canhão. Em construção."
+
+[node name="Background" type="TextureRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_bg")
+expand_mode = 1
+stretch_mode = 5
+mouse_filter = 2
+
+[node name="Vignette" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.05, 0.08, 0.12, 0.18)
+mouse_filter = 2
+
+[node name="Building" type="Node2D" parent="."]
+position = Vector2(640, 380)
+
+[node name="Sprite" type="Sprite2D" parent="Building"]
+scale = Vector2(0.6, 0.6)
+texture = ExtResource("3_building")
+
+[node name="FX" type="Area2D" parent="Building/Sprite"]
+collision_layer = 0
+collision_mask = 0
+script = ExtResource("4_fx")
+sprite_path = NodePath("..")
+light_offset = Vector2(-22, 98)
+light_color = Color(1, 0.55, 0.2, 1)
+light_energy = 1.4
+light_texture_scale = 2.0
+particle_kind = 2
+particle_offset = Vector2(-22, 98)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Building/Sprite/FX"]
+position = Vector2(0, -50)
+shape = SubResource("RectangleShape2D_hover")
+
+[node name="ChimneySmoke" type="GPUParticles2D" parent="Building/Sprite"]
+position = Vector2(188, -402)
+amount = 8
+lifetime = 3.0
+process_material = SubResource("ParticleProcessMaterial_chimney")
+texture = ExtResource("5_smoke")
+
+[node name="PlayerSpawnPoint" type="Node2D" parent="."]
+position = Vector2(640, 660)
+
+[node name="NpcHotspots" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="."]
+offset_left = 24.0
+offset_top = 16.0
+offset_right = 600.0
+offset_bottom = 56.0
+theme_override_colors/font_color = Color(0.95, 0.85, 0.55, 1)
+theme_override_font_sizes/font_size = 28
+
+[node name="Body" type="Label" parent="."]
+offset_left = 24.0
+offset_top = 64.0
+offset_right = 760.0
+offset_bottom = 140.0
+theme_override_colors/font_color = Color(0.82, 0.8, 0.74, 1)
+theme_override_font_sizes/font_size = 16
+autowrap_mode = 3
+
+[node name="Buttons" type="HBoxContainer" parent="."]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -340.0
+offset_top = -64.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_constants/separation = 12
+
+[node name="BackToIsland" type="Button" parent="Buttons"]
+layout_mode = 2
+text = "Mapa da Ilha"
+
+[node name="BackToSea" type="Button" parent="Buttons"]
+layout_mode = 2
+text = "Voltar ao Mar"

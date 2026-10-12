@@ -13,22 +13,22 @@ extends Control
 ## volta para o oceano. O navio não existe enquanto esta cena está ativa --
 ## `GameManager` guarda a posição/casco/suprimento dele pra restaurar na volta.
 
-const DESCRIPTIONS: Dictionary = {
-	"Shipyard": "O esqueleto de um navio em construção. Compra e reparo de embarcações. Em construção.",
-	"Forge": "O calor da forja nunca esfria. Armas e peças de canhão. Em construção.",
-	"Tavern": "Rum, rumores e tripulação para contratar sob a caveira pintada na parede. Em construção.",
-	"Apothecary": "Um brilho verde-pântano escapa pelas janelas. Poções e curas. Em construção.",
-	"BountyBoard": "O obelisco da praça central, coberto de cartazes. Contratos e recompensas. Em construção.",
-	"BlackMarket": "Tendas que não fazem perguntas. Comércio de itens raros. Em construção.",
-	"GuildHall": "Bandeiras azuis tremulam sobre a mansão gótica. Sua guilda e sua frota. Em construção.",
-	"Academy": "O farol no topo do penhasco guia os que estudam o mar. Em construção.",
+## Qual cena de bairro cada hotspot abre. Cada uma é uma cena própria em
+## `scenes/cities/districts/`, com seu título/texto/prédio já embutidos --
+## não precisa mais passar texto por `GameManager`. "Academy" ainda não tem
+## arte própria, então cai na cena genérica (`city_district_base.tscn`, cujo
+## `district_title`/`district_body` já estão setados pra Academia nela mesma).
+const DISTRICT_SCENES: Dictionary = {
+	"Shipyard": "res://scenes/cities/districts/shipyard_district.tscn",
+	"Forge": "res://scenes/cities/districts/blacksmith_district.tscn",
+	"Tavern": "res://scenes/cities/districts/tavern_district.tscn",
+	"Apothecary": "res://scenes/cities/districts/apothecary_district.tscn",
+	"BountyBoard": "res://scenes/cities/districts/bounty_board_district.tscn",
+	"BlackMarket": "res://scenes/cities/districts/supply_market_district.tscn",
+	"GuildHall": "res://scenes/cities/districts/captains_guild_district.tscn",
 }
+const FALLBACK_SCENE: String = "res://scenes/cities/city_district_base.tscn"
 
-const TITLES: Dictionary = {
-	"Shipyard": "Estaleiro", "Forge": "Forja", "Tavern": "Taverna",
-	"Apothecary": "Boticário", "BountyBoard": "Quadro de Recompensas",
-	"BlackMarket": "Mercado Negro", "GuildHall": "Salão da Guilda", "Academy": "Academia",
-}
 
 func _ready() -> void:
 	for button in $Hotspots.get_children():
@@ -36,11 +36,9 @@ func _ready() -> void:
 
 
 ## Em vez de abrir um popup sobre o mapa, entra na praça daquele bairro: uma
-## cena própria com fundo panorâmico (`city_district_base.tscn`).
+## cena própria com fundo panorâmico e o prédio em cima.
 func _on_hotspot_pressed(location: String) -> void:
-	GameManager.pending_district_title = TITLES.get(location, location)
-	GameManager.pending_district_body = DESCRIPTIONS.get(location, "Em construção.")
-	get_tree().change_scene_to_file("res://scenes/cities/city_district_base.tscn")
+	SceneTransitionManager.change_scene(DISTRICT_SCENES.get(location, FALLBACK_SCENE))
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -58,4 +56,4 @@ func _unhandled_input(event: InputEvent) -> void:
 ## salvo em `GameManager` (`saved_hull`/`saved_supply`/`saved_ship_position`) no
 ## próprio `_ready()`, lendo o que foi guardado ao entrar no porto.
 func _return_to_ocean() -> void:
-	get_tree().change_scene_to_file("res://scenes/world/ocean_map.tscn")
+	SceneTransitionManager.change_scene("res://scenes/world/ocean_map.tscn")

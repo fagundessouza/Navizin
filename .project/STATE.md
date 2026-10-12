@@ -3,6 +3,33 @@
 > Arquivo de contexto. Ao iniciar uma sessão nova, diga **"Carregar checkpoint"** e leia só este arquivo.
 > Ao final de cada sessão ou marco, diga **"Salvar checkpoint"** para atualizá-lo.
 
+## Checkpoint atual (2026-10-11d) — branch `feature/town-hub-redesign`
+
+**7 distritos de Tortuga, com arte de verdade, transição com nevoeiro e navio sumindo ao atracar.**
+
+O usuário gerou a arte que faltava (achada em `~/Downloads/Tortuga/`, não documentada por ele, só encontrada conferindo a pasta antes de assumir que não existia): os 7 prédios dos distritos (isolados em fundo preto, mesma convenção de extração de sempre) e um fundo panorâmico `Tortuga Harbor Background.png` (1536×864, mesma proporção 16:9 do jogo) que serve de cenário comum pra todos os distritos -- exatamente o que o prompt do checkpoint anterior (`ART_PROMPTS.md`) pedia.
+
+**`scenes/cities/districts/`** (7 cenas, uma por distrito):
+- `tavern_district.tscn`, `blacksmith_district.tscn`, `shipyard_district.tscn`, `apothecary_district.tscn`, `bounty_board_district.tscn`, `captains_guild_district.tscn`, `supply_market_district.tscn`.
+- Cada uma: fundo panorâmico comum + o prédio daquele distrito (`Sprite2D`) por cima + `BuildingFX` (luz piscando, partícula temática, hover) + título/texto próprios (`@export district_title/body` em `city_district_base.gd`, sem mais precisar de `GameManager` como intermediário -- cada distrito agora é uma cena de verdade, não uma genérica reconfigurada).
+- "Academy" (sem arte própria ainda) cai na cena genérica `city_district_base.tscn`, que ganhou seu próprio `district_title`/`body` fixos como fallback.
+- `island_tortuga_hub.gd`: `_on_hotspot_pressed` troca o dicionário antigo de título/descrição por um dicionário direto nome→caminho de cena (`DISTRICT_SCENES`).
+
+**`scripts/cities/building_fx.gd`** (novo, reutilizável): `PointLight2D` piscando (tween em loop), `GPUParticles2D` temática (`ParticleKind`: SMOKE/SPARKS/MIST/NONE) e leve aumento de escala no hover -- um `BuildingFX` (`Area2D`) por prédio, filho do `Sprite2D` (assim luz/partícula herdam a escala do prédio automaticamente, sem precisar converter unidade).
+
+**`scripts/autoload/scene_transition_manager.gd`** (novo autoload, "nevoeiro da morte"): cobre a tela de bruma escura (shader `fog_transition.gdshader`, reaproveita o ruído da névoa do oceano) antes de QUALQUER troca de cena do jogo (oceano↔ilha↔distrito), e desfaz depois. `ocean_map.gd._enter_tortuga()` também esconde o casco (`visible=false`, `set_physics_process(false)`) antes de disparar a troca, simulando o navio ancorando.
+
+**Armadilha real encontrada e evitada:** a primeira versão usava `create_tween()` + `await tween.finished` encadeado por cima do `change_scene_to_file()` -- o tween criado DEPOIS da troca de cena nunca emitia `finished` (trava indefinida, confirmada esperando 90s de verdade rodando o jogo). Reescrito como máquina de estados em `_process(delta)`, sem Tween nenhum: resolve de vez, e é o padrão mais robusto pra gerenciador de transição em autoload de qualquer forma.
+
+**Verificado de ponta a ponta rodando o jogo de verdade** (autoload de teste temporário, removido depois): mar → F → mapa da ilha → clica "Forja" → `BlacksmithDistrict` com título certo, `BuildingFX` com luz piscando confirmada → "Voltar ao Mar" → `OceanMap` com o navio visível e processando física de novo. Captura da forja rodando mostra o brilho da fornalha por cima da arte (luz ADD visível), composição coesa com o fundo do porto.
+
+**Pendente:**
+- As outras 5 cenas de distrito (Estaleiro, Boticário, Quadro de Procurados, Guilda dos Capitães, Mercado de Suprimentos) seguem o mesmo padrão já validado, mas só passaram por checagem de compilação (headless), não teste dinâmico individual -- risco baixo dado que a estrutura é idêntica, mas vale conferir no editor.
+- NPCs dentro de cada distrito (`NpcHotspots`, vazio) e o personagem/avatar andando continuam fora de escopo, como combinado.
+- Também veio na mesma pasta (`~/Downloads/Tortuga/`) um tileset de penhasco/costa e uma torre-farol -- não usados nesta rodada (fora do pedido), mas disponíveis pra quando a seção 2 do checkpoint de 2026-10-09 (redesenho visual da ilha com `TileMapLayer`) for retomada.
+
+---
+
 ## Checkpoint atual (2026-10-11c) — branch `feature/town-hub-redesign`
 
 **Hierarquia de 3 níveis, estilo AQW/Swords and Sandals, implementada:**

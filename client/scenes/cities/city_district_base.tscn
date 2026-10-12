@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/cities/city_district_base.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/sprites/environment/districts/harbor_background.png" id="2_bg"]
 
 [node name="CityDistrictBase" type="Control"]
 anchors_preset = 15
@@ -10,18 +11,31 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_script")
+district_title = "Academia"
+district_body = "O farol no topo do penhasco guia os que estudam o mar. Em construção."
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background" type="TextureRect" parent="."]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.08, 0.1, 0.14, 1)
+texture = ExtResource("2_bg")
+expand_mode = 1
+stretch_mode = 5
+mouse_filter = 2
+
+[node name="Vignette" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.05, 0.08, 0.12, 0.18)
 mouse_filter = 2
 
 [node name="PlayerSpawnPoint" type="Node2D" parent="."]
-position = Vector2(640, 500)
+position = Vector2(640, 560)
 
 [node name="NpcHotspots" type="Control" parent="."]
 anchors_preset = 15
