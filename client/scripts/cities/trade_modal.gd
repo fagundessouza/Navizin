@@ -1,5 +1,5 @@
 class_name TradeModal
-extends PanelContainer
+extends Control
 ## Modal de interação reutilizável pra qualquer distrito: retrato + saudação
 ## dinâmica do NPC no topo (via `ReputationManager`), N abas configuráveis
 ## (construídas em código a partir de `tabs`, não fixas em cena) e até 2

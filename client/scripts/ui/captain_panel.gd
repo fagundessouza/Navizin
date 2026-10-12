@@ -1,5 +1,5 @@
 class_name CaptainPanel
-extends PanelContainer
+extends Control
 ## Painel do capitão sobre o próprio navio/progresso -- mesmo padrão de N
 ## abas construídas em código do `TradeModal` (`scripts/cities/trade_modal.gd`),
 ## mas sem o cabeçalho de saudação de NPC: aqui não tem balcão nem vendedor,

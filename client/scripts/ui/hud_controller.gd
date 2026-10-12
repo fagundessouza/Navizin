@@ -3,7 +3,8 @@ extends Control
 ## Controlador do HUD do capitão. Liga o navio do jogador à interface:
 ## - barras de casco e de suprimentos, lidas do navio a cada quadro;
 ## - bússola: a fita desliza pelo rumo do navio;
-## - hotbar: ícones dos slots, recarga da bordada no slot 1, teclas 1 a 8;
+## - hotbar: 8 slots vazios por padrão (sem item/equip de verdade ainda),
+##   recarga da bordada no slot 1, teclas 1 a 8;
 ## - barra de menus: 6 botões com destino próprio (painel com abas, painel de
 ##   proficiências ou a caixa de diálogo simples), atalho de teclado e som de clique.
 ##
@@ -18,10 +19,6 @@ extends Control
 const SLOT_COUNT: int = 8
 const FLASH_TIME: float = 0.25
 const HOVER_SCALE: Vector2 = Vector2(1.05, 1.05)
-const ICON_PATH: String = "res://assets/ui/icons/hot_%d.png"
-
-## Ícones da hotbar por slot: 1 munição, 2 rum, 3 pistola, 4 espada.
-const SLOT_ICON_COUNT: int = 4
 
 ## Botões sem painel dedicado ainda: usam a caixa de diálogo genérica (só
 ## título + corpo), igual ao sistema antigo.
@@ -69,9 +66,6 @@ func _ready() -> void:
 	for k in range(1, SLOT_COUNT + 1):
 		var highlight: ColorRect = get_node("Hotbar/Slot%d/Highlight%d" % [k, k])
 		highlight.visible = false
-	for k in range(1, SLOT_ICON_COUNT + 1):
-		var icon: TextureRect = get_node("Hotbar/Slot%d/Icon%d" % [k, k])
-		icon.texture = load(ICON_PATH % k)
 	for button in $SystemMenuBar/Grid.get_children():
 		button.pressed.connect(_on_menu_pressed.bind(button.name))
 		button.mouse_entered.connect(_hover.bind(button, true))

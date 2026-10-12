@@ -1,5 +1,5 @@
 class_name LifeSkillsPanel
-extends PanelContainer
+extends Control
 ## Painel de Life Skills / Proficiências do capitão, no estilo BDO/Albion:
 ## uma barra de progresso por ofício. Sem XP de verdade rastreado ainda --
 ## `SKILLS` só preenche a interface com valores de demonstração; quando

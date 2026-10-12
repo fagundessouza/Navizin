@@ -3,6 +3,20 @@
 > Arquivo de contexto. Ao iniciar uma sessão nova, diga **"Carregar checkpoint"** e leia só este arquivo.
 > Ao final de cada sessão ou marco, diga **"Salvar checkpoint"** para atualizá-lo.
 
+## Checkpoint atual (2026-10-12h) — branch `feature/town-hub-redesign`
+
+**Acabamento gótico/metalizado nos painéis (estilo MU Online/Diablo), hotbar refeita com slots fatiados, vazamento de ícones do menu corrigido.**
+
+- **Hotbar** (`hotbar.tscn`): a faixa única `hotbar_strip.png` com 8 posições em offset fixo virou um `HBoxContainer` de 8 `TextureRect` usando `hotkey_slot_frame.png` (já extraído de rodada anterior) -- layout flui em vez de pixel hardcoded. `hud_controller.gd` parou de pré-carregar `hot_1..4.png` nos slots 1-4 (munição/rum/pistola/espada mockados); os 8 slots ficam vazios por padrão agora, só preenchidos quando existir equipamento de verdade.
+- **Enfeites de nine-patch**: `nine_patch_skull_banner.png` (topo) e `nine_patch_anchor_seal.png` (base) são novos, recortados do mesmo `ui_45_353x178.png` da extração da prancha de pergaminho (2 rodadas atrás) que já tinha virado `nine_patch_corner_skull.png`/`edge_h`/`edge_v` -- esse pedaço específico da prancha é uma referência de caixa de diálogo completa com os dois enfeites prontos, só precisou recortar e isolar cada um.
+- **`GothicPanelShader` (`assets/shaders/gothic_panel.gdshader`)**: opacidade de 85% no miolo escuro do quadro + brilho metálico pulsante na moldura ornamentada, com variação de tempo por célula (hash+seno) em vez de um pulso uniforme. Separar miolo de moldura por BRILHO do pixel (luma), não por posição/UV -- a primeira tentativa usando distância até a borda em UV vazou brilho borrado pelo painel inteiro, porque o `NinePatchRect` remapeia UV de um jeito não-linear pro 9-slice (corner fixo, borda esticada só num eixo, centro esticado nos dois). O miolo de `modal_frame_iron.png` é um chapado ~luma 0.055; a moldura entalhada nunca cai tão baixo assim (~0.11+) -- um corte de brilho separa os dois de forma confiável, pixel a pixel.
+- **`TradeModal`/`CaptainPanel`/`LifeSkillsPanel` restruturados**: raiz trocou de `PanelContainer` com `StyleBoxTexture` pra `Control` simples com um `NinePatchRect` de verdade como fundo (irmão, não pai, do conteúdo) -- só assim dá pra aplicar o shader SÓ no fundo sem ele also afetar texto/botões por cima (um `material` num `PanelContainer` desce pra todos os filhos). Cada painel ganhou `SkullBanner`/`AnchorSeal` pendurados no topo/base, sobrepondo a moldura. `extends PanelContainer` virou `extends Control` nos 3 scripts -- nenhum deles usava API específica de `PanelContainer`, troca segura.
+- **Vazamento de ícones do menu** (`system_menu_bar.tscn`): ícones reduzidos 20% (52px -> 42px, meio a meio com "reduza a escala em 20%"), painel/grid recalculados pro novo tamanho, `clip_contents = true` no `Frame` e no `Grid` pra garantir que nem o pulo de escala do hover ultrapasse a moldura.
+
+**Verificado rodando o jogo de verdade:** hotbar com 8 slots vazios e framed; ícones do menu certinhos dentro da moldura sem vazar; painel do Navio com o brilho confinado só na moldura (não mais espalhado), enfeites de caveira/âncora visíveis e bem posicionados, texto legível sem o pulso por cima.
+
+---
+
 ## Checkpoint atual (2026-10-12g) — branch `feature/town-hub-redesign`
 
 **Barra de menus do HUD reestruturada: de 13 ícones soltos (a maioria sem função, só texto "Em construção") pra 6 botões com destino próprio.**
