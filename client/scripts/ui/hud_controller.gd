@@ -29,6 +29,7 @@ const MENUS: Dictionary = {
 	"MenuProfile": {"key": KEY_P, "title": "Perfis e Títulos", "body": "Conquistas e reputação nos mares. Em construção."},
 	"MenuCompass": {"key": KEY_V, "title": "Rosa dos Ventos", "body": ""},
 	"MenuAlerts": {"key": KEY_K, "title": "Alertas", "body": "Avisos de perigo e de casco baixo. Em construção."},
+	"MenuSettings": {"key": KEY_O, "title": "Configurações", "body": "Vídeo, áudio e controles. Em construção."},
 }
 
 var _ship: Node2D = null

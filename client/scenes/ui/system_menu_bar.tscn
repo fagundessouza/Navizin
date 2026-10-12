@@ -37,6 +37,7 @@
 [ext_resource type="Texture2D" path="res://assets/ui/icons/skull_crossbones_hover.png" id="h12"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/skull_crossbones_pressed.png" id="p12"]
 [ext_resource type="AudioStream" path="res://assets/audio/ui_click.wav" id="99_click"]
+[ext_resource type="Texture2D" path="res://assets/ui/processed/icon_settings.png" id="i13"]
 
 [sub_resource type="StyleBoxFlat" id="Shadow"]
 bg_color = Color(0.03, 0.05, 0.08, 0.55)
@@ -54,7 +55,7 @@ shadow_size = 10
 shadow_offset = Vector2(3, 5)
 
 [node name="SystemMenuBar" type="Control"]
-custom_minimum_size = Vector2(342, 118)
+custom_minimum_size = Vector2(342, 184)
 layout_mode = 3
 anchors_preset = 3
 anchor_left = 1.0
@@ -62,7 +63,7 @@ anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = -358.0
-offset_top = -134.0
+offset_top = -200.0
 offset_right = -16.0
 offset_bottom = -16.0
 grow_horizontal = 0
@@ -71,7 +72,7 @@ grow_vertical = 0
 [node name="Frame" type="Panel" parent="."]
 layout_mode = 0
 offset_right = 342.0
-offset_bottom = 118.0
+offset_bottom = 184.0
 theme_override_styles/panel = SubResource("Shadow")
 mouse_filter = 2
 
@@ -80,7 +81,7 @@ layout_mode = 0
 offset_left = 8.0
 offset_top = 8.0
 offset_right = 334.0
-offset_bottom = 110.0
+offset_bottom = 176.0
 columns = 6
 theme_override_constants/h_separation = 6
 theme_override_constants/v_separation = 6
@@ -205,6 +206,14 @@ texture_pressed = ExtResource("p12")
 ignore_texture_size = true
 stretch_mode = 5
 
+
+[node name="MenuSettings" type="TextureButton" parent="Grid"]
+custom_minimum_size = Vector2(52, 52)
+layout_mode = 2
+tooltip_text = "Configurações"
+texture_normal = ExtResource("i13")
+ignore_texture_size = true
+stretch_mode = 5
 
 [node name="ClickSound" type="AudioStreamPlayer" parent="."]
 stream = ExtResource("99_click")

@@ -3,6 +3,24 @@
 > Arquivo de contexto. Ao iniciar uma sessão nova, diga **"Carregar checkpoint"** e leia só este arquivo.
 > Ao final de cada sessão ou marco, diga **"Salvar checkpoint"** para atualizá-lo.
 
+## Checkpoint atual (2026-10-12d) — branch `feature/town-hub-redesign`
+
+**Bug reportado (Baú/Feira "sumidos") investigado, não reproduzido.** Testei os dois hotspots do zero (posição, clique, cena, modal) rodando o jogo de verdade -- tudo funcionou. Provável causa: cache do editor do usuário não recarregando as cenas depois das últimas mudanças. Reportado, não corrigido (nada pra corrigir no código).
+
+**Prancha de UI processada (`Meshy_AI_rpg_ui_asset_spritesheet.png`, achada em `~/Downloads/Tortuga/`).** Fundo de pergaminho, não preto puro -- precisou de técnica nova de recorte.
+
+- **`scripts/extract_parchment_ui_assets.py`** (utilitário salvo no repo, não descartável como os scripts de sessão anteriores): classifica cada pixel por matiz+saturação+valor (HSV) em vez de limiar de luminância -- o pergaminho tem vinheta e textura de grão, a claridade sozinha varia demais (testado: 45 a 210) pra um limiar único funcionar. Dois modos: `fatia` (um recorte manual) e `prancha` (separa automaticamente cada peça isolada, mesma técnica de componentes conectados dos kits anteriores).
+- **11 peças em `assets/ui/processed/`:** `nine_patch_corner_skull.png`, `nine_patch_edge_h.png`/`edge_v.png`, `icon_settings.png`, `icon_ammo_sheet.png` (seção inteira, não peça por peça), `hotkey_slot_frame.png`, `dialogue_box_bg.png` (com o texto de exemplo "Dialogue text line 1..." apagado à mão -- vinha desenhado na própria prancha, ia aparecer por baixo do texto real), `portrait_avatar_frame.png` (moldura vazia, sem rosto fixo -- diferente da antiga `portrait_frame.png`), `tab_banner_kraken/swords/anchor.png`.
+- **`modal_frame_iron.png`** (nova, montada com Python a partir das peças): os 4 cantos de caveira espelhados pra cada esquina + bordas de ferro repetidas + preenchimento escuro no centro -- compõe a moldura que o `NinePatchRect`/`StyleBoxTexture` pedido realmente precisa (uma textura montada, não peças soltas -- `StyleBoxTexture` fatia UMA textura em 3x3, não combina arquivos separados).
+
+**`TradeModal` atualizado:** moldura nova (`modal_frame_iron.png`), retrato novo (`portrait_avatar_frame.png`), e a saudação do NPC agora mora dentro de uma mini caixa de diálogo (`dialogue_box_bg.png`) em vez de só texto solto. **Bug pego e corrigido na hora:** a caixa de diálogo nova inflou a altura mínima do modal além do espaço fixo reservado, e ele passou pra fora da tela (visível só testando rodando o jogo, não ia aparecer numa checagem de compilação). Corrigido aumentando a altura do painel (420px → 520px) e apertando as margens da caixinha de diálogo.
+
+**Botão de Configurações:** adicionado na barra de sistema do HUD (`system_menu_bar.tscn`), 13º ícone -- a grade de 6 colunas ganhou uma 3ª linha (painel cresceu de 118 pra 184px de altura, sem colidir com bússola/minimapa/hotbar). Ligado em `hud_controller.gd` pelo mesmo dicionário genérico que já cobria os outros 12 (tecla O, "em construção").
+
+**Verificado rodando o jogo de verdade:** captura do HUD confirma o botão novo sem sobreposição; captura do modal da Forja confirma a moldura/retrato/caixa de diálogo cabendo na tela depois da correção de altura.
+
+---
+
 ## Checkpoint atual (2026-10-12c) — branch `feature/town-hub-redesign`
 
 **Abertura direta do modal + saudação por reputação + moldura metalizada.**
