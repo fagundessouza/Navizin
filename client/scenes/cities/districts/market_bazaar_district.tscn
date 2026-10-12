@@ -1,9 +1,9 @@
 [gd_scene load_steps=2 format=3]
 
 [ext_resource type="Script" path="res://scripts/cities/city_district_base.gd" id="1_script"]
-[ext_resource type="Texture2D" path="res://assets/sprites/environment/districts/interiors/market_cavern.png" id="2_bg"]
+[ext_resource type="Texture2D" path="res://assets/sprites/environment/districts/harbor_background.png" id="2_bg"]
 
-[node name="SupplyMarketDistrict" type="Control"]
+[node name="MarketBazaarDistrict" type="Control"]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -11,8 +11,8 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_script")
-district_title = "Mercado de Suprimentos"
-district_body = "Baús, tesouros e mercadorias contrabandeadas numa caverna sob a ilha. Em construção."
+district_title = "Mercado Feirante de Tortuga"
+district_body = "Barracas de pólvora, biscoito de viagem e bugigangas ao longo do cais. Em construção."
 
 [node name="Background" type="TextureRect" parent="."]
 anchors_preset = 15

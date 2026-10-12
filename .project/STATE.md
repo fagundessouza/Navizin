@@ -3,6 +3,23 @@
 > Arquivo de contexto. Ao iniciar uma sessão nova, diga **"Carregar checkpoint"** e leia só este arquivo.
 > Ao final de cada sessão ou marco, diga **"Salvar checkpoint"** para atualizá-lo.
 
+## Checkpoint atual (2026-10-11f) — branch `feature/town-hub-redesign`
+
+**Reorganização de nomes/fundos, taxonomia dos distritos virou 8.**
+
+- `shipyard_district.tscn`: fundo trocado pra um interior dedicado (galpão com casco de navio em construção + forja ao fundo), em vez de compartilhar o porto escuro com a forja.
+- `captains_guild_district.tscn`: fundo trocado pro estúdio gótico com mesa de navegação/mapas/globos/candelabros -- **é o MESMO arquivo já usado em `apothecary_district.tscn`** (a descrição pedida bateu exatamente com essa imagem, e não achei nenhuma outra nova depois de conferir a pasta de novo). Os dois distritos compartilham o visual por ora; se quiser uma arte exclusiva pro Boticário, precisa gerar uma nova.
+- `supply_market_district.tscn` renomeada pra `treasure_vault_district.tscn` ("Baú do Tesouro e Contrabando"), mesmo fundo de caverna com baús de ouro.
+- **Distrito novo:** `market_bazaar_district.tscn` ("Mercado Feirante de Tortuga"). Sem imagem dedicada pedida -- usei o `harbor_background.png` genérico (cais/porto), que já serve bem pra barracas de feira ao ar livre. Não havia hotspot livre no mapa da ilha pra um 8º destino, então reaproveitei o antigo hotspot "Academy" (sem conteúdo próprio) -- renomeado pra "MarketBazaar" no `.tscn` e no dicionário do script. O hotspot "BlackMarket" virou "TreasureVault" do mesmo jeito.
+- `bounty_board_district.tscn`: só troca de título, pra "Mural de Recompensas e Contratos" (mesmo fundo de fogueira na praia).
+- Tooltips dos hotspots em `island_tortuga_hub.tscn` atualizados pra bater com os títulos novos.
+
+**8 distritos agora:** Taverna, Forja, Estaleiro, Boticário, Mural de Recompensas, Baú do Tesouro, Guilda dos Capitães, Mercado Feirante -- todos num dicionário nome→cena em `island_tortuga_hub.gd` (`DISTRICT_SCENES`).
+
+**Verificado rodando o jogo de ponta a ponta:** mar → F → mapa → Baú do Tesouro (confere fundo + título) → volta ao mapa → Mercado Feirante (confere fundo + título) → volta ao mapa → Guilda (confere fundo + título) → Voltar ao Mar → oceano. Os 6 passos passaram, capturas conferidas visualmente.
+
+---
+
 ## Checkpoint atual (2026-10-11e) — branch `feature/town-hub-redesign`
 
 **Fundos dedicados por distrito, prédio isolado removido.** O checkpoint anterior (2026-10-11d) empilhava o Sprite2D do prédio (fundo preto extraído) sobre o `Tortuga Harbor Background` genérico, repetido nos 7 distritos. O usuário pediu fundos panorâmicos ÚNICOS por distrito -- de novo, achados em `~/Downloads/Tortuga/` sem aviso (9 imagens novas, timestamp de minutos depois do checkpoint anterior), conferidos antes de assumir.

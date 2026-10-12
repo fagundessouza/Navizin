@@ -11,8 +11,8 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_script")
-district_title = "Quadro de Procurados"
-district_body = "Cartazes de recompensa por cabeças conhecidas, pregados perto da fogueira na praia. Contratos e caça a procurados. Em construção."
+district_title = "Mural de Recompensas e Contratos"
+district_body = "Cartazes de recompensa por cabeças conhecidas, pregados perto da fogueira na praia -- a um passo da Taverna, na praça central. Contratos e caça a procurados. Em construção."
 
 [node name="Background" type="TextureRect" parent="."]
 anchors_preset = 15

@@ -15,17 +15,21 @@ extends Control
 
 ## Qual cena de bairro cada hotspot abre. Cada uma é uma cena própria em
 ## `scenes/cities/districts/`, com seu título/texto/prédio já embutidos --
-## não precisa mais passar texto por `GameManager`. "Academy" ainda não tem
-## arte própria, então cai na cena genérica (`city_district_base.tscn`, cujo
-## `district_title`/`district_body` já estão setados pra Academia nela mesma).
+## não precisa mais passar texto por `GameManager`.
+##
+## "TreasureVault" (antigo "BlackMarket") virou o Baú do Tesouro e Contrabando.
+## "MarketBazaar" reaproveita o antigo hotspot "Academy" (sem arte própria até
+## então) pro Mercado Feirante -- não havia hotspot livre sobrando no mapa pra
+## um bairro novo, e Academy era o único sem conteúdo real.
 const DISTRICT_SCENES: Dictionary = {
 	"Shipyard": "res://scenes/cities/districts/shipyard_district.tscn",
 	"Forge": "res://scenes/cities/districts/blacksmith_district.tscn",
 	"Tavern": "res://scenes/cities/districts/tavern_district.tscn",
 	"Apothecary": "res://scenes/cities/districts/apothecary_district.tscn",
 	"BountyBoard": "res://scenes/cities/districts/bounty_board_district.tscn",
-	"BlackMarket": "res://scenes/cities/districts/supply_market_district.tscn",
+	"TreasureVault": "res://scenes/cities/districts/treasure_vault_district.tscn",
 	"GuildHall": "res://scenes/cities/districts/captains_guild_district.tscn",
+	"MarketBazaar": "res://scenes/cities/districts/market_bazaar_district.tscn",
 }
 const FALLBACK_SCENE: String = "res://scenes/cities/city_district_base.tscn"
 

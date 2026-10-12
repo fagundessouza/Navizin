@@ -95,9 +95,9 @@ texture_normal = ExtResource("2_blank")
 texture_hover = ExtResource("3_hover")
 ignore_texture_size = true
 stretch_mode = 1
-tooltip_text = "Quadro de Recompensas"
+tooltip_text = "Mural de Recompensas e Contratos"
 
-[node name="BlackMarket" type="TextureButton" parent="Hotspots"]
+[node name="TreasureVault" type="TextureButton" parent="Hotspots"]
 offset_left = 870.0
 offset_top = 362.0
 offset_right = 1030.0
@@ -106,7 +106,7 @@ texture_normal = ExtResource("2_blank")
 texture_hover = ExtResource("3_hover")
 ignore_texture_size = true
 stretch_mode = 1
-tooltip_text = "Mercado Negro"
+tooltip_text = "Baú do Tesouro e Contrabando"
 
 [node name="GuildHall" type="TextureButton" parent="Hotspots"]
 offset_left = 838.0
@@ -117,9 +117,9 @@ texture_normal = ExtResource("2_blank")
 texture_hover = ExtResource("3_hover")
 ignore_texture_size = true
 stretch_mode = 1
-tooltip_text = "Salão da Guilda"
+tooltip_text = "Salão da Guilda dos Capitães"
 
-[node name="Academy" type="TextureButton" parent="Hotspots"]
+[node name="MarketBazaar" type="TextureButton" parent="Hotspots"]
 offset_left = 928.0
 offset_top = 3.0
 offset_right = 1048.0
@@ -128,7 +128,7 @@ texture_normal = ExtResource("2_blank")
 texture_hover = ExtResource("3_hover")
 ignore_texture_size = true
 stretch_mode = 1
-tooltip_text = "Academia"
+tooltip_text = "Mercado Feirante de Tortuga"
 
 [node name="Title" type="Label" parent="."]
 offset_left = 24.0

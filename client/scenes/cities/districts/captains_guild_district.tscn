@@ -1,7 +1,7 @@
 [gd_scene load_steps=2 format=3]
 
 [ext_resource type="Script" path="res://scripts/cities/city_district_base.gd" id="1_script"]
-[ext_resource type="Texture2D" path="res://assets/sprites/environment/districts/interiors/coastal_bonfire.png" id="2_bg"]
+[ext_resource type="Texture2D" path="res://assets/sprites/environment/districts/interiors/guildhall_study.png" id="2_bg"]
 
 [node name="CaptainsGuildDistrict" type="Control"]
 anchors_preset = 15
