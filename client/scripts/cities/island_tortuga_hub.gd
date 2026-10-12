@@ -37,8 +37,8 @@ const FALLBACK_SCENE: String = "res://scenes/cities/city_district_base.tscn"
 
 
 func _ready() -> void:
-	for button in $Hotspots.get_children():
-		button.pressed.connect(_on_hotspot_pressed.bind(button.name))
+	for pin in $Hotspots.get_children():
+		pin.pressed.connect(_on_hotspot_pressed)
 
 
 ## Em vez de abrir um popup sobre o mapa, entra na praça daquele bairro: uma

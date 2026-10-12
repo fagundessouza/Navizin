@@ -11,7 +11,6 @@
 [ext_resource type="Texture2D" uid="uid://dwmpvhplsiiac" path="res://assets/sprites/environment/islands/tortuga_kit/signpost.png" id="28_signpost"]
 [ext_resource type="Texture2D" uid="uid://cd5o6dy54363p" path="res://assets/sprites/environment/islands/tortuga_kit/mooring_post_a.png" id="29_posta"]
 [ext_resource type="Texture2D" uid="uid://c5grta4uktttt" path="res://assets/sprites/environment/islands/tortuga_kit/mooring_post_b.png" id="30_postb"]
-[ext_resource type="Texture2D" uid="uid://dtn0x5oaptst5" path="res://assets/sprites/environment/islands/tortuga_kit/barrels.png" id="31_barrels"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_ocean"]
 shader = ExtResource("2_ocean")
@@ -120,16 +119,11 @@ scale = Vector2(1.2052386, 0.9841492)
 texture = ExtResource("28_signpost")
 
 [node name="TortugaMooringPostA" type="Sprite2D" parent="World" unique_id=482864703]
-position = Vector2(970, -3524)
+position = Vector2(1285.0001, -3521.0002)
 scale = Vector2(0.93, 0.93)
 texture = ExtResource("29_posta")
 
 [node name="TortugaMooringPostB" type="Sprite2D" parent="World" unique_id=652982105]
-position = Vector2(1415, -3524)
+position = Vector2(1436.0001, -3598.0002)
 scale = Vector2(0.93, 0.93)
 texture = ExtResource("30_postb")
-
-[node name="TortugaBarrels" type="Sprite2D" parent="World" unique_id=899701275]
-position = Vector2(1456, -3434)
-scale = Vector2(1.11, 1.11)
-texture = ExtResource("31_barrels")

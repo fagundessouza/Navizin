@@ -33,13 +33,29 @@ func _ready() -> void:
 ## num botão primeiro, só nos distritos que têm os dois nós (Mural de
 ## Recompensas e Guilda não são loja, não têm essa dupla). O botão continua
 ## ligado, pra reabrir o modal se o jogador fechar e quiser ver de novo.
+##
+## Enquanto o modal está aberto, esconde "Mapa da Ilha"/"Voltar ao Mar" e o
+## próprio botão de abrir -- com o modal grande (principalmente o da Taverna,
+## de 4 abas) eles ficavam sobrepostos/por baixo, clicáveis sem aparecer.
 func _wire_shop() -> void:
 	var button: Button = get_node_or_null("OpenShopButton")
 	var modal: Control = get_node_or_null("TradeModal")
 	if button == null or modal == null:
 		return
 	button.pressed.connect(modal.open)
+	modal.opened.connect(_on_modal_opened.bind(button))
+	modal.closed.connect(_on_modal_closed.bind(button))
 	modal.open()
+
+
+func _on_modal_opened(open_button: Button) -> void:
+	$Buttons.visible = false
+	open_button.visible = false
+
+
+func _on_modal_closed(open_button: Button) -> void:
+	$Buttons.visible = true
+	open_button.visible = true
 
 
 func _unhandled_input(event: InputEvent) -> void:

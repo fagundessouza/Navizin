@@ -15,6 +15,11 @@ extends PanelContainer
 ## Abre direto ao entrar no distrito (`city_district_base.gd._wire_shop`),
 ## sem caixa de diálogo intermediária -- ver essa saudação já É a transição.
 
+## Pra quem precisa reagir à abertura/fechamento (ex. `city_district_base.gd`
+## escondendo os botões de navegação por baixo, que ficavam sobrepostos).
+signal opened
+signal closed
+
 @export var shop_title: String = "Loja"
 @export var tabs: PackedStringArray = ["Categoria 1", "Categoria 2"]
 @export var action_buttons: PackedStringArray = ["Comprar", "Vender"]
@@ -48,10 +53,12 @@ func _ready() -> void:
 func open() -> void:
 	visible = true
 	_greeting_label.text = ReputationManager.get_greeting(npc_name)
+	opened.emit()
 
 
 func close() -> void:
 	visible = false
+	closed.emit()
 
 
 ## Monta os botões de aba e as páginas em código: cada distrito define um

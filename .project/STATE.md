@@ -3,6 +3,24 @@
 > Arquivo de contexto. Ao iniciar uma sessão nova, diga **"Carregar checkpoint"** e leia só este arquivo.
 > Ao final de cada sessão ou marco, diga **"Salvar checkpoint"** para atualizá-lo.
 
+## Checkpoint atual (2026-10-12e) — branch `feature/town-hub-redesign`
+
+**Camadas de UI, reposição da Caverna do Tesouro (de verdade desta vez), e sistema de marcadores visuais no mapa da ilha.**
+
+**1) Sobreposição de botões corrigida.** `TradeModal` ganhou sinais `opened`/`closed`; `city_district_base.gd._wire_shop()` escuta os dois e esconde `$Buttons` (Mapa da Ilha/Voltar ao Mar) + o próprio botão de abrir enquanto o modal está visível -- com o modal da Taverna (mais largo, 4 abas na época), esses botões ficavam atrás dele, clicáveis sem aparecer. Reaparecem ao fechar.
+
+**2) Taverna: removido Comprar/Vender, tirada a aba Bebidas.** `action_buttons` vazio (nenhum botão de ação -- Tripulação/Procurados/Contratos não são venda simples, não fazem sentido com Comprar/Vender genérico). Ficaram só 3 abas: Tripulação, Quadro de Procurados, Contratos de Serviço. Modal um pouco mais estreito (720px → 600px) pra não sobrar espaço vazio com uma aba a menos.
+
+**3) Caverna do Tesouro reposicionada de verdade.** A posição anterior (penhasco do farol, borda direita) tecnicamente tinha 80% de pixel opaco por baixo, mas o usuário via como "flutuando fora do terreno" -- olhando a ilha de novo com mais calma, achei uma fenda rochosa de verdade (penhascos escuros com onda batendo) bem abaixo da Feira de Suprimentos, que bate com a descrição "base inferior, abaixo dos cais da feira". Nova posição com 93% de pixel opaco por baixo (contra ~80% antes), verificado por amostragem antes de aplicar.
+
+**4) `DistrictPin.tscn`/`.gd` (novo componente): os 8 hotspots invisíveis (`TextureButton` só visível no hover) viraram marcadores SEMPRE visíveis.** Ícone gótico próprio por distrito (do mesmo recorte da prancha de pergaminho da rodada anterior, seção "Core Icons" -- navio pro Estaleiro, bala de canhão pra Forja, caveira pra Taverna, pergaminho pro Boticário, medalhão pro Marketplace, bússola pra Caverna do Tesouro, leme pra Guilda, livro-âncora pra Feira), com aumento de escala + brilho dourado no hover, e uma etiqueta (reaproveita o `dialogue_box_bg.png` da rodada anterior) mostrando nome + função do distrito. Clique emite `pressed(district_id)` direto -- `island_tortuga_hub.gd` simplificou a conexão (não precisa mais de `.bind()`).
+
+**Verificado rodando o jogo de verdade:** captura do mapa da ilha confirma os 8 pins visíveis e a Caverna do Tesouro com o hover mostrando o tooltip certo, na rocha; captura da Taverna confirma 3 abas sem Comprar/Vender e sem os botões de navegação sobrepostos. 8 checagens no total, todas passaram.
+
+**Nota lateral:** o `ocean_map.tscn` tinha mudanças do próprio usuário no editor (barris removidos, postes de amarração reposicionados) -- mantidas como estavam, não revertidas.
+
+---
+
 ## Checkpoint atual (2026-10-12d) — branch `feature/town-hub-redesign`
 
 **Bug reportado (Baú/Feira "sumidos") investigado, não reproduzido.** Testei os dois hotspots do zero (posição, clique, cena, modal) rodando o jogo de verdade -- tudo funcionou. Provável causa: cache do editor do usuário não recarregando as cenas depois das últimas mudanças. Reportado, não corrigido (nada pra corrigir no código).

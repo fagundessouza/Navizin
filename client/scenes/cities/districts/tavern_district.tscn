@@ -94,8 +94,8 @@ text = "Abrir Taverna"
 
 [node name="TradeModal" parent="." instance=ExtResource("3_modal")]
 visible = false
-offset_left = -360.0
-offset_right = 360.0
+offset_left = -300.0
+offset_right = 300.0
 shop_title = "Taverna do Oculto"
-tabs = PackedStringArray("Bebidas", "Tripulação", "Quadro de Procurados", "Contratos de Serviço")
-action_buttons = PackedStringArray("Comprar", "Vender")
+tabs = PackedStringArray("Tripulação", "Quadro de Procurados", "Contratos de Serviço")
+action_buttons = PackedStringArray()
