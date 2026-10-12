@@ -1,12 +1,7 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=2 format=3]
 
 [ext_resource type="Script" path="res://scripts/cities/city_district_base.gd" id="1_script"]
-[ext_resource type="Texture2D" path="res://assets/sprites/environment/districts/harbor_background.png" id="2_bg"]
-[ext_resource type="Texture2D" path="res://assets/sprites/environment/districts/guild.png" id="3_building"]
-[ext_resource type="Script" path="res://scripts/cities/building_fx.gd" id="4_fx"]
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_hover"]
-size = Vector2(900, 900)
+[ext_resource type="Texture2D" path="res://assets/sprites/environment/districts/interiors/coastal_bonfire.png" id="2_bg"]
 
 [node name="CaptainsGuildDistrict" type="Control"]
 anchors_preset = 15
@@ -17,7 +12,7 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_script")
 district_title = "Salão da Guilda dos Capitães"
-district_body = "Bandeiras tremulam sobre a mansão gótica. Sua guilda, sua frota e sua reputação entre os capitães. Em construção."
+district_body = "Bandeiras tremulam sobre a vila costeira. Sua guilda, sua frota e sua reputação entre os capitães. Em construção."
 
 [node name="Background" type="TextureRect" parent="."]
 anchors_preset = 15
@@ -38,27 +33,6 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.05, 0.08, 0.12, 0.18)
 mouse_filter = 2
-
-[node name="Building" type="Node2D" parent="."]
-position = Vector2(640, 360)
-
-[node name="Sprite" type="Sprite2D" parent="Building"]
-scale = Vector2(0.58, 0.58)
-texture = ExtResource("3_building")
-
-[node name="FX" type="Area2D" parent="Building/Sprite"]
-collision_layer = 0
-collision_mask = 0
-script = ExtResource("4_fx")
-sprite_path = NodePath("..")
-light_offset = Vector2(0, 268)
-light_color = Color(1, 0.65, 0.3, 1)
-light_energy = 1.1
-light_texture_scale = 2.4
-particle_kind = 0
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Building/Sprite/FX"]
-shape = SubResource("RectangleShape2D_hover")
 
 [node name="PlayerSpawnPoint" type="Node2D" parent="."]
 position = Vector2(640, 660)

@@ -1,13 +1,14 @@
 class_name CityDistrictBase
 extends Control
 ## Base pra um bairro/praça da cidade (taverna, forja, boticário...), no
-## estilo AQW/Swords and Sandals: um fundo panorâmico 2D aberto com o prédio
-## daquele bairro em cima, não mais um popup de texto sobre o mapa da ilha.
+## estilo AQW/Swords and Sandals: um fundo panorâmico 2D dedicado (interior ou
+## cenário próprio daquele bairro), não mais um popup de texto sobre o mapa
+## da ilha.
 ##
 ## Cada bairro é a sua PRÓPRIA cena em `scenes/cities/districts/`, herdando a
-## estrutura comum (fundo, título, texto, botões) e só adicionando o Sprite2D
-## do prédio + `BuildingFX`. `district_title`/`district_body` são @export pra
-## cada cena-filha preencher direto, sem precisar de estado global.
+## estrutura comum (fundo, título, texto, botões). `district_title`/
+## `district_body` são @export pra cada cena-filha preencher direto, sem
+## precisar de estado global.
 ##
 ## Ainda sem personagem andando -- fica para quando o visual AQW/multiplayer
 ## entrar de verdade. `PlayerSpawnPoint` já existe pronto pra isso: é só

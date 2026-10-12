@@ -3,6 +3,24 @@
 > Arquivo de contexto. Ao iniciar uma sessão nova, diga **"Carregar checkpoint"** e leia só este arquivo.
 > Ao final de cada sessão ou marco, diga **"Salvar checkpoint"** para atualizá-lo.
 
+## Checkpoint atual (2026-10-11e) — branch `feature/town-hub-redesign`
+
+**Fundos dedicados por distrito, prédio isolado removido.** O checkpoint anterior (2026-10-11d) empilhava o Sprite2D do prédio (fundo preto extraído) sobre o `Tortuga Harbor Background` genérico, repetido nos 7 distritos. O usuário pediu fundos panorâmicos ÚNICOS por distrito -- de novo, achados em `~/Downloads/Tortuga/` sem aviso (9 imagens novas, timestamp de minutos depois do checkpoint anterior), conferidos antes de assumir.
+
+- `tavern_district.tscn` → interior da taverna, lareira acesa, mesas de madeira.
+- `apothecary_district.tscn` → laboratório gótico, frascos de água-viva bioluminescente, candelabros, lua pela janela.
+- `supply_market_district.tscn` → caverna de tesouro/contrabando sob a ilha, baús abertos, doca interna.
+- `blacksmith_district.tscn` e `shipyard_district.tscn` → compartilham o mesmo fundo (porto escuro "The Black Tide", pontes suspensas entre penhascos, barcos).
+- `bounty_board_district.tscn` e `captains_guild_district.tscn` → compartilham o mesmo fundo (vila costeira, fogueira na praia, palmeiras).
+- Removido de todas: o nó `Building` (Sprite2D do prédio isolado + `BuildingFX` + colisão de hover). `scripts/cities/building_fx.gd` ficou sem nenhuma cena usando -- deletado (código morto de verdade, não só arquivo de asset parado).
+- Os 7 PNGs de prédio isolado (`assets/sprites/environment/districts/*.png`, sem a subpasta `interiors/`) continuam no projeto, só sem uso em cena nenhuma por ora -- não apaguei esses (são arte, não código; podem servir pra outra coisa, tipo ícone do hotspot no mapa da ilha).
+- Fundos novos ficam em `assets/sprites/environment/districts/interiors/`.
+- **Verificado rodando o jogo de verdade:** capturas de taverna, boticário e mercado confirmam tela cheia sem sobreposição, título/texto/botões legíveis por cima.
+
+**Também vieram na mesma leva (não usados ainda):** uma vista interna do estaleiro/forja combinados (pode servir pra um distrito futuro ou substituir o fundo compartilhado atual), e 3 pranchas de retrato de NPC (ferreiro, capitão, taverneiro -- cada uma com 3 expressões) para quando existir sistema de diálogo com retrato.
+
+---
+
 ## Checkpoint atual (2026-10-11d) — branch `feature/town-hub-redesign`
 
 **7 distritos de Tortuga, com arte de verdade, transição com nevoeiro e navio sumindo ao atracar.**
