@@ -1,10 +1,9 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/cities/island_tortuga_hub.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/ui/hotspots/transparent.png" id="2_blank"]
 [ext_resource type="Texture2D" path="res://assets/ui/hotspots/hover_outline.png" id="3_hover"]
 [ext_resource type="Texture2D" path="res://assets/sprites/environment/islands/tortuga_hub.png" id="4_bg"]
-[ext_resource type="PackedScene" path="res://scenes/ui/dialog_panel.tscn" id="5_dialog"]
 
 [node name="IslandTortugaHub" type="Control"]
 anchors_preset = 15
@@ -153,15 +152,3 @@ theme_override_colors/font_color = Color(0.8, 0.78, 0.7, 1)
 theme_override_font_sizes/font_size = 14
 text = "F para voltar ao navio"
 horizontal_alignment = 2
-
-[node name="InfoPanel" parent="." instance=ExtResource("5_dialog")]
-visible = false
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -180.0
-offset_top = -160.0
-offset_right = 180.0
-offset_bottom = 160.0

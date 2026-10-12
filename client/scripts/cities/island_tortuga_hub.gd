@@ -1,7 +1,11 @@
 class_name TortugaCityHub
 extends Control
-## Cena do porto de Tortuga: a ilustração inteira como fundo, com pontos de
+## Mapa geral de Tortuga: a ilustração inteira como fundo, com pontos de
 ## interação invisíveis (realçados só no hover) sobre os prédios certos.
+##
+## Estilo AQW/Swords and Sandals: esta tela é só o SELETOR de bairro, não o
+## destino final. Clicar num prédio troca pra uma cena de praça 2D dedicada
+## (`city_district_base.tscn`), não mais um popup de texto por cima do mapa.
 ##
 ## Cena própria (`res://scenes/cities/island_tortuga_hub.tscn`), não mais um
 ## overlay escondido dentro de `ocean_map.tscn`: `ocean_map.gd` troca para esta
@@ -26,25 +30,21 @@ const TITLES: Dictionary = {
 	"BlackMarket": "Mercado Negro", "GuildHall": "Salão da Guilda", "Academy": "Academia",
 }
 
-@onready var _info: NinePatchRect = $InfoPanel
-
-
 func _ready() -> void:
 	for button in $Hotspots.get_children():
 		button.pressed.connect(_on_hotspot_pressed.bind(button.name))
 
 
+## Em vez de abrir um popup sobre o mapa, entra na praça daquele bairro: uma
+## cena própria com fundo panorâmico (`city_district_base.tscn`).
 func _on_hotspot_pressed(location: String) -> void:
-	_info.get_node("Title").text = TITLES.get(location, location)
-	_info.get_node("Body").text = DESCRIPTIONS.get(location, "Em construção.")
-	_info.visible = true
+	GameManager.pending_district_title = TITLES.get(location, location)
+	GameManager.pending_district_body = DESCRIPTIONS.get(location, "Em construção.")
+	get_tree().change_scene_to_file("res://scenes/cities/city_district_base.tscn")
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_cancel") and _info.visible:
-		_info.visible = false
-		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("interact") and not _info.visible:
+	if event.is_action_pressed("interact"):
 		_return_to_ocean()
 		get_viewport().set_input_as_handled()
 

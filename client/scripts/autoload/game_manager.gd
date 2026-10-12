@@ -26,6 +26,13 @@ func clear_saved_ship_state() -> void:
 	saved_supply = -1.0
 
 
+## Qual bairro foi clicado no mapa da ilha (`island_tortuga_hub.gd`), lido por
+## `city_district_base.gd` no próprio `_ready()` pra se configurar -- não dá pra
+## passar parâmetro direto num `change_scene_to_file`, então viaja por aqui.
+var pending_district_title: String = ""
+var pending_district_body: String = ""
+
+
 func _ready() -> void:
 	# Ponto de inicialização: carregar configurações locais, se houver.
 	pass

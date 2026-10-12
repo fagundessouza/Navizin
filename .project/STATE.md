@@ -3,6 +3,46 @@
 > Arquivo de contexto. Ao iniciar uma sessão nova, diga **"Carregar checkpoint"** e leia só este arquivo.
 > Ao final de cada sessão ou marco, diga **"Salvar checkpoint"** para atualizá-lo.
 
+## Checkpoint atual (2026-10-11c) — branch `feature/town-hub-redesign`
+
+**Hierarquia de 3 níveis, estilo AQW/Swords and Sandals, implementada:**
+
+```
+OceanMap ──(F na baía)──> IslandTortugaHub ──(clica no prédio)──> CityDistrictBase
+   ▲                        (mapa/seletor               (praça 2D daquele bairro,
+   └────("Voltar ao Mar")       de bairro)                reaproveitável p/ todos)
+```
+
+- `IslandTortugaHub` deixou de ser o destino final -- agora é só o SELETOR de
+  bairro. Clicar num hotspot não abre mais popup de texto: troca de cena pra
+  `scenes/cities/city_district_base.tscn`.
+- `city_district_base.tscn`/`.gd`: cena única e reutilizável pra qualquer
+  bairro (Taverna, Forja, Boticário...). Não existem 8 cenas quase-idênticas --
+  `GameManager.pending_district_title/body` carrega qual bairro foi clicado
+  (setado antes do `change_scene_to_file`, já que ele não aceita parâmetro
+  direto) e a cena se configura no próprio `_ready()`.
+- Fundo da praça por enquanto é um `ColorRect` escuro liso -- ainda sem a arte
+  panorâmica do Mesh AI (prompt já existe em `ART_PROMPTS.md`, só falta gerar
+  e trocar o placeholder).
+- Botões "Mapa da Ilha" (volta pro seletor) e "Voltar ao Mar" (pula direto pro
+  oceano, sem passar pela ilha -- `ocean_map.gd` restaura o navio do mesmo
+  jeito, o estado salvo não foi tocado).
+- `PlayerSpawnPoint` (`Node2D` vazio) já existe na cena-modelo, parado, pronto
+  pra quando o personagem andando estilo AQW (e multiplayer) entrar -- combinado
+  explicitamente com o usuário que fica estático por enquanto.
+- **Verificado rodando o jogo de ponta a ponta** (autoload temporário, mesma
+  técnica do checkpoint anterior): mar → F → mapa da ilha → clica "Taverna" →
+  praça com título/texto certos → "Voltar ao Mar" → navio restaurado (casco,
+  suprimento e posição) direto no oceano, pulando o mapa da ilha. Os 6 passos
+  do teste passaram.
+
+**Pendente:** arte panorâmica real por bairro (Mesh AI), NPCs/hotspots dentro
+de cada praça, e o personagem/avatar andando (explicitamente adiado pelo
+usuário -- "podemos manter estático assim mesmo... futuramente a gente já
+deixa preparado").
+
+---
+
 ## Checkpoint atual (2026-10-11b) — branch `feature/town-hub-redesign`
 
 Três correções pontuais sobre o checkpoint anterior (mesmo dia, rodada seguinte):
