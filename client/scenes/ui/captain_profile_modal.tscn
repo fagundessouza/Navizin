@@ -1,0 +1,64 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/captain_profile_modal.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/ui/panels/captain_paperdoll_panel.png" id="2_bg"]
+[ext_resource type="PackedScene" path="res://scenes/ui/inventory_picker_submodal.tscn" id="3_picker"]
+
+[node name="CaptainProfileModal" type="Control"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -480.0
+offset_top = -270.0
+offset_right = 480.0
+offset_bottom = 270.0
+script = ExtResource("1_script")
+
+[node name="Background" type="TextureRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("2_bg")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="CloseButton" type="Button" parent="."]
+offset_left = 905.0
+offset_top = 8.0
+offset_right = 945.0
+offset_bottom = 38.0
+text = "X"
+
+[node name="PointsLabel" type="Label" parent="."]
+offset_left = 310.0
+offset_top = 388.0
+offset_right = 650.0
+offset_bottom = 412.0
+theme_override_colors/font_color = Color(0.85, 0.82, 0.76, 1)
+theme_override_font_sizes/font_size = 15
+horizontal_alignment = 1
+text = "Pontos disponíveis: 0"
+
+[node name="EquipSlots" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="AttributeButtons" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Picker" parent="." instance=ExtResource("3_picker")]
+layout_mode = 1

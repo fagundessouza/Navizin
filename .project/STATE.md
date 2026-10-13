@@ -3,6 +3,23 @@
 > Arquivo de contexto. Ao iniciar uma sessão nova, diga **"Carregar checkpoint"** e leia só este arquivo.
 > Ao final de cada sessão ou marco, diga **"Salvar checkpoint"** para atualizá-lo.
 
+## Checkpoint atual (2026-10-13a) — branch `feature/town-hub-redesign`
+
+**Painéis de arte dedicados (Galeão + Ficha do Capitão Paperdoll), submodal de inventário reutilizável, sistema real de atributos sociais.**
+
+- As imagens novas (`Meshy_AI_captain_paperdoll_panel.png`, `Meshy_AI_galleon_ship_panel.png`) não chegaram anexadas na mensagem (só citadas por nome) -- acharam-se em `~/Downloads/Tortuga/` depois que o usuário apontou a pasta. Essa pasta é o repositório-fonte de TODA a arte bruta usada nas últimas rodadas (inclusive `Meshy_AI_rpg_ui_asset_spritesheet.png`, a prancha original da extração de UI de rodadas anteriores) -- útil lembrar pra próxima vez que faltar uma imagem referenciada por nome.
+- `image_ff5672.png` (os 3 brasões) também nunca existiu separado -- é a faixa inferior do próprio `captain_paperdoll_panel.png`, que já vem com Leão/Busto/Aperto-de-mãos prontos e com os `+` desenhados.
+- **`CaptainProfileModal`/`ShipStatusModal` substituem os antigos `AccessoriesPanel`/`ShipPanel` genéricos (`CaptainPanel` de abas)** -- as duas artes já vêm com moldura, "+"  e emblemas pintados, então os scripts só posicionam BOTÕES TRANSPARENTES exatamente em cima do que já está desenhado (nenhum ícone extra desenhado por cima). Coordenadas de cada slot medidas com overlay de grade nas imagens de origem (1536x864), convertidas pra escala de exibição (960x540, fator 0.625) -- documentado no cabeçalho dos dois scripts pra não precisar remedir do zero se a arte mudar de tamanho.
+- **`InventoryPickerSubmodal`** (novo, reutilizável): abre do lado do slot clicado (lado com mais espaço, calculado por slot -- direita/esquerda e cima/baixo), lista só os itens de `STUB_INVENTORY` filtrados pela categoria do slot (sem inventário de verdade ainda). Clique no item seleciona e fecha; clique fora (backdrop em tela cheia) também fecha. Selecionar um item atualiza o tooltip do slot com o nome escolhido -- prova o fluxo fim-a-fim mesmo sem dado real.
+- **Pulso de clique**: todo slot '+' (6 do paperdoll + 3 especiais do navio + 20 da grade de armamento = 29 ao todo) ganha a mesma animação -- escala 1→1.35→1 + brilho instantâneo (`modulate`) via Tween, antes de abrir o submodal.
+- **`CaptainAttributes` (novo autoload)**: `leadership`/`charisma`/`persuasion` + `available_points` (começa em 5, valor de demonstração). `spend(attr)` incrementa e emite `changed`; `captain_profile_modal.gd` escuta e atualiza o número embaixo de cada brasão e o "Pontos disponíveis" em tempo real.
+- Grade de armamento do navio (5x4=20 slots) construída em loop a partir de duas listas de coordenadas, não 20 nós escritos à mão. As 3 barras de recurso (carga/blindagem/vento) na faixa de baixo do painel do navio ficaram só decorativas por ora -- dá pra ligar em `ship.supply`/`hull`/`WindManager` depois se quiser essa leitura ao vivo ali também (não pedido nesta rodada).
+- "Habilidades Passivas" e "Tripulação" (abas do `ShipPanel` antigo) não têm mais lugar nessa tela nova de encaixe -- a arte não tem espaço de abas. Ficam pendentes de uma decisão futura sobre onde morar.
+
+**Verificado rodando o jogo de verdade:** 12 checagens, todas passaram -- os 2 painéis abrem com a arte certa, clique num slot abre o picker na posição certa com a lista filtrada certa, selecionar um item atualiza o tooltip, clicar 3x no brasão do Leão sobe `leadership` pra 3 e `available_points` pra 2 com o texto atualizando ao vivo na tela.
+
+---
+
 ## Checkpoint atual (2026-10-12h) — branch `feature/town-hub-redesign`
 
 **Acabamento gótico/metalizado nos painéis (estilo MU Online/Diablo), hotbar refeita com slots fatiados, vazamento de ícones do menu corrigido.**

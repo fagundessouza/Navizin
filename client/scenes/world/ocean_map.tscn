@@ -51,7 +51,7 @@ mouse_filter = 2
 
 [node name="FogLayer" type="Parallax2D" parent="." unique_id=179720299]
 z_index = -5
-scroll_offset = Vector2(-931, 0)
+scroll_offset = Vector2(5548, 228)
 repeat_size = Vector2(940, 940)
 autoscroll = Vector2(6, 2)
 repeat_times = 3
@@ -118,12 +118,12 @@ position = Vector2(1037, -3447.0002)
 scale = Vector2(1.2052386, 0.9841492)
 texture = ExtResource("28_signpost")
 
-[node name="TortugaMooringPostA" type="Sprite2D" parent="World" unique_id=482864703]
-position = Vector2(1285.0001, -3521.0002)
-scale = Vector2(0.93, 0.93)
-texture = ExtResource("29_posta")
-
 [node name="TortugaMooringPostB" type="Sprite2D" parent="World" unique_id=652982105]
 position = Vector2(1436.0001, -3598.0002)
 scale = Vector2(0.93, 0.93)
 texture = ExtResource("30_postb")
+
+[node name="TortugaMooringPostA" type="Sprite2D" parent="World" unique_id=482864703]
+position = Vector2(1285.0001, -3521.0002)
+scale = Vector2(0.93, 0.93)
+texture = ExtResource("29_posta")
