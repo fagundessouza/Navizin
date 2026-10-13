@@ -11,11 +11,16 @@ extends Control
 ## partir de `GRID_COLS`/`GRID_ROWS` em vez de 20 entradas escritas à mão.
 ##
 ## As 3 barras de recurso (carga/blindagem/vento) na faixa de baixo da arte
-## ficam só decorativas por ora -- dá pra ligar em `ship.supply`/`hull` e
-## `WindManager` depois, se quiser essa leitura ao vivo aqui também.
+## leem direto do navio (`supply`/`hull`) e do `WindManager`, mesma fonte que
+## a barra de HUD do canto inferior esquerdo -- não é um segundo sistema de
+## status, é o mesmo dado mostrado de novo aqui.
 
 signal opened
 signal closed
+
+## Força do vento (`WindManager.wind_strength`) varia de 0.3 a 1.5; mesmo
+## teto usado em `hud_controller.gd._update_wind()`.
+const WIND_MAX: float = 1.5
 
 const PANEL_SIZE: Vector2 = Vector2(960, 540)
 const PICKER_WIDTH_ESTIMATE: float = 226.0
@@ -36,6 +41,12 @@ const GLOW_COLOR: Color = Color(1.4, 1.25, 0.8, 1.0)
 
 @onready var _slots_root: Control = $Slots
 @onready var _picker: InventoryPickerSubmodal = $Picker
+@onready var _cargo_bar: ProgressBar = $CargoBar
+@onready var _hull_bar: ProgressBar = $HullBar
+@onready var _wind_bar: ProgressBar = $WindBar
+
+var _ship: Node2D = null
+var _wind: Node = null
 
 
 func _ready() -> void:
@@ -43,6 +54,15 @@ func _ready() -> void:
 	$CloseButton.pressed.connect(close)
 	_build_special_slots()
 	_build_armament_grid()
+	_wind = get_node("/root/WindManager")
+
+
+func _process(_delta: float) -> void:
+	if not visible:
+		return
+	if _ship == null:
+		_ship = get_tree().get_first_node_in_group("player_ship") as Node2D
+	_update_resource_bars()
 
 
 func open() -> void:
@@ -54,6 +74,25 @@ func close() -> void:
 	_picker.close()
 	visible = false
 	closed.emit()
+
+
+## Mesma fonte de dado que `hud_controller.gd`: `ship.supply`/`max_supply`,
+## `ship.hull`/`max_hull` lidos direto (não só pelo sinal `hull_changed`,
+## que não dispara de novo só porque o jogador abriu este painel) e
+## `WindManager.wind_strength` sobre o teto de 1.5.
+func _update_resource_bars() -> void:
+	if _ship != null:
+		var supply: float = _ship.get("supply")
+		var max_supply: float = _ship.get("max_supply")
+		_cargo_bar.max_value = max_supply
+		_cargo_bar.value = supply
+
+		var hull: float = _ship.get("hull")
+		var max_hull: float = _ship.get("max_hull")
+		_hull_bar.max_value = max_hull
+		_hull_bar.value = hull
+	_wind_bar.max_value = WIND_MAX
+	_wind_bar.value = clampf(_wind.wind_strength, 0.0, WIND_MAX)
 
 
 func _build_special_slots() -> void:

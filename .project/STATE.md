@@ -3,6 +3,18 @@
 > Arquivo de contexto. Ao iniciar uma sessão nova, diga **"Carregar checkpoint"** e leia só este arquivo.
 > Ao final de cada sessão ou marco, diga **"Salvar checkpoint"** para atualizá-lo.
 
+## Checkpoint atual (2026-10-13b) — branch `feature/town-hub-redesign`
+
+**Barras de recurso do `ShipStatusModal` ligadas aos dados reais do navio/vento.**
+
+- As 3 barras (carga, casco/blindagem, vento) na faixa de baixo do `galleon_ship_panel.png` eram só decorativas até este checkpoint -- agora leem `ship.supply`/`max_supply`, `ship.hull`/`max_hull` e `WindManager.wind_strength`, a mesma fonte que já alimenta a barra de HUD do canto inferior esquerdo (não é um segundo sistema de status, é o mesmo dado mostrado de novo aqui).
+- Posição/tamanho de cada `ProgressBar` medido por amostragem de pixel no interior escuro de cada cápsula da arte (não eyeballed) -- ver cabeçalho de `ship_status_modal.gd` pro fator de conversão (0.625, igual ao resto do painel).
+- `_process()` só atualiza as barras enquanto o painel está `visible` (o resto do tempo nem gasta o `get_first_node_in_group`), e resolve o navio uma vez só quando acha, igual ao padrão já usado em `hud_controller.gd._connect_ship()`.
+
+**Verificado rodando o jogo de verdade:** forcei `hull=450`, `supply=300`, `wind_strength=1.2` e as 3 barras preencheram nas proporções certas (45%/30%/80%) -- confirmado por valor lido E por captura de tela.
+
+---
+
 ## Checkpoint atual (2026-10-13a) — branch `feature/town-hub-redesign`
 
 **Painéis de arte dedicados (Galeão + Ficha do Capitão Paperdoll), submodal de inventário reutilizável, sistema real de atributos sociais.**
