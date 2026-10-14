@@ -279,6 +279,48 @@ const _GRIMOIRES: Array[Dictionary] = [
 ]
 
 
+## Ícone genérico por MATERIAL BRUTO (não item fabricado) -- pedido explícito
+## da Caverna do Tesouro ("substituir a listagem de texto puro... por uma
+## grade de slots com ícones recortados"). Materiais não têm arte dedicada
+## em nenhuma prancha recebida (só itens prontos têm); desenhados do zero
+## (PIL, formas geométricas simples: lingote/prancha/rolo de tecido/couro/
+## corda/gema/osso/vidro/fivela/saco de pólvora/fragmento de relíquia),
+## cada arquétipo tingido na cor do próprio material, em vez de reusar um
+## ícone de item fabricado que não tem nada a ver.
+const MATERIAL_ICON_DIR: String = "res://assets/ui/icons/materials/"
+const _MATERIAL_ICON_FILES: Dictionary = {
+	"Liga de Ferro": "material_liga_de_ferro.png", "Liga de Cobre": "material_liga_de_cobre.png",
+	"Liga de Ouro": "material_liga_de_ouro.png", "Prata": "material_prata.png", "Ouro": "material_ouro.png",
+	"Placas de Ferro": "material_placas_de_ferro.png", "Esfera de Ferro": "material_esfera_de_ferro.png",
+	"Peças de Latão": "material_pecas_de_latao.png", "Madeira de Carvalho": "material_madeira_de_carvalho.png",
+	"Madeira Nobre": "material_madeira_nobre.png", "Lona": "material_lona.png",
+	"Lona Reforçada": "material_lona_reforcada.png", "Seda": "material_seda.png",
+	"Linho Encerado": "material_linho_encerado.png", "Veludo Corsário": "material_veludo_corsario.png",
+	"Couro": "material_couro.png", "Couro Reforçado": "material_couro_reforcado.png",
+	"Cordame": "material_cordame.png", "Pérola Negra": "material_perola_negra.png",
+	"Pérola Abissal": "material_perola_abissal.png", "Diamante Sombrio": "material_diamante_sombrio.png",
+	"Osso de Leviatã": "material_osso_de_leviata.png", "Osso de Titã": "material_osso_de_tita.png",
+	"Dente de Leviatã": "material_dente_de_leviata.png", "Relíquia de Osso": "material_reliquia_de_osso.png",
+	"Escamas de Kraken": "material_escamas_de_kraken.png", "Coral Amaldiçoado": "material_coral_amaldicoado.png",
+	"Essência de Monstro Marinho": "material_essencia_de_monstro_marinho.png",
+	"Essência de Ebenruth": "material_essencia_de_ebenruth.png", "Fragmentos Místicos": "material_fragmentos_misticos.png",
+	"Vento Rúnico": "material_vento_runico.png", "Tinta Rúnica": "material_tinta_runica.png",
+	"Fivela de Bronze": "material_fivela_de_bronze.png", "Fivela de Prata": "material_fivela_de_prata.png",
+	"Bússola Fragmentada": "material_bussola_fragmentada.png", "Pólvora": "material_polvora.png",
+	"Relíquia de Ouro": "material_reliquia_de_ouro.png",
+}
+var _material_icon_cache: Dictionary = {}
+
+
+func get_material_icon(material_name: String) -> Texture2D:
+	if _material_icon_cache.has(material_name):
+		return _material_icon_cache[material_name]
+	var file: String = _MATERIAL_ICON_FILES.get(material_name, "")
+	var icon: Texture2D = load(MATERIAL_ICON_DIR + file) if file != "" else null
+	_material_icon_cache[material_name] = icon
+	return icon
+
+
 func _ready() -> void:
 	_register_tiered_catalog()
 	_register_flat_catalog(_build_ammo_catalog(), "municao", "forja", "")

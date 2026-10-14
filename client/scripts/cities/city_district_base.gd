@@ -17,8 +17,13 @@ extends Control
 @export var district_title: String = ""
 @export_multiline var district_body: String = ""
 
+const STATION_GLOW_SHADER: Shader = preload("res://assets/shaders/station_highlight.gdshader")
+const STATION_GLOW_MARGIN: float = 2.6
+
 @onready var _title: Label = $Title
 @onready var _body: Label = $Body
+
+var _glow_phase_counter: int = 0
 
 ## Quantos modais de distrito estão abertos agora -- os botões de navegação
 ## só reaparecem quando chega a 0. Mais de um pode ficar aberto ao mesmo
@@ -58,11 +63,36 @@ func _wire_modal(button_name: String, modal_name: String, auto_open: bool) -> vo
 	var modal: Control = get_node_or_null(modal_name)
 	if button == null or modal == null:
 		return
+	_add_station_glow(button)
 	button.pressed.connect(UIManager.open_modal.bind(modal))
 	modal.opened.connect(_on_modal_opened.bind(button))
 	modal.closed.connect(_on_modal_closed.bind(button))
 	if auto_open:
 		UIManager.open_modal(modal)
+
+
+## Luz quente pulsando atrás do botão -- "destaque visual às estações" pedido
+## explicitamente, igual pros 8 bairros de uma vez (genérico aqui na base, em
+## vez de editar cada `.tscn` individualmente). Fica ATRÁS do botão
+## (`move_to_front()` no botão depois de inserido) e um pouco maior que ele
+## (`STATION_GLOW_MARGIN`), com `mouse_filter = IGNORE` pra não roubar o
+## clique. Ver nota no shader sobre por que isso não é Lit 2D de verdade.
+func _add_station_glow(button: Button) -> void:
+	var glow := ColorRect.new()
+	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	glow.color = Color.WHITE
+	var grow_x: float = button.size.x * (STATION_GLOW_MARGIN - 1.0) * 0.5
+	var grow_y: float = button.size.y * (STATION_GLOW_MARGIN - 1.0) * 0.5
+	glow.position = button.position - Vector2(grow_x, grow_y)
+	glow.size = button.size * STATION_GLOW_MARGIN
+	var mat := ShaderMaterial.new()
+	mat.shader = STATION_GLOW_SHADER
+	_glow_phase_counter += 1
+	mat.set_shader_parameter("phase_offset", fmod(float(_glow_phase_counter) * 1.73, TAU))
+	glow.material = mat
+	button.get_parent().add_child(glow)
+	glow.z_index = button.z_index
+	button.move_to_front()
 
 
 func _on_modal_opened(open_button: Button) -> void:

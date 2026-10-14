@@ -1,0 +1,99 @@
+@tool
+class_name VisualShaderNodeNoiseSimplex2d
+extends VisualShaderNodeCustom
+
+
+func _init() -> void:
+	set_input_port_default_value(1, Vector3(0, 0, 0))
+	set_input_port_default_value(2, 5.0)
+
+
+func _get_name() -> String:
+	return "SimplexNoise2D"
+
+
+func _get_category() -> String:
+	return "RGBA"
+
+
+func _get_subcategory() -> String:
+	return "Noise"
+
+
+func _get_description() -> String:
+	return "2d simplex noise"
+
+
+func _get_return_icon_type() -> VisualShaderNode.PortType:
+	return VisualShaderNode.PORT_TYPE_SCALAR
+
+
+func _get_input_port_count() -> int:
+	return 3
+
+
+func _get_input_port_name(port: int) -> String:
+	match port:
+		0:
+			return "uv"
+		1:
+			return "offset"
+		2:
+			return "scale"
+	return ""
+
+
+func _get_input_port_type(port: int) -> VisualShaderNode.PortType:
+	match port:
+		0:
+			return VisualShaderNode.PORT_TYPE_VECTOR_3D
+		1:
+			return VisualShaderNode.PORT_TYPE_VECTOR_3D
+		2:
+			return VisualShaderNode.PORT_TYPE_SCALAR
+	return VisualShaderNode.PORT_TYPE_SCALAR
+
+
+func _get_output_port_count() -> int:
+	return 1
+
+
+func _get_output_port_name(port: int) -> String:
+	match port:
+		0:
+			return "result"
+	return ""
+
+
+func _get_output_port_type(port: int) -> VisualShaderNode.PortType:
+	match port:
+		0:
+			return VisualShaderNode.PORT_TYPE_SCALAR
+	return VisualShaderNode.PORT_TYPE_SCALAR
+
+
+func _get_global_code(_mode: VisualShader.Mode) -> String:
+	var current_script: Script = get_script()
+	var path: String = ""
+	if current_script is Script:
+		path = current_script.resource_path.get_base_dir()
+	return '#include "' + path + '/simplex2d.gdshaderinc"'
+
+
+func _get_code(
+	input_vars: Array[String],
+	output_vars: Array[String],
+	_mode: VisualShader.Mode,
+	_type: VisualShader.Type,
+) -> String:
+	var uv: String = "UV"
+
+	if input_vars[0]:
+		uv = input_vars[0]
+
+	return "%s = _simplex2dNoiseFunc((%s.xy+%s.xy)*%s);" % [
+		output_vars[0],
+		uv,
+		input_vars[1],
+		input_vars[2],
+	]

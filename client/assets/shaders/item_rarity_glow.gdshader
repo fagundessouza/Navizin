@@ -19,10 +19,26 @@ shader_type canvas_item;
 // recebe um `phase_offset` próprio (`ship_status_modal.gd` passa um valor
 // por índice), pra uma GRADE de 20 canhões não piscar tudo em uníssono;
 // (2) as "faíscas"/"chamas"/"runas" usam `smoothstep()` sobre ruído que
-// MUDA GRADUALMENTE (`floor(TIME*speed)` vira `TIME*speed` suave), então a
-// energia parece fluir pela borda em vez de picotar; (3) brilho em duas
-// camadas (núcleo mais apertado + halo mais largo e fraco) pra um volume
-// mais "AAA", não só uma linha fina de luz.
+// MUDA GRADUALMENTE, então a energia parece fluir pela borda em vez de
+// picotar; (3) brilho em duas camadas (núcleo mais apertado + halo mais
+// largo e fraco) pra um volume mais "AAA", não só uma linha fina de luz.
+//
+// SHADERV2 ("Visual Shader Node Library", arkology/MIT -- instalado solto
+// na raiz do projeto em vez de dentro de addons/, por isso nunca apareceu
+// como plugin na lista de addons): usa 3 funções de lá em vez de
+// reimplementar ruído/fogo/brilho na mão -- `_simplex2dNoiseFunc` (ruído
+// coerente de verdade no lugar do hash-grid caseiro de antes), `_fireFXFunc`
+// (chama em camadas de verdade pro modo Fogo Sombrio, no lugar de um
+// flicker genérico) e `_shineFunc` (um brilho de reflexo varrendo a borda
+// na diagonal, "shine" de loot AAA, em todo item com brilho de raridade
+// ativo). As funções de glow por blur da biblioteca (`_outerGlowFunc`/
+// `_innerGlowFunc`) ficaram de fora: cada uma amostra a textura em até 29x29
+// (841 taps) por pixel, caro demais pra grade de 20 canhões simultâneos --
+// o glow em duas camadas por distância-até-a-borda já cobre o volume sem
+// esse custo.
+#include "res://rgba/noise/simplex2d.gdshaderinc"
+#include "res://rgba/fireFX.gdshaderinc"
+#include "res://rgba/shineFX.gdshaderinc"
 
 const int AURA_NONE = 0;
 const int AURA_ELECTRIC = 1;
@@ -35,23 +51,11 @@ uniform int aura_mode : hint_range(0, 3) = 0;
 uniform float refine_boost : hint_range(0.0, 2.0) = 0.0;
 uniform float phase_offset : hint_range(0.0, 6.2832) = 0.0;
 
-float hash21(vec2 p) {
-	p = fract(p * vec2(123.34, 456.21));
-	p += dot(p, p + 45.32);
-	return fract(p.x * p.y);
-}
-
-// Ruído de valor suave (interpola entre células de hash) -- em vez do hash
-// cru reavaliado a cada frame, isso dá uma corrente contínua, sem saltos.
+// Wrapper fino sobre o ruído simplex do ShaderV2 -- mantém a mesma
+// assinatura/faixa [0,1] que o `flow_noise()` caseiro de antes tinha, pra
+// não precisar reescrever as 3 chamadas abaixo.
 float flow_noise(vec2 p) {
-	vec2 i = floor(p);
-	vec2 f = fract(p);
-	f = f * f * (3.0 - 2.0 * f);
-	float a = hash21(i);
-	float b = hash21(i + vec2(1.0, 0.0));
-	float c = hash21(i + vec2(0.0, 1.0));
-	float d = hash21(i + vec2(1.0, 1.0));
-	return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+	return _simplex2dNoiseFunc(p);
 }
 
 void fragment() {
@@ -80,14 +84,16 @@ void fragment() {
 		glow += border * spark * (1.0 + refine_boost * 0.6) * intensity;
 		color = mix(color, vec3(0.75, 0.9, 1.0), spark * 0.5);
 	} else if (aura_mode == AURA_DARK_FIRE) {
-		// Chama lenta e orgânica -- mesmo `flow_noise`, frequência espacial
-		// menor e movimento mais devagar, pra "respirar" em vez de tremer.
-		float freq = 6.0 + refine_boost * 4.0;
-		float speed = 0.6 + refine_boost * 0.5;
-		float flicker = flow_noise(UV * freq + vec2(0.0, t * speed));
-		float fire = smoothstep(0.4, 0.85, flicker);
+		// Chama de verdade (ShaderV2 `_fireFXFunc`, 3 bandas de cor sobre FBM
+		// de Perlin) em vez do flicker genérico de antes -- preto -> vermelho
+		// sombrio -> laranja quase branco, subindo pela UV com o tempo.
+		float speed = 0.35 + refine_boost * 0.3;
+		vec4 fire_col = _fireFXFunc(UV * (2.0 + refine_boost), vec2(0.0, 1.0), speed, t,
+			vec4(0.0, 0.0, 0.0, 0.0), vec4(0.55, 0.08, 0.02, 1.0), vec4(1.0, 0.55, 0.15, 1.0),
+			0.0, 0.45, 0.85);
+		float fire = fire_col.a;
 		glow += border * fire * (0.9 + refine_boost * 0.6) * intensity;
-		color = mix(color, vec3(0.95, 0.35, 0.1), fire * 0.6);
+		color = mix(color, fire_col.rgb, fire * 0.6);
 	} else if (aura_mode == AURA_RUNIC) {
 		// Glifos girando bem devagar ao redor da borda -- período mais
 		// longo que os outros dois, pra parecer um encantamento ativo.
@@ -99,6 +105,19 @@ void fragment() {
 		glow += border * rune * 0.8 * intensity;
 		color = mix(color, vec3(0.6, 0.85, 0.95), 0.3);
 	}
+
+	// ShaderV2 `_shineFunc`: um brilho de reflexo varrendo a borda na
+	// diagonal, igual ao "shine" que passa por um item raro num loot AAA --
+	// `_loc_shine` anda de -1.4 a 1.4 ao longo do tempo pra cruzar o quadro
+	// inteiro e sumir, em vez de ficar parado. Alimenta com uma base opaca
+	// (alpha=1) só pra função aplicar o termo; o que entra no glow final é a
+	// DIFERENÇA que ela soma, não a base em si.
+	vec4 shine_base = vec4(0.0, 0.0, 0.0, 1.0);
+	float shine_loc = mod(t * 0.35, 2.8) - 1.4;
+	vec4 shine_result = _shineFunc(shine_base, UV - 0.5, shine_loc, 0.78, 0.5, 0.35, 1.0, 0.0, vec3(1.0));
+	float shine_power = shine_result.r;
+	glow += border * shine_power * intensity;
+	color += shine_power * 0.6;
 
 	COLOR = vec4(color, clamp(glow, 0.0, 1.0) * rarity_color.a);
 }

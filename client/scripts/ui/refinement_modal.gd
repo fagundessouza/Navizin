@@ -35,6 +35,8 @@ const ICON_BORDER_COLOR: Color = Color(0.78, 0.65, 0.38, 0.9)
 @onready var _protection_check: CheckBox = $Margin/VBox/HBox/Right/ProtectionCheck
 @onready var _refine_button: Button = $Margin/VBox/HBox/Right/RefineButton
 @onready var _result_label: Label = $Margin/VBox/HBox/Right/ResultLabel
+@onready var _repair_label: Label = $Margin/VBox/HBox/Right/RepairLabel
+@onready var _repair_button: Button = $Margin/VBox/HBox/Right/RepairButton
 
 var _selected_instance_id: String = ""
 
@@ -45,6 +47,8 @@ func _ready() -> void:
 	$Margin/VBox/Header/CloseButton.pressed.connect(close)
 	_style_button(_refine_button)
 	_refine_button.pressed.connect(_on_refine_pressed)
+	_style_button(_repair_button)
+	_repair_button.pressed.connect(_on_repair_pressed)
 	_protection_check.toggled.connect(_on_protection_toggled)
 	PlayerInventory.changed.connect(_on_inventory_changed)
 
@@ -164,6 +168,8 @@ func _update_details() -> void:
 		_protection_check.disabled = true
 		_protection_check.button_pressed = false
 		_refine_button.disabled = true
+		_repair_label.text = ""
+		_repair_button.disabled = true
 		return
 
 	var instance_id: String = _selected_instance_id
@@ -173,9 +179,11 @@ func _update_details() -> void:
 	_selected_name.add_theme_color_override("font_color", rarity["color"])
 
 	var durability: float = PlayerInventory.get_durability(instance_id)
-	_durability_bar.max_value = PlayerInventory.MAX_DURABILITY
+	var max_durability: float = PlayerInventory.get_max_durability(instance_id)
+	_durability_bar.max_value = max_durability
 	_durability_bar.value = durability
-	_durability_label.text = "Durabilidade: %d/%d" % [int(durability), int(PlayerInventory.MAX_DURABILITY)]
+	_durability_label.text = "Durabilidade: %d/%d" % [int(durability), int(max_durability)]
+	_update_repair_section(instance_id, max_durability)
 
 	if level >= EnchantmentManager.MAX_LEVEL:
 		_chance_label.text = "Nível máximo (+15) já alcançado."
@@ -207,6 +215,29 @@ func _update_details() -> void:
 	_cost_label.text = cost_text
 
 	_refine_button.disabled = not PlayerInventory.can_refine(instance_id, use_protection)
+
+
+## Oficina de Manutenção: "recuperar a durabilidade máxima" pedido
+## explícito -- repõe o TETO (não só a barra atual) de volta a 100, por um
+## custo em Kit de Reparo. Fica aqui dentro do painel de Refino (mesma
+## estação, "Forja Naval -- Refino") em vez de um 3º botão/distrito
+## dedicado -- é a mesma bancada, só outro tipo de trabalho nela.
+func _update_repair_section(instance_id: String, max_durability: float) -> void:
+	if max_durability >= PlayerInventory.MAX_DURABILITY:
+		_repair_label.text = "Durabilidade máxima intacta (100/100)."
+		_repair_button.disabled = true
+		return
+	var kit_have: int = PlayerInventory.materials.get(PlayerInventory.REPAIR_KIT, 0)
+	_repair_label.text = "Teto reduzido por falhas de refino. Reparar: %dx Kit de Reparo (tem %d)" % [PlayerInventory.REPAIR_KIT_COST, kit_have]
+	_repair_button.disabled = not PlayerInventory.can_repair(instance_id)
+
+
+func _on_repair_pressed() -> void:
+	if _selected_instance_id == "":
+		return
+	if PlayerInventory.repair_max_durability(_selected_instance_id):
+		_result_label.text = "Durabilidade máxima restaurada."
+		_result_label.add_theme_color_override("font_color", OK_COLOR)
 
 
 func _on_refine_pressed() -> void:

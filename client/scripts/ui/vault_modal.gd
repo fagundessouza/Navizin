@@ -6,6 +6,17 @@ extends Control
 ## (tudo em `PlayerInventory.crafted_items`, com ícone, nome colorido pela
 ## raridade e o prefixo de refino). Só mostra, não transfere nem gasta nada
 ## ainda -- é um extrato, não um banco funcional de depósito/saque.
+##
+## GRADE DE ÍCONES + ZOOM: a aba Materiais era uma lista de texto puro (nome
+## + quantidade, nenhum ícone) -- pedido explícito pra virar `GridContainer`
+## com ícone recortado (`ItemDatabase.get_material_icon()`, desenhado do
+## zero já que não existe arte de material bruto em nenhuma prancha),
+## quantidade, e zoom ao passar o mouse igual ao resto do jogo
+## (`ItemTooltipZoom`). Itens Fabricados virou grade também, por consistência
+## -- já tinha ícone, só não tinha grade/paginação/zoom.
+##
+## PAGINAÇÃO: mesma técnica de `crafting_modal.gd` (6-8 por página, aqui
+## generoso em colunas então cabe mais por ser `GridContainer`).
 
 signal opened
 signal closed
@@ -13,15 +24,19 @@ signal closed
 const OUTLINE_COLOR: Color = Color(0.03, 0.03, 0.04, 1.0)
 const HOVER_COLOR: Color = Color(1.0, 0.92, 0.65, 1.0)
 const NORMAL_FONT_COLOR: Color = Color(0.93, 0.9, 0.84, 1.0)
-const ICON_FRAME_SIZE: float = 32.0
+const ICON_FRAME_SIZE: float = 40.0
 const ICON_BORDER_COLOR: Color = Color(0.78, 0.65, 0.38, 0.9)
+const GRID_COLUMNS: int = 6
+const PAGE_SIZE: int = 18
 
 @onready var _tabs_box: HBoxContainer = $Margin/VBox/Tabs
-@onready var _materials_list: VBoxContainer = $Margin/VBox/Pages/Materials/List
-@onready var _items_list: VBoxContainer = $Margin/VBox/Pages/Items/List
+@onready var _materials_grid: GridContainer = $Margin/VBox/Pages/Materials/Grid
+@onready var _items_grid: GridContainer = $Margin/VBox/Pages/Items/Grid
+@onready var _tooltip_zoom: ItemTooltipZoom = $ItemTooltipZoom
 
 var _tab_buttons: Array[Button] = []
 var _pages: Array[Control] = []
+var _page_index: Array[int] = [0, 0]
 
 
 func _ready() -> void:
@@ -30,9 +45,18 @@ func _ready() -> void:
 	$Margin/VBox/Header/CloseButton.pressed.connect(close)
 	_tab_buttons = [$Margin/VBox/Tabs/MaterialsTab, $Margin/VBox/Tabs/ItemsTab]
 	_pages = [$Margin/VBox/Pages/Materials, $Margin/VBox/Pages/Items]
+	_materials_grid.columns = GRID_COLUMNS
+	_items_grid.columns = GRID_COLUMNS
 	for i in _tab_buttons.size():
 		_style_button(_tab_buttons[i])
 		_tab_buttons[i].pressed.connect(_select_tab.bind(i))
+	for i in _pages.size():
+		var prev: Button = _pages[i].get_node("Pager/Prev")
+		var next: Button = _pages[i].get_node("Pager/Next")
+		_style_button(prev)
+		_style_button(next)
+		prev.pressed.connect(_on_page_nav.bind(i, -1))
+		next.pressed.connect(_on_page_nav.bind(i, 1))
 	_select_tab(0)
 	PlayerInventory.changed.connect(_on_inventory_changed)
 
@@ -59,49 +83,108 @@ func _select_tab(index: int) -> void:
 		_tab_buttons[i].disabled = i == index
 
 
+func _on_page_nav(tab_index: int, delta: int) -> void:
+	var total: int = PlayerInventory.materials.size() if tab_index == 0 else PlayerInventory.crafted_items.size()
+	var page_count: int = _page_count(total)
+	_page_index[tab_index] = clampi(_page_index[tab_index] + delta, 0, page_count - 1)
+	_rebuild()
+
+
+func _page_count(total_items: int) -> int:
+	return maxi(1, ceili(float(total_items) / float(PAGE_SIZE)))
+
+
 func _rebuild() -> void:
-	for child in _materials_list.get_children():
-		child.queue_free()
 	var names: Array = PlayerInventory.materials.keys()
 	names.sort()
-	for material_name in names:
-		var row := HBoxContainer.new()
-		var name_label := Label.new()
-		name_label.text = material_name
-		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		name_label.add_theme_color_override("font_color", NORMAL_FONT_COLOR)
-		row.add_child(name_label)
-		var qty_label := Label.new()
-		qty_label.text = str(PlayerInventory.materials[material_name])
-		qty_label.add_theme_color_override("font_color", Color(0.85, 0.75, 0.4))
-		row.add_child(qty_label)
-		_materials_list.add_child(row)
+	_rebuild_grid_page(0, _materials_grid, names, func(name: String) -> Control: return _build_material_cell(name))
 
-	for child in _items_list.get_children():
+	var instance_ids: Array = PlayerInventory.crafted_items.keys()
+	_rebuild_grid_page(1, _items_grid, instance_ids, func(iid: String) -> Control: return _build_item_cell(iid))
+
+
+## Fatiador de página genérico pras 2 abas -- cada uma só difere no builder
+## de célula (`cell_builder`), tudo o resto (clamping de página, slice,
+## texto/estado do pager) é idêntico.
+func _rebuild_grid_page(tab_index: int, grid: GridContainer, entries: Array, cell_builder: Callable) -> void:
+	for child in grid.get_children():
 		child.queue_free()
-	if PlayerInventory.crafted_items.is_empty():
+
+	var pager: HBoxContainer = _pages[tab_index].get_node("Pager")
+	if entries.is_empty():
 		var empty := Label.new()
-		empty.text = "Nenhum item fabricado guardado ainda."
+		empty.text = "Nada guardado ainda."
 		empty.add_theme_color_override("font_color", Color(0.6, 0.58, 0.54))
-		_items_list.add_child(empty)
-	else:
-		for instance_id in PlayerInventory.crafted_items:
-			_items_list.add_child(_build_item_row(instance_id))
+		grid.add_child(empty)
+		pager.visible = false
+		return
+
+	var page_count: int = _page_count(entries.size())
+	_page_index[tab_index] = clampi(_page_index[tab_index], 0, page_count - 1)
+	var start: int = _page_index[tab_index] * PAGE_SIZE
+	var end: int = mini(start + PAGE_SIZE, entries.size())
+	for entry in entries.slice(start, end):
+		grid.add_child(cell_builder.call(entry))
+
+	pager.visible = page_count > 1
+	if pager.visible:
+		pager.get_node("PageLabel").text = "Página %d de %d" % [_page_index[tab_index] + 1, page_count]
+		pager.get_node("Prev").disabled = _page_index[tab_index] == 0
+		pager.get_node("Next").disabled = _page_index[tab_index] >= page_count - 1
 
 
-func _build_item_row(instance_id: String) -> Control:
+## Uma célula da grade de Materiais: ícone + quantidade embaixo, com hover
+## zoom (modo "recipe-like" simplificado -- materiais não são um item de
+## `ItemDatabase`, não tem receita/raridade, só ícone e nome, então monta um
+## dicionário mínimo pro tooltip em vez de reusar `show_for_recipe`).
+func _build_material_cell(material_name: String) -> Control:
+	var cell := VBoxContainer.new()
+	cell.add_theme_constant_override("separation", 2)
+	cell.custom_minimum_size = Vector2(ICON_FRAME_SIZE + 8, 0)
+
+	var frame := _make_icon_frame(ItemDatabase.get_material_icon(material_name))
+	frame.mouse_entered.connect(_on_material_hover.bind(frame, material_name))
+	frame.mouse_exited.connect(_tooltip_zoom.hide_tooltip)
+	cell.add_child(frame)
+
+	var qty_label := Label.new()
+	qty_label.text = str(PlayerInventory.materials[material_name])
+	qty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	qty_label.add_theme_color_override("font_color", Color(0.85, 0.75, 0.4))
+	qty_label.add_theme_font_size_override("font_size", 13)
+	cell.add_child(qty_label)
+	return cell
+
+
+func _on_material_hover(frame: Control, material_name: String) -> void:
+	var local_pos: Vector2 = frame.global_position - global_position + Vector2(frame.size.x, 0)
+	_tooltip_zoom.show_for_material(material_name, PlayerInventory.materials[material_name], local_pos, size)
+
+
+func _build_item_cell(instance_id: String) -> Control:
 	var rarity: Dictionary = PlayerInventory.get_item_rarity(instance_id)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 6)
-	row.add_child(_make_icon_frame(PlayerInventory.get_item_icon(instance_id)))
+	var cell := VBoxContainer.new()
+	cell.add_theme_constant_override("separation", 2)
+	cell.custom_minimum_size = Vector2(ICON_FRAME_SIZE + 8, 0)
+
+	var frame := _make_icon_frame(PlayerInventory.get_item_icon(instance_id))
+	frame.mouse_entered.connect(_on_item_hover.bind(frame, instance_id))
+	frame.mouse_exited.connect(_tooltip_zoom.hide_tooltip)
+	cell.add_child(frame)
 
 	var name_label := Label.new()
 	name_label.text = PlayerInventory.get_item_name(instance_id)
-	name_label.tooltip_text = PlayerInventory.get_float_tooltip_line(instance_id)
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	name_label.add_theme_color_override("font_color", rarity["color"])
-	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(name_label)
-	return row
+	name_label.add_theme_font_size_override("font_size", 11)
+	cell.add_child(name_label)
+	return cell
+
+
+func _on_item_hover(frame: Control, instance_id: String) -> void:
+	var local_pos: Vector2 = frame.global_position - global_position + Vector2(frame.size.x, 0)
+	_tooltip_zoom.show_for_instance(instance_id, local_pos, size)
 
 
 func _make_icon_frame(icon: Texture2D) -> PanelContainer:

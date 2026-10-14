@@ -22,11 +22,26 @@ const PROTECTION_STARTER_QTY: int = 5
 ## Durabilidade estilo BDO: todo item nasce no máximo, refinar gasta um
 ## pouco mesmo quando dá certo (o metal/tecido sofre no processo), e gasta
 ## MUITO mais numa falha (o jato de pólvora/martelada que não deu certo
-## estressa o material). Não trava o refino em 0 -- é desgaste visível, não
-## um bloqueio duro, pra não precisar de um sistema de "reparo" nesta rodada.
+## estressa o material). Isso aqui é a durabilidade ATUAL -- some igual a
+## uma barra de vida comum.
 const MAX_DURABILITY: float = 100.0
 const DURABILITY_COST_SUCCESS: float = 3.0
 const DURABILITY_COST_FAILURE: float = 10.0
+
+## Durabilidade MÁXIMA estilo BDO: diferente da atual acima, essa é o TETO
+## da barra, e só uma FALHA de refino reduz ela (sucesso não mexe aqui --
+## só o "estresse" de uma tentativa que deu errado desgasta a estrutura do
+## item de um jeito que nem recuperar a durabilidade atual conserta). Nasce
+## em `MAX_DURABILITY` (100) igual à atual, cai `MAX_DURABILITY_LOSS_ON_FAIL`
+## por falha, com piso em `MAX_DURABILITY_FLOOR` (nunca chega a 0 -- um item
+## "capenga" ainda deve dar pra equipar, só com uma barra bem mais curta).
+## A Oficina de Manutenção (`RefinementModal`, botão "Reparar") devolve ao
+## teto cheio por um custo em material.
+const MAX_DURABILITY_LOSS_ON_FAIL: float = 5.0
+const MAX_DURABILITY_FLOOR: float = 20.0
+const REPAIR_KIT: String = "Kit de Reparo"
+const REPAIR_KIT_STARTER_QTY: int = 5
+const REPAIR_KIT_COST: int = 2
 
 ## Slots de peça única do Galeão (fora a grade de canhão, que é `equipped_cannons`).
 const SHIP_SLOTS: Array[String] = ["vela", "casco", "leme", "proa", "relíquia_ebenruth"]
@@ -77,6 +92,7 @@ func _seed_materials() -> void:
 				materials[material_name] = STARTER_QTY
 	materials[REFINE_STONE] = REFINE_STARTER_QTY
 	materials[PROTECTION_SCROLL] = PROTECTION_STARTER_QTY
+	materials[REPAIR_KIT] = REPAIR_KIT_STARTER_QTY
 
 
 func has_materials_for(item_id: String) -> bool:
@@ -121,6 +137,7 @@ func craft(item_id: String) -> String:
 		"display_name": display_name,
 		"stats": stats,
 		"durability": MAX_DURABILITY,
+		"max_durability": MAX_DURABILITY,
 		"float_value": float_value,
 	}
 	changed.emit()
@@ -221,8 +238,17 @@ func refine_instance(instance_id: String, use_protection: bool) -> Dictionary:
 		_unequip_everywhere(instance_id)
 		crafted_items.erase(instance_id)
 	else:
-		var cost: float = DURABILITY_COST_SUCCESS if result["outcome"] == "success" else DURABILITY_COST_FAILURE
-		entry["durability"] = clampf(entry.get("durability", MAX_DURABILITY) - cost, 0.0, MAX_DURABILITY)
+		var is_success: bool = result["outcome"] == "success"
+		var cost: float = DURABILITY_COST_SUCCESS if is_success else DURABILITY_COST_FAILURE
+		var max_dur: float = entry.get("max_durability", MAX_DURABILITY)
+		if not is_success:
+			# BDO style: só FALHA desgasta o TETO -- sucesso só gasta da barra
+			# atual (já tratado acima, igual sempre foi). Nunca passa do piso
+			# (`MAX_DURABILITY_FLOOR`), pra um item muito refinado não virar
+			# inutilizável de vez só de apanhar tentando subir de novo.
+			max_dur = maxf(MAX_DURABILITY_FLOOR, max_dur - MAX_DURABILITY_LOSS_ON_FAIL)
+			entry["max_durability"] = max_dur
+		entry["durability"] = clampf(entry.get("durability", MAX_DURABILITY) - cost, 0.0, max_dur)
 	changed.emit()
 	return result
 
@@ -231,6 +257,35 @@ func get_durability(instance_id: String) -> float:
 	if instance_id == "" or not crafted_items.has(instance_id):
 		return 0.0
 	return crafted_items[instance_id].get("durability", MAX_DURABILITY)
+
+
+func get_max_durability(instance_id: String) -> float:
+	if instance_id == "" or not crafted_items.has(instance_id):
+		return MAX_DURABILITY
+	return crafted_items[instance_id].get("max_durability", MAX_DURABILITY)
+
+
+## Oficina de Manutenção (`RefinementModal`): repõe o TETO de volta a
+## `MAX_DURABILITY` (não só a barra atual -- `repair_instance` já faria isso
+## de um jeito mais barato se fosse só a atual; aqui é especificamente o
+## reparo estrutural pedido, "recuperar a durabilidade máxima").
+func can_repair(instance_id: String) -> bool:
+	if not crafted_items.has(instance_id):
+		return false
+	if get_max_durability(instance_id) >= MAX_DURABILITY:
+		return false
+	return materials.get(REPAIR_KIT, 0) >= REPAIR_KIT_COST
+
+
+func repair_max_durability(instance_id: String) -> bool:
+	if not can_repair(instance_id):
+		return false
+	materials[REPAIR_KIT] -= REPAIR_KIT_COST
+	var entry: Dictionary = crafted_items[instance_id]
+	entry["max_durability"] = MAX_DURABILITY
+	entry["durability"] = MAX_DURABILITY
+	changed.emit()
+	return true
 
 
 func _unequip_everywhere(instance_id: String) -> void:

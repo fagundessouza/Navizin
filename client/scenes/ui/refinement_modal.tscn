@@ -190,3 +190,23 @@ disabled = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 autowrap_mode = 3
+
+[node name="HSeparator" type="HSeparator" parent="Margin/VBox/HBox/Right"]
+layout_mode = 2
+
+[node name="RepairTitle" type="Label" parent="Margin/VBox/HBox/Right"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.85, 0.55, 1)
+theme_override_font_sizes/font_size = 15
+text = "Oficina de Manutenção"
+
+[node name="RepairLabel" type="Label" parent="Margin/VBox/HBox/Right"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.78, 0.74, 0.66, 1)
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 3
+
+[node name="RepairButton" type="Button" parent="Margin/VBox/HBox/Right"]
+layout_mode = 2
+text = "Reparar Durabilidade Máxima"
+disabled = true

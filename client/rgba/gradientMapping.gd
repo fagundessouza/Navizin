@@ -1,0 +1,117 @@
+@tool
+class_name VisualShaderNodeRGBAgradientMapping
+extends VisualShaderNodeCustom
+
+
+func _init() -> void:
+	set_input_port_default_value(1, 1.0)
+	set_input_port_default_value(2, 0.0)
+	set_input_port_default_value(3, false)
+
+
+func _get_name() -> String:
+	return "GradientMapping"
+
+
+func _get_category() -> String:
+	return "RGBA"
+
+
+#func _get_subcategory():
+#	return ""
+func _get_description() -> String:
+	return """Remaps colors based on average color value using [gradient].
+[gradientOffset] allows to do color cycling if set TIME to [gradientOffset] and 'true' to [cycleColor]"""
+
+
+func _get_return_icon_type() -> VisualShaderNode.PortType:
+	return VisualShaderNode.PORT_TYPE_VECTOR_3D
+
+
+func _get_input_port_count() -> int:
+	return 5
+
+
+func _get_input_port_name(port: int) -> String:
+	match port:
+		0:
+			return "color"
+		1:
+			return "alpha"
+		2:
+			return "gradientOffset"
+		3:
+			return "cycleColor"
+		4:
+			return "gradient"
+	return ""
+
+
+func _get_input_port_type(port: int) -> VisualShaderNode.PortType:
+	match port:
+		0:
+			return VisualShaderNode.PORT_TYPE_VECTOR_3D
+		1:
+			return VisualShaderNode.PORT_TYPE_SCALAR
+		2:
+			return VisualShaderNode.PORT_TYPE_SCALAR
+		3:
+			return VisualShaderNode.PORT_TYPE_BOOLEAN
+		4:
+			return VisualShaderNode.PORT_TYPE_SAMPLER
+	return VisualShaderNode.PORT_TYPE_SCALAR
+
+
+func _get_output_port_count() -> int:
+	return 2
+
+
+func _get_output_port_name(port: int) -> String:
+	match port:
+		0:
+			return "col"
+		1:
+			return "alpha"
+	return ""
+
+
+func _get_output_port_type(port: int) -> VisualShaderNode.PortType:
+	match port:
+		0:
+			return VisualShaderNode.PORT_TYPE_VECTOR_3D
+		1:
+			return VisualShaderNode.PORT_TYPE_SCALAR
+	return VisualShaderNode.PORT_TYPE_SCALAR
+
+
+func _get_global_code(_mode: VisualShader.Mode) -> String:
+	var current_script: Script = get_script()
+	var path: String = ""
+	if current_script is Script:
+		path = current_script.resource_path.get_base_dir()
+	return '#include "' + path + '/gradientMapping.gdshaderinc"'
+
+
+func _get_code(
+	input_vars: Array[String],
+	output_vars: Array[String],
+	_mode: VisualShader.Mode,
+	_type: VisualShader.Type,
+) -> String:
+	return """vec4 %s%s = _gradientMappingFunc(%s, %s, %s, %s);
+%s = %s%s.rgb;
+%s = %s%s.a * %s;""" % [
+		output_vars[0],
+		output_vars[1],
+		input_vars[0],
+		input_vars[2],
+		input_vars[4],
+		input_vars[3],
+		output_vars[0],
+		output_vars[0],
+		output_vars[1],
+		output_vars[1],
+		output_vars[0],
+		output_vars[1],
+		input_vars[1],
+	]

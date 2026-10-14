@@ -36,12 +36,22 @@ const RARITY_GLOW_SHADER: Shader = preload("res://assets/shaders/item_rarity_glo
 ## categoria, mesmo antes de qualquer raridade rolar.
 const AMBIENT_GLOW_COLOR: Color = Color(0.9, 0.8, 0.5, 1.0)
 
+## Itens por página -- "6 a 8 itens por página" pedido explicitamente; 6
+## cobre a lista sem precisar de `ScrollContainer` pra nenhuma categoria
+## atual (a mais cheia, Relíquias, tem 50 -- 9 páginas, mas cada página
+## individual cabe sem rolar).
+const PAGE_SIZE: int = 6
+
 @onready var _tabs_box: HBoxContainer = $Margin/VBox/Tabs
 @onready var _pages_root: Control = $Margin/VBox/Pages
 @onready var _tooltip_zoom: ItemTooltipZoom = $ItemTooltipZoom
 
 var _tab_buttons: Array[Button] = []
 var _pages: Array[Control] = []
+## Página atual por aba (índice paralelo a `categories`) -- cada aba lembra
+## sua própria página ao trocar de aba e voltar, em vez de sempre reiniciar
+## na primeira.
+var _page_index: Array[int] = []
 
 
 func _ready() -> void:
@@ -81,17 +91,63 @@ func _build_tabs() -> void:
 		_tabs_box.add_child(button)
 		_tab_buttons.append(button)
 
-		var page := ScrollContainer.new()
+		var page := VBoxContainer.new()
 		page.set_anchors_preset(Control.PRESET_FULL_RECT)
 		page.visible = false
+		page.add_theme_constant_override("separation", 8)
 		var list := VBoxContainer.new()
 		list.name = "List"
 		list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		list.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		list.add_theme_constant_override("separation", 8)
 		page.add_child(list)
 
+		page.add_child(_build_pager(i))
+
 		_pages_root.add_child(page)
 		_pages.append(page)
+		_page_index.append(0)
+
+
+## Barra "< Anterior | página X de Y | Próxima >" no rodapé de cada aba --
+## pedido explícito, no lugar de listas compridas rolando pra sempre.
+func _build_pager(category_index: int) -> HBoxContainer:
+	var pager := HBoxContainer.new()
+	pager.name = "Pager"
+	pager.alignment = BoxContainer.ALIGNMENT_CENTER
+	pager.add_theme_constant_override("separation", 16)
+
+	var prev_button := Button.new()
+	prev_button.name = "Prev"
+	prev_button.text = "< Anterior"
+	prev_button.pressed.connect(_on_page_nav.bind(category_index, -1))
+	_style_button(prev_button)
+	pager.add_child(prev_button)
+
+	var page_label := Label.new()
+	page_label.name = "PageLabel"
+	page_label.add_theme_color_override("font_color", NORMAL_FONT_COLOR)
+	pager.add_child(page_label)
+
+	var next_button := Button.new()
+	next_button.name = "Next"
+	next_button.text = "Próxima >"
+	next_button.pressed.connect(_on_page_nav.bind(category_index, 1))
+	_style_button(next_button)
+	pager.add_child(next_button)
+
+	return pager
+
+
+func _on_page_nav(category_index: int, delta: int) -> void:
+	var recipe_ids: Array[String] = ItemDatabase.get_recipes_for(station, categories[category_index])
+	var page_count: int = _page_count(recipe_ids.size())
+	_page_index[category_index] = clampi(_page_index[category_index] + delta, 0, page_count - 1)
+	_rebuild_pages()
+
+
+func _page_count(total_items: int) -> int:
+	return maxi(1, ceili(float(total_items) / float(PAGE_SIZE)))
 
 
 func _select_tab(index: int) -> void:
@@ -109,14 +165,27 @@ func _rebuild_pages() -> void:
 		for child in list.get_children():
 			child.queue_free()
 		var recipe_ids: Array[String] = ItemDatabase.get_recipes_for(station, categories[i])
+		var pager: HBoxContainer = _pages[i].get_node("Pager")
 		if recipe_ids.is_empty():
 			var empty := Label.new()
 			empty.text = "Nenhuma receita aqui ainda."
 			empty.add_theme_color_override("font_color", Color(0.6, 0.58, 0.54))
 			list.add_child(empty)
+			pager.visible = false
 			continue
-		for item_id in recipe_ids:
+
+		var page_count: int = _page_count(recipe_ids.size())
+		_page_index[i] = clampi(_page_index[i], 0, page_count - 1)
+		var start: int = _page_index[i] * PAGE_SIZE
+		var end: int = mini(start + PAGE_SIZE, recipe_ids.size())
+		for item_id in recipe_ids.slice(start, end):
 			list.add_child(_build_recipe_row(item_id))
+
+		pager.visible = page_count > 1
+		if pager.visible:
+			pager.get_node("PageLabel").text = "Página %d de %d" % [_page_index[i] + 1, page_count]
+			pager.get_node("Prev").disabled = _page_index[i] == 0
+			pager.get_node("Next").disabled = _page_index[i] >= page_count - 1
 
 
 func _build_recipe_row(item_id: String) -> Control:

@@ -62,10 +62,13 @@ func show_for_instance(instance_id: String, anchor_pos: Vector2, parent_size: Ve
 	_durability_bar.visible = true
 	_durability_label.visible = true
 	var durability: float = PlayerInventory.get_durability(instance_id)
-	_durability_bar.max_value = PlayerInventory.MAX_DURABILITY
+	var max_durability: float = PlayerInventory.get_max_durability(instance_id)
+	_durability_bar.max_value = max_durability
 	_durability_bar.value = durability
-	_style_durability_bar(durability / PlayerInventory.MAX_DURABILITY)
-	_durability_label.text = "Durabilidade: %d/%d" % [int(durability), int(PlayerInventory.MAX_DURABILITY)]
+	_style_durability_bar(durability / max_durability)
+	_durability_label.text = "Durabilidade: %d/%d" % [int(durability), int(max_durability)]
+	if max_durability < PlayerInventory.MAX_DURABILITY:
+		_durability_label.text += " (teto reduzido)"
 
 	var entry: Dictionary = PlayerInventory.crafted_items[instance_id]
 	_build_stats(entry.get("stats", {}), EnchantmentManager.stat_multiplier_for(entry.get("refine_level", 0)))
@@ -86,6 +89,33 @@ func show_for_recipe(item_id: String, anchor_pos: Vector2, parent_size: Vector2)
 	_durability_label.visible = false
 
 	_build_stats(item.get("stats", {}), 1.0)
+	_position_near(anchor_pos, parent_size)
+	visible = true
+
+
+## Material bruto (Caverna do Tesouro): não existe no catálogo de
+## `ItemDatabase.ITEMS` (materiais não são "itens", só entradas em
+## `PlayerInventory.materials`), então não tem raridade/stats pra mostrar --
+## só o ícone, nome e quanto tem guardado.
+func show_for_material(material_name: String, quantity: int, anchor_pos: Vector2, parent_size: Vector2) -> void:
+	_icon_rect.texture = ItemDatabase.get_material_icon(material_name)
+	_name_label.text = material_name
+	_name_label.add_theme_color_override("font_color", Color(0.85, 0.8, 0.72))
+
+	_float_label.visible = false
+	_durability_bar.visible = false
+	_durability_label.visible = false
+
+	_build_stats({}, 1.0)
+	for child in _stats_list.get_children():
+		child.queue_free()
+	var qty_label := Label.new()
+	qty_label.text = "Quantidade: %d" % quantity
+	qty_label.add_theme_color_override("font_color", Color(0.85, 0.75, 0.4))
+	qty_label.add_theme_font_size_override("font_size", 13)
+	qty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_stats_list.add_child(qty_label)
+
 	_position_near(anchor_pos, parent_size)
 	visible = true
 

@@ -5,6 +5,7 @@
 [ext_resource type="Shader" path="res://assets/shaders/gothic_panel.gdshader" id="3_gothic"]
 [ext_resource type="Texture2D" path="res://assets/ui/processed/nine_patch_skull_banner.png" id="4_skullbanner"]
 [ext_resource type="Texture2D" path="res://assets/ui/processed/nine_patch_anchor_seal.png" id="5_anchorseal"]
+[ext_resource type="PackedScene" path="res://scenes/ui/item_tooltip_zoom.tscn" id="6_tooltipzoom"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_gothic"]
 shader = ExtResource("3_gothic")
@@ -111,26 +112,69 @@ custom_minimum_size = Vector2(0, 280)
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="Materials" type="ScrollContainer" parent="Margin/VBox/Pages"]
+[node name="Materials" type="VBoxContainer" parent="Margin/VBox/Pages"]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_constants/separation = 8
 
-[node name="List" type="VBoxContainer" parent="Margin/VBox/Pages/Materials"]
+[node name="Grid" type="GridContainer" parent="Margin/VBox/Pages/Materials"]
 layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/separation = 4
+size_flags_vertical = 3
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 10
+columns = 6
 
-[node name="Items" type="ScrollContainer" parent="Margin/VBox/Pages"]
+[node name="Pager" type="HBoxContainer" parent="Margin/VBox/Pages/Materials"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 16
+
+[node name="Prev" type="Button" parent="Margin/VBox/Pages/Materials/Pager"]
+layout_mode = 2
+text = "< Anterior"
+
+[node name="PageLabel" type="Label" parent="Margin/VBox/Pages/Materials/Pager"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.93, 0.9, 0.84, 1)
+
+[node name="Next" type="Button" parent="Margin/VBox/Pages/Materials/Pager"]
+layout_mode = 2
+text = "Próxima >"
+
+[node name="Items" type="VBoxContainer" parent="Margin/VBox/Pages"]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_constants/separation = 8
 
-[node name="List" type="VBoxContainer" parent="Margin/VBox/Pages/Items"]
+[node name="Grid" type="GridContainer" parent="Margin/VBox/Pages/Items"]
 layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/separation = 4
+size_flags_vertical = 3
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 10
+columns = 6
+
+[node name="Pager" type="HBoxContainer" parent="Margin/VBox/Pages/Items"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 16
+
+[node name="Prev" type="Button" parent="Margin/VBox/Pages/Items/Pager"]
+layout_mode = 2
+text = "< Anterior"
+
+[node name="PageLabel" type="Label" parent="Margin/VBox/Pages/Items/Pager"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.93, 0.9, 0.84, 1)
+
+[node name="Next" type="Button" parent="Margin/VBox/Pages/Items/Pager"]
+layout_mode = 2
+text = "Próxima >"
+
+[node name="ItemTooltipZoom" parent="." instance=ExtResource("6_tooltipzoom")]
+layout_mode = 1

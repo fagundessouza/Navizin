@@ -1,0 +1,138 @@
+@tool
+class_name VisualShaderNodeRGBAinnerGlowEmpty
+extends VisualShaderNodeCustom
+
+
+func _init() -> void:
+	set_input_port_default_value(2, -1.0)
+	set_input_port_default_value(3, 1.0)
+	set_input_port_default_value(4, 1.0)
+	set_input_port_default_value(5, Vector3(1.0, 1.0, 1.0))
+	set_input_port_default_value(6, 1.0)
+
+
+func _get_name() -> String:
+	return "InnerGlowEmpty"
+
+
+func _get_category() -> String:
+	return "RGBA"
+
+
+func _get_subcategory() -> String:
+	return "Glow"
+
+
+func _get_description() -> String:
+	return "Same as InnerGlow but without original texture (only contours)"
+
+
+func _get_return_icon_type() -> VisualShaderNode.PortType:
+	return VisualShaderNode.PORT_TYPE_VECTOR_3D
+
+
+func _get_input_port_count() -> int:
+	return 7
+
+
+func _get_input_port_name(port: int) -> String:
+	match port:
+		0:
+			return "sampler2D"
+		1:
+			return "uv"
+		2:
+			return "lod"
+		3:
+			return "size"
+		4:
+			return "intensity"
+		5:
+			return "color"
+		6:
+			return "alpha"
+	return ""
+
+
+func _get_input_port_type(port: int) -> VisualShaderNode.PortType:
+	match port:
+		0:
+			return VisualShaderNode.PORT_TYPE_SAMPLER
+		1:
+			return VisualShaderNode.PORT_TYPE_VECTOR_3D
+		2:
+			return VisualShaderNode.PORT_TYPE_SCALAR
+		3:
+			return VisualShaderNode.PORT_TYPE_SCALAR
+		4:
+			return VisualShaderNode.PORT_TYPE_SCALAR
+		5:
+			return VisualShaderNode.PORT_TYPE_VECTOR_3D
+		6:
+			return VisualShaderNode.PORT_TYPE_SCALAR
+	return VisualShaderNode.PORT_TYPE_SCALAR
+
+
+func _get_output_port_count() -> int:
+	return 2
+
+
+func _get_output_port_name(port: int) -> String:
+	match port:
+		0:
+			return "col"
+		1:
+			return "alpha"
+	return ""
+
+
+func _get_output_port_type(port: int) -> VisualShaderNode.PortType:
+	match port:
+		0:
+			return VisualShaderNode.PORT_TYPE_VECTOR_3D
+		1:
+			return VisualShaderNode.PORT_TYPE_SCALAR
+	return VisualShaderNode.PORT_TYPE_SCALAR
+
+
+func _get_global_code(_mode: VisualShader.Mode) -> String:
+	var current_script: Script = get_script()
+	var path: String = ""
+	if current_script is Script:
+		path = current_script.resource_path.get_base_dir()
+	return '#include "' + path + '/innerGlowEmpty.gdshaderinc"'
+
+
+func _get_code(
+	input_vars: Array[String],
+	output_vars: Array[String],
+	_mode: VisualShader.Mode,
+	_type: VisualShader.Type,
+) -> String:
+	var texture: String = "TEXTURE"
+	var uv: String = "UV"
+
+	if input_vars[0]:
+		texture = input_vars[0]
+	if input_vars[1]:
+		uv = input_vars[1]
+
+	return """vec4 %s%s = _innerGlowEmptyFunc(%s, %s.xy, %s, %s, %s, vec4(%s, %s));
+%s = %s%s.rgb;
+%s = %s%s.a;""" % [
+		output_vars[0],
+		output_vars[1],
+		texture,
+		uv,
+		input_vars[2],
+		input_vars[3],
+		input_vars[4],
+		input_vars[5],
+		input_vars[6],
+		output_vars[0],
+		output_vars[0],
+		output_vars[1],
+		output_vars[1],
+		output_vars[0],
+		output_vars[1],
+	]
