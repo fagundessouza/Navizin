@@ -67,7 +67,6 @@ const FOOTER_BUTTONS: Array[Dictionary] = [
 	{"label": "Diário de Navegação", "cx": 484.4, "cy": 436.3},
 ]
 const FOOTER_BUTTON_SIZE: float = 46.0
-const CREW_BUTTON_INDEX: int = 2
 
 const PULSE_SCALE: Vector2 = Vector2(1.3, 1.3)
 const GLOW_COLOR: Color = Color(1.4, 1.25, 0.8, 1.0)
@@ -80,9 +79,14 @@ const GLOWING_RARITIES: Array[String] = ["blue", "yellow", "orange", "purple", "
 @onready var _slots_root: Control = $Slots
 @onready var _footer_root: Control = $Footer
 @onready var _picker: InventoryPickerSubmodal = $Picker
+@onready var _tooltip_zoom: ItemTooltipZoom = $ItemTooltipZoom
 @onready var _crew_submodal: CrewManagementSubmodal = $CrewManagementSubmodal
+@onready var _cargo_modal: ShipInfoModal = $CargoModal
+@onready var _ammo_modal: ShipInfoModal = $AmmoModal
+@onready var _log_modal: ShipInfoModal = $LogModal
 @onready var _weight_bar: ProgressBar = $WeightBar
-@onready var _stats_label: Label = $StatsLabel
+@onready var _weight_label: Label = $WeightLabel
+@onready var _stats_label: Label = $StatsPanel/StatsLabel
 
 var _ship: Node2D = null
 ## category -> Button, pros 5 slots de peça única.
@@ -127,6 +131,9 @@ func open() -> void:
 func close() -> void:
 	_picker.close()
 	_crew_submodal.close()
+	_cargo_modal.close()
+	_ammo_modal.close()
+	_log_modal.close()
 	visible = false
 	closed.emit()
 
@@ -134,9 +141,12 @@ func close() -> void:
 func _build_craft_slots() -> void:
 	for data in CRAFT_SLOTS:
 		var button := _make_slot_button(data["cx"], data["cy"], data["size"], data["label"])
-		button.pressed.connect(_on_slot_pressed.bind(button, data["category"], data["label"]))
-		_slot_buttons[data["category"]] = button
-		_slot_glows[data["category"]] = _make_rarity_glow(button)
+		var category: String = data["category"]
+		button.pressed.connect(_on_slot_pressed.bind(button, category, data["label"]))
+		button.mouse_entered.connect(_on_slot_hover.bind(button, func(): return PlayerInventory.equipped.get(category, "")))
+		button.mouse_exited.connect(_tooltip_zoom.hide_tooltip)
+		_slot_buttons[category] = button
+		_slot_glows[category] = _make_rarity_glow(button, _next_glow_phase())
 
 
 func _build_cannon_grid() -> void:
@@ -144,10 +154,35 @@ func _build_cannon_grid() -> void:
 	for row_y in CANNON_ROWS:
 		for col_x in CANNON_COLS:
 			var button := _make_slot_button(col_x, row_y, CANNON_SLOT_SIZE, "Armamento")
-			button.pressed.connect(_on_cannon_pressed.bind(button, index))
+			var cannon_index: int = index
+			button.pressed.connect(_on_cannon_pressed.bind(button, cannon_index))
+			button.mouse_entered.connect(_on_slot_hover.bind(button, func(): return PlayerInventory.equipped_cannons[cannon_index]))
+			button.mouse_exited.connect(_tooltip_zoom.hide_tooltip)
 			_cannon_buttons.append(button)
-			_cannon_glows.append(_make_rarity_glow(button))
+			_cannon_glows.append(_make_rarity_glow(button, _next_glow_phase()))
 			index += 1
+
+
+## Zoom de alta resolução no item equipado -- pedido explícito ("ao passar o
+## mouse sobre qualquer ícone de item no craft ou inventário"). Slot vazio
+## não mostra nada (sem item fabricado pra dar zoom). O getter é uma lambda
+## porque o instance_id equipado pode mudar entre um hover e outro, sem
+## precisar reconectar o sinal toda vez que `PlayerInventory` muda.
+func _on_slot_hover(button: Button, get_instance_id: Callable) -> void:
+	var instance_id: String = get_instance_id.call()
+	if instance_id == "":
+		return
+	var local_pos: Vector2 = button.position
+	_tooltip_zoom.show_for_instance(instance_id, local_pos + Vector2(button.size.x, 0), PANEL_SIZE)
+
+
+## Fase inicial do pulso de cada slot, pra uma grade de 20 canhões não piscar
+## toda em uníssono -- 0.37 é só um passo irracional-o-bastante pra não
+## alinhar período nenhum dentro de 25 slots.
+var _glow_phase_counter: int = 0
+func _next_glow_phase() -> float:
+	_glow_phase_counter += 1
+	return fmod(float(_glow_phase_counter) * 0.37, TAU)
 
 
 func _make_slot_button(cx: float, cy: float, size: float, label: String) -> Button:
@@ -165,7 +200,7 @@ func _make_slot_button(cx: float, cy: float, size: float, label: String) -> Butt
 ## filho dele (segue posição/escala do pulso de clique de graça), ignorando
 ## mouse pra nunca roubar o clique do botão por baixo. Começa escondido --
 ## `_refresh_slots()` decide se/como aparece.
-func _make_rarity_glow(button: Button) -> ColorRect:
+func _make_rarity_glow(button: Button, phase: float) -> ColorRect:
 	var glow := ColorRect.new()
 	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	glow.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -173,9 +208,25 @@ func _make_rarity_glow(button: Button) -> ColorRect:
 	glow.visible = false
 	var mat := ShaderMaterial.new()
 	mat.shader = RARITY_GLOW_SHADER
+	mat.set_shader_parameter("phase_offset", phase)
 	glow.material = mat
 	button.add_child(glow)
 	return glow
+
+
+## Os 4 destinos na mesma ordem de `FOOTER_BUTTONS` -- "destravamento dos
+## botões" pedido explicitamente: até esta rodada só o de Tripulação (índice
+## 2) abria algo, os outros 3 só pulsavam sem acontecer nada ao clicar.
+func _footer_destination(index: int, button: Button) -> Callable:
+	match index:
+		0:
+			return _cargo_modal.open
+		1:
+			return _ammo_modal.open
+		2:
+			return _crew_submodal.open
+		_:
+			return _log_modal.open
 
 
 func _build_footer_buttons() -> void:
@@ -188,11 +239,25 @@ func _build_footer_buttons() -> void:
 		button.position = Vector2(data["cx"] - size / 2.0, data["cy"] - size / 2.0)
 		button.size = Vector2(size, size)
 		button.tooltip_text = data["label"]
-		if i == CREW_BUTTON_INDEX:
-			button.pressed.connect(_on_crew_button_pressed.bind(button))
-		else:
-			button.pressed.connect(_pulse.bind(button))
+		button.pressed.connect(_on_footer_pressed.bind(button, i))
 		_footer_root.add_child(button)
+
+
+## Os 4 submodais de rodapé são independentes um do outro (não passam pelo
+## `UIManager`, que é só pros modais do Town Hub) -- sem isso, clicar Carga
+## depois Munição depois Log deixava os 3 abertos ao mesmo tempo, empilhados
+## por cima um do outro (achado rodando o jogo de verdade nesta rodada).
+func _close_footer_submodals() -> void:
+	_cargo_modal.close()
+	_ammo_modal.close()
+	_crew_submodal.close()
+	_log_modal.close()
+
+
+func _on_footer_pressed(button: Button, index: int) -> void:
+	_pulse(button)
+	_close_footer_submodals()
+	_footer_destination(index, button).call()
 
 
 func _on_slot_pressed(button: Button, category: String, label: String) -> void:
@@ -285,14 +350,6 @@ func _refine_boost_for(refine_level: int) -> float:
 	return clampf(float(refine_level - 9) / 6.0, 0.0, 1.0) * 2.0
 
 
-## Abre a Tripulação como um overlay flutuante sobre a própria ficha do
-## navio -- não fecha este painel, só sobrepõe (mesmo padrão do submodal de
-## inventário: um popup por cima, não uma troca de tela).
-func _on_crew_button_pressed(button: Button) -> void:
-	_pulse(button)
-	_crew_submodal.open()
-
-
 func _pulse(button: Button) -> void:
 	button.pivot_offset = button.size * 0.5
 	var tw := create_tween()
@@ -325,6 +382,7 @@ func _update_weight_bar() -> void:
 	var data: ShipData = _ship.data
 	_weight_bar.max_value = data.max_cargo
 	_weight_bar.value = data.cargo_weight
+	_weight_label.text = "Peso: %d/%d" % [int(data.cargo_weight), int(data.max_cargo)]
 
 
 ## Os 4 atributos reais recalculados por `ship_base.gd.recalc_equipment_bonuses()`

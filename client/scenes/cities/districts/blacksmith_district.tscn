@@ -112,8 +112,8 @@ text = "Fabricar Peças Navais"
 visible = false
 panel_title = "Forja Naval -- Peças do Galeão"
 station = "forja"
-categories = PackedStringArray("armamento", "municao")
-category_labels = PackedStringArray("Canhões", "Munições")
+categories = PackedStringArray("armamento", "municao", "arpao")
+category_labels = PackedStringArray("Canhões", "Munições", "Arpões de Caça")
 
 [node name="OpenRefinementButton" type="Button" parent="."]
 offset_left = 24.0

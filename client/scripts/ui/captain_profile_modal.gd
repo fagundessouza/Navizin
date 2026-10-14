@@ -51,6 +51,7 @@ const GLOWING_RARITIES: Array[String] = ["blue", "yellow", "orange", "purple", "
 @onready var _equip_slots: Control = $EquipSlots
 @onready var _attr_buttons: Control = $AttributeButtons
 @onready var _picker: InventoryPickerSubmodal = $Picker
+@onready var _tooltip_zoom: ItemTooltipZoom = $ItemTooltipZoom
 @onready var _points_label: Label = $PointsLabel
 @onready var _stats_label: Label = $StatsLabel
 
@@ -87,22 +88,44 @@ func close() -> void:
 func _build_equip_slots() -> void:
 	for data in PAPERDOLL_SLOTS:
 		var size: float = data["size"]
+		var category: String = data["category"]
 		var button := Button.new()
 		button.flat = true
 		button.custom_minimum_size = Vector2(size, size)
 		button.position = Vector2(data["cx"] - size / 2.0, data["cy"] - size / 2.0)
 		button.size = Vector2(size, size)
 		button.tooltip_text = data["label"]
-		button.pressed.connect(_on_slot_pressed.bind(button, data["category"], data["label"]))
+		button.pressed.connect(_on_slot_pressed.bind(button, category, data["label"]))
+		button.mouse_entered.connect(_on_slot_hover.bind(button, category))
+		button.mouse_exited.connect(_tooltip_zoom.hide_tooltip)
 		_equip_slots.add_child(button)
-		_slot_buttons[data["category"]] = button
-		_slot_glows[data["category"]] = _make_rarity_glow(button)
+		_slot_buttons[category] = button
+		_slot_glows[category] = _make_rarity_glow(button, _next_glow_phase())
+
+
+## Zoom de alta resolução no item equipado -- mesmo pedido de
+## `ship_status_modal.gd` ("no craft ou inventário"). Slot vazio não mostra
+## nada.
+func _on_slot_hover(button: Button, category: String) -> void:
+	var instance_id: String = PlayerInventory.equipped_captain.get(category, "")
+	if instance_id == "":
+		return
+	_tooltip_zoom.show_for_instance(instance_id, button.position + Vector2(button.size.x, 0), PANEL_SIZE)
+
+
+## Fase inicial do pulso de cada slot (só 6, mas mantém o padrão de
+## `ship_status_modal.gd` -- mesmo poucos slots não deveriam piscar em
+## uníssono).
+var _glow_phase_counter: int = 0
+func _next_glow_phase() -> float:
+	_glow_phase_counter += 1
+	return fmod(float(_glow_phase_counter) * 0.37, TAU)
 
 
 ## Overlay de brilho de raridade -- mesma técnica de `ship_status_modal.gd`
 ## (um `ColorRect` do tamanho do slot, filho dele, com
 ## `item_rarity_glow.gdshader`).
-func _make_rarity_glow(button: Button) -> ColorRect:
+func _make_rarity_glow(button: Button, phase: float) -> ColorRect:
 	var glow := ColorRect.new()
 	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	glow.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -110,6 +133,7 @@ func _make_rarity_glow(button: Button) -> ColorRect:
 	glow.visible = false
 	var mat := ShaderMaterial.new()
 	mat.shader = RARITY_GLOW_SHADER
+	mat.set_shader_parameter("phase_offset", phase)
 	glow.material = mat
 	button.add_child(glow)
 	return glow

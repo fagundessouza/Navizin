@@ -26,12 +26,19 @@ NetworkClient="*res://scripts/autoload/network_client.gd"
 WindManager="*res://scripts/singletons/wind_manager.gd"
 SceneTransitionManager="*res://scripts/autoload/scene_transition_manager.gd"
 ReputationManager="*res://scripts/autoload/reputation_manager.gd"
+CaptainAttributes="*res://scripts/autoload/captain_attributes.gd"
+ItemDatabase="*res://scripts/autoload/item_database.gd"
+CraftingManager="*res://scripts/managers/crafting_manager.gd"
+EnchantmentManager="*res://scripts/managers/enchantment_manager.gd"
+UIManager="*res://scripts/ui/ui_manager.gd"
+PlayerInventory="*res://scripts/autoload/player_inventory.gd"
 
 [display]
 
 window/size/viewport_width=1280
 window/size/viewport_height=720
 window/stretch/mode="canvas_items"
+
 
 [gui]
 

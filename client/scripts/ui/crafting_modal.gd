@@ -38,6 +38,7 @@ const AMBIENT_GLOW_COLOR: Color = Color(0.9, 0.8, 0.5, 1.0)
 
 @onready var _tabs_box: HBoxContainer = $Margin/VBox/Tabs
 @onready var _pages_root: Control = $Margin/VBox/Pages
+@onready var _tooltip_zoom: ItemTooltipZoom = $ItemTooltipZoom
 
 var _tab_buttons: Array[Button] = []
 var _pages: Array[Control] = []
@@ -138,7 +139,10 @@ func _build_recipe_row(item_id: String) -> Control:
 	var outer := HBoxContainer.new()
 	outer.add_theme_constant_override("separation", 10)
 	row.add_child(outer)
-	outer.add_child(_make_icon_frame(item.get("icon"), item.get("tier", 0)))
+	var icon_frame := _make_icon_frame(item.get("icon"), item.get("tier", 0), item_id)
+	icon_frame.mouse_entered.connect(_on_icon_hover.bind(icon_frame, item_id))
+	icon_frame.mouse_exited.connect(_tooltip_zoom.hide_tooltip)
+	outer.add_child(icon_frame)
 
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 4)
@@ -188,7 +192,7 @@ func _build_recipe_row(item_id: String) -> Control:
 ## fica em branco dentro da moldura, sem quebrar nada. A borda usa
 ## `item_rarity_glow.gdshader` ativo (pedido explícito), com faíscas pro
 ## Tier IV de cada categoria.
-func _make_icon_frame(icon: Texture2D, tier: int) -> PanelContainer:
+func _make_icon_frame(icon: Texture2D, tier: int, item_id: String) -> PanelContainer:
 	var frame := PanelContainer.new()
 	frame.custom_minimum_size = Vector2(ICON_FRAME_SIZE, ICON_FRAME_SIZE)
 	var style := StyleBoxFlat.new()
@@ -223,6 +227,10 @@ func _make_icon_frame(icon: Texture2D, tier: int) -> PanelContainer:
 	mat.set_shader_parameter("rarity_color", AMBIENT_GLOW_COLOR)
 	mat.set_shader_parameter("aura_mode", 1 if tier >= 4 else 0)
 	mat.set_shader_parameter("intensity", 0.7)
+	# Fase por hash do item_id (não um contador) -- determinístico mesmo
+	# depois de `_rebuild_pages()` recriar a linha do zero, e já evita todo
+	# card pulsando junto sem precisar guardar estado entre reconstruções.
+	mat.set_shader_parameter("phase_offset", fmod(float(item_id.hash() % 1000) * 0.37, TAU))
 	glow.material = mat
 	frame.add_child(glow)
 	return frame
@@ -230,6 +238,19 @@ func _make_icon_frame(icon: Texture2D, tier: int) -> PanelContainer:
 
 func _on_craft_pressed(item_id: String) -> void:
 	PlayerInventory.craft(item_id)
+
+
+## Hover zoom na miniatura da receita -- pedido explícito ("ao passar o
+## mouse sobre qualquer ícone de item no craft"). É sempre `show_for_recipe`
+## aqui (nunca `show_for_instance`): um card de receita ainda não foi
+## fabricado, não tem raridade/Float/refino/durabilidade pra mostrar.
+func _on_icon_hover(icon_frame: PanelContainer, item_id: String) -> void:
+	# `icon_frame.position` é relativo ao pai IMEDIATO dele (um HBoxContainer
+	# lá dentro da lista rolável), não ao `CraftingModal` -- converte por
+	# posição global, já que `_tooltip_zoom` é filho direto daqui, no mesmo
+	# espaço que `global_position - global_position` resolve certo.
+	var local_pos: Vector2 = icon_frame.global_position - global_position + Vector2(icon_frame.size.x, 0)
+	_tooltip_zoom.show_for_recipe(item_id, local_pos, size)
 
 
 func _style_button(button: Button) -> void:

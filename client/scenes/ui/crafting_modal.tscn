@@ -5,6 +5,7 @@
 [ext_resource type="Shader" path="res://assets/shaders/gothic_panel.gdshader" id="3_gothic"]
 [ext_resource type="Texture2D" path="res://assets/ui/processed/nine_patch_skull_banner.png" id="4_skullbanner"]
 [ext_resource type="Texture2D" path="res://assets/ui/processed/nine_patch_anchor_seal.png" id="5_anchorseal"]
+[ext_resource type="PackedScene" path="res://scenes/ui/item_tooltip_zoom.tscn" id="6_tooltipzoom"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_gothic"]
 shader = ExtResource("3_gothic")
@@ -100,3 +101,6 @@ theme_override_constants/separation = 8
 custom_minimum_size = Vector2(0, 320)
 layout_mode = 2
 size_flags_vertical = 3
+
+[node name="ItemTooltipZoom" parent="." instance=ExtResource("6_tooltipzoom")]
+layout_mode = 1

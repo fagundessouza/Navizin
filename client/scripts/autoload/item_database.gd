@@ -143,27 +143,121 @@ const _TIER_ICONS: Dictionary = {
 ## 8 linhas) -- a prancha não tem uma 9ª linha separada pra Alma, então
 ## reaproveita o ícone de Cursada (os dois são "sombrios", a diferença fica
 ## só no nome/bônus).
-const _AMMO: Array[Dictionary] = [
-	{"id": "municao_polvora", "name": "Munição de Pólvora", "materials": {"Esfera de Ferro": 2, "Pólvora": 1}, "stats": {}, "icon": "municao_polvora.png"},
-	{"id": "municao_fogo", "name": "Munição de Fogo", "materials": {"Esfera de Ferro": 2, "Minério de Fogo": 1}, "stats": {"elemental_damage_bonus": 0.12}, "icon": "municao_fogo.png"},
-	{"id": "municao_gelo", "name": "Munição de Gelo", "materials": {"Esfera de Ferro": 2, "Minério de Gelo": 1}, "stats": {"elemental_damage_bonus": 0.12}, "icon": "municao_gelo.png"},
-	{"id": "municao_veneno", "name": "Munição de Veneno", "materials": {"Esfera de Ferro": 2, "Minério de Veneno": 1}, "stats": {"elemental_damage_bonus": 0.1}, "icon": "municao_veneno.png"},
-	{"id": "municao_prata", "name": "Munição de Prata", "materials": {"Esfera de Ferro": 2, "Minério de Prata": 1}, "stats": {"elemental_damage_bonus": 0.15}, "icon": "municao_prata.png"},
-	{"id": "municao_ouro", "name": "Munição de Ouro", "materials": {"Esfera de Ferro": 2, "Minério de Ouro": 1}, "stats": {"elemental_damage_bonus": 0.15}, "icon": "municao_ouro.png"},
-	{"id": "municao_diamante", "name": "Munição de Diamante", "materials": {"Esfera de Ferro": 2, "Minério de Diamante": 1}, "stats": {"elemental_damage_bonus": 0.2}, "icon": "municao_diamante.png"},
-	{"id": "municao_alma", "name": "Munição de Alma", "materials": {"Esfera de Ferro": 2, "Minério de Alma": 1}, "stats": {"elemental_damage_bonus": 0.22}, "icon": "municao_alma.png"},
-	{"id": "municao_cursada", "name": "Munição Cursada", "materials": {"Esfera de Ferro": 2, "Minério Amaldiçoado": 1}, "stats": {"elemental_damage_bonus": 0.25}, "icon": "municao_cursada.png"},
+##
+## PACOTES COMERCIAIS: cada tipo vira 4 itens (P/M/G/GG), gerados em loop --
+## o pacote só multiplica a QUANTIDADE de material (fabricar um lote maior de
+## uma vez), não o bônus por bala; `elemental_damage_bonus` fica igual nos 4
+## tamanhos do mesmo tipo.
+const _AMMO_TYPES: Dictionary = {
+	"polvora": {"name": "Pólvora", "ore": "Pólvora", "stats": {}, "icon": "municao_polvora.png"},
+	"fogo": {"name": "Fogo", "ore": "Minério de Fogo", "stats": {"elemental_damage_bonus": 0.12}, "icon": "municao_fogo.png"},
+	"gelo": {"name": "Gelo", "ore": "Minério de Gelo", "stats": {"elemental_damage_bonus": 0.12}, "icon": "municao_gelo.png"},
+	"veneno": {"name": "Veneno", "ore": "Minério de Veneno", "stats": {"elemental_damage_bonus": 0.1}, "icon": "municao_veneno.png"},
+	"prata": {"name": "Prata", "ore": "Minério de Prata", "stats": {"elemental_damage_bonus": 0.15}, "icon": "municao_prata.png"},
+	"ouro": {"name": "Ouro", "ore": "Minério de Ouro", "stats": {"elemental_damage_bonus": 0.15}, "icon": "municao_ouro.png"},
+	"diamante": {"name": "Diamante", "ore": "Minério de Diamante", "stats": {"elemental_damage_bonus": 0.2}, "icon": "municao_diamante.png"},
+	"alma": {"name": "Alma", "ore": "Minério de Alma", "stats": {"elemental_damage_bonus": 0.22}, "icon": "municao_alma.png"},
+	"cursada": {"name": "Cursada", "ore": "Minério Amaldiçoado", "stats": {"elemental_damage_bonus": 0.25}, "icon": "municao_cursada.png"},
+}
+
+## Pacote P = unidade básica (mesmo custo que a munição avulsa de antes);
+## M/G/GG multiplicam o material pelo tamanho do lote, pra fabricar de uma
+## vez em vez de clicar "Fabricar" repetidas vezes.
+const _PACKAGE_SIZES: Array[Dictionary] = [
+	{"id": "p", "label": "Pacote P", "mult": 1},
+	{"id": "m", "label": "Pacote M", "mult": 3},
+	{"id": "g", "label": "Pacote G", "mult": 8},
+	{"id": "gg", "label": "Pacote Extra G", "mult": 20},
 ]
 
-## "Relíquias Místicas em Grade Gótica": 4 relíquias distintas (o pedido diz
-## "etc.", ficou em 4 pra cobrir os dois materiais-chave citados -- Essência
-## de Ebenruth e Dente de Leviatã). Movida pro Boticário na reestruturação
-## urbana (seção 3) -- antes era fabricada no Estaleiro.
+
+func _build_ammo_catalog() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for type_id in _AMMO_TYPES:
+		var data: Dictionary = _AMMO_TYPES[type_id]
+		for pkg in _PACKAGE_SIZES:
+			var mult: int = pkg["mult"]
+			result.append({
+				"id": "municao_%s_%s" % [type_id, pkg["id"]],
+				"name": "Munição de %s -- %s" % [data["name"], pkg["label"]],
+				"materials": {"Esfera de Ferro": 2 * mult, data["ore"]: 1 * mult},
+				"stats": data["stats"],
+				"icon": data["icon"],
+			})
+	return result
+
+## "Arpões de Caça Marítima": categoria separada das balas de pistola/esferas
+## de canhão, pros combates do Sea Hunt contra monstros de profundeza --
+## ainda sem sistema de Sea Hunt de verdade, então fica guardada no
+## inventário igual à Munição (`elemental_damage_bonus`/`armor_pen_bonus` só
+## pra tooltip, nada consome isso ainda). Ícone reaproveitado da prancha de
+## Munições (coluna de cartucho/bala, mais "farpado" que as esferas de
+## canhão) -- não existe arte de arpão dedicada em nenhuma prancha recebida.
+const _HARPOONS: Array[Dictionary] = [
+	{"id": "arpao_t1", "name": "Arpão de Caça Tier I", "materials": {"Madeira Nobre": 2, "Esfera de Ferro": 2}, "stats": {}, "icon": "arpao.png"},
+	{"id": "arpao_t2", "name": "Arpão Farpado Tier II", "materials": {"Madeira Nobre": 3, "Liga de Ferro": 2}, "stats": {"armor_pen_bonus": 0.08}, "icon": "arpao.png"},
+	{"id": "arpao_t3", "name": "Arpão de Aço Tier III", "materials": {"Liga de Cobre": 3, "Dente de Leviatã": 1}, "stats": {"armor_pen_bonus": 0.16, "elemental_damage_bonus": 0.1}, "icon": "arpao.png"},
+	{"id": "arpao_t4", "name": "Arpão Rúnico Tier IV", "materials": {"Liga de Ouro": 3, "Dente de Leviatã": 2, "Vento Rúnico": 1}, "stats": {"armor_pen_bonus": 0.25, "elemental_damage_bonus": 0.2}, "icon": "arpao.png"},
+]
+
+## "Relíquias Místicas em Grade Gótica": as 50 células da prancha, uma
+## relíquia cada -- nomes lendários estilo D&D/BDO/Lineage 2 (gerados por
+## combinação de substantivo místico + epíteto épico, não escritos 50x à
+## mão). Ícone de cada uma é o recorte exato daquela célula
+## (`relics/relic_NN.png`, NN = índice na prancha 10x5, linha a linha).
+## Ficam na Boticário na reestruturação urbana (seção 3 de duas rodadas
+## atrás) -- antes era fabricada no Estaleiro.
 const _RELICS: Array[Dictionary] = [
-	{"id": "relíquia_luz_ebenruth", "name": "Luz Divina de Ebenruth", "materials": {"Fragmentos Místicos": 4, "Essência de Ebenruth": 2}, "stats": {"hull_bonus": 150.0}, "icon": "relíquia_luz.png"},
-	{"id": "relíquia_totem_tempestade", "name": "Totem de Tempestade", "materials": {"Fragmentos Místicos": 4, "Essência de Ebenruth": 2}, "stats": {"speed_bonus": 20.0}, "icon": "relíquia_totem.png"},
-	{"id": "relíquia_dente_kraken", "name": "Dente de Kraken", "materials": {"Fragmentos Místicos": 3, "Dente de Leviatã": 2}, "stats": {"damage_mult_bonus": 0.15}, "icon": "relíquia_dente.png"},
-	{"id": "relíquia_ancora_espectral", "name": "Âncora Espectral", "materials": {"Fragmentos Místicos": 5, "Dente de Leviatã": 3}, "stats": {"cargo_bonus": 30.0}, "icon": "relíquia_ancora.png"},
+	{"id": "relic_coracao_do_leviata_ancestral_00", "name": "Coração do Leviatã Ancestral", "materials": {"Fragmentos Místicos": 4, "Essência de Ebenruth": 2}, "stats": {"hull_bonus": 100.0}, "icon": "relics/relic_00.png"},
+	{"id": "relic_olho_da_rainha_do_gelo_01", "name": "Olho da Rainha do Gelo", "materials": {"Fragmentos Místicos": 3, "Dente de Leviatã": 2}, "stats": {"cargo_bonus": 15.0}, "icon": "relics/relic_01.png"},
+	{"id": "relic_calice_do_sangue_antigo_02", "name": "Cálice do Sangue Antigo", "materials": {"Fragmentos Místicos": 5, "Dente de Leviatã": 3}, "stats": {"speed_bonus": 10.0}, "icon": "relics/relic_02.png"},
+	{"id": "relic_coroa_do_leviata_negro_03", "name": "Coroa do Leviatã Negro", "materials": {"Fragmentos Místicos": 4, "Pérola Abissal": 2}, "stats": {"damage_mult_bonus": 0.1}, "icon": "relics/relic_03.png"},
+	{"id": "relic_lagrima_do_kraken_primordial_04", "name": "Lágrima do Kraken Primordial", "materials": {"Fragmentos Místicos": 3, "Osso de Titã": 2}, "stats": {"leadership_bonus": 8.0}, "icon": "relics/relic_04.png"},
+	{"id": "relic_fragmento_do_caos_runico_05", "name": "Fragmento do Caos Rúnico", "materials": {"Fragmentos Místicos": 5, "Coral Amaldiçoado": 3}, "stats": {"boarding_crit_bonus": 0.05}, "icon": "relics/relic_05.png"},
+	{"id": "relic_orbe_do_trovao_divino_06", "name": "Orbe do Trovão Divino", "materials": {"Fragmentos Místicos": 4, "Essência de Ebenruth": 2}, "stats": {"node_speed_bonus": 8.0}, "icon": "relics/relic_06.png"},
+	{"id": "relic_relicario_da_chama_negra_07", "name": "Relicário da Chama Negra", "materials": {"Fragmentos Místicos": 3, "Dente de Leviatã": 2}, "stats": {"armor_pen_bonus": 0.05}, "icon": "relics/relic_07.png"},
+	{"id": "relic_selo_do_deus_afogado_08", "name": "Selo do Deus Afogado", "materials": {"Fragmentos Místicos": 5, "Dente de Leviatã": 3}, "stats": {"elemental_damage_bonus": 0.1}, "icon": "relics/relic_08.png"},
+	{"id": "relic_cajado_do_juizo_final_09", "name": "Cajado do Juízo Final", "materials": {"Fragmentos Místicos": 4, "Pérola Abissal": 2}, "stats": {"hull_bonus": 150.0}, "icon": "relics/relic_09.png"},
+	{"id": "relic_veu_de_ebenruth_10", "name": "Véu de Ebenruth", "materials": {"Fragmentos Místicos": 3, "Osso de Titã": 2}, "stats": {"cargo_bonus": 20.0}, "icon": "relics/relic_10.png"},
+	{"id": "relic_garra_das_mares_sombrias_11", "name": "Garra das Marés Sombrias", "materials": {"Fragmentos Místicos": 5, "Coral Amaldiçoado": 3}, "stats": {"speed_bonus": 14.0}, "icon": "relics/relic_11.png"},
+	{"id": "relic_presa_do_tita_submerso_12", "name": "Presa do Titã Submerso", "materials": {"Fragmentos Místicos": 4, "Essência de Ebenruth": 2}, "stats": {"damage_mult_bonus": 0.15}, "icon": "relics/relic_12.png"},
+	{"id": "relic_chama_da_nevoa_espectral_13", "name": "Chama da Névoa Espectral", "materials": {"Fragmentos Místicos": 3, "Dente de Leviatã": 2}, "stats": {"leadership_bonus": 12.0}, "icon": "relics/relic_13.png"},
+	{"id": "relic_cristal_do_mar_sem_fundo_14", "name": "Cristal do Mar Sem Fundo", "materials": {"Fragmentos Místicos": 5, "Dente de Leviatã": 3}, "stats": {"boarding_crit_bonus": 0.08}, "icon": "relics/relic_14.png"},
+	{"id": "relic_chifre_da_tempestade_esquecida_15", "name": "Chifre da Tempestade Esquecida", "materials": {"Fragmentos Místicos": 4, "Pérola Abissal": 2}, "stats": {"node_speed_bonus": 12.0}, "icon": "relics/relic_15.png"},
+	{"id": "relic_cetro_da_furia_oceanica_16", "name": "Cetro da Fúria Oceânica", "materials": {"Fragmentos Místicos": 3, "Osso de Titã": 2}, "stats": {"armor_pen_bonus": 0.08}, "icon": "relics/relic_16.png"},
+	{"id": "relic_medalhao_da_luz_perdida_17", "name": "Medalhão da Luz Perdida", "materials": {"Fragmentos Místicos": 5, "Coral Amaldiçoado": 3}, "stats": {"elemental_damage_bonus": 0.15}, "icon": "relics/relic_17.png"},
+	{"id": "relic_pingente_de_ouroboros_18", "name": "Pingente de Ouroboros", "materials": {"Fragmentos Místicos": 4, "Essência de Ebenruth": 2}, "stats": {"hull_bonus": 200.0}, "icon": "relics/relic_18.png"},
+	{"id": "relic_ancora_do_dragao_das_profundezas_19", "name": "Âncora do Dragão das Profundezas", "materials": {"Fragmentos Místicos": 3, "Dente de Leviatã": 2}, "stats": {"cargo_bonus": 25.0}, "icon": "relics/relic_19.png"},
+	{"id": "relic_totem_do_eclipse_eterno_20", "name": "Totem do Eclipse Eterno", "materials": {"Fragmentos Místicos": 5, "Dente de Leviatã": 3}, "stats": {"speed_bonus": 18.0}, "icon": "relics/relic_20.png"},
+	{"id": "relic_pedra_do_juizo_da_serpente_infinita_21", "name": "Pedra do Juízo da Serpente Infinita", "materials": {"Fragmentos Místicos": 4, "Pérola Abissal": 2}, "stats": {"damage_mult_bonus": 0.2}, "icon": "relics/relic_21.png"},
+	{"id": "relic_espinha_do_abismo_eterno_22", "name": "Espinha do Abismo Eterno", "materials": {"Fragmentos Místicos": 3, "Osso de Titã": 2}, "stats": {"leadership_bonus": 16.0}, "icon": "relics/relic_22.png"},
+	{"id": "relic_elo_do_vazio_estelar_23", "name": "Elo do Vazio Estelar", "materials": {"Fragmentos Místicos": 5, "Coral Amaldiçoado": 3}, "stats": {"boarding_crit_bonus": 0.1}, "icon": "relics/relic_23.png"},
+	{"id": "relic_coracao_da_luz_perdida_24", "name": "Coração da Luz Perdida", "materials": {"Fragmentos Místicos": 4, "Essência de Ebenruth": 2}, "stats": {"node_speed_bonus": 16.0}, "icon": "relics/relic_24.png"},
+	{"id": "relic_olho_de_ouroboros_25", "name": "Olho de Ouroboros", "materials": {"Fragmentos Místicos": 3, "Dente de Leviatã": 2}, "stats": {"armor_pen_bonus": 0.1}, "icon": "relics/relic_25.png"},
+	{"id": "relic_calice_do_dragao_das_profundezas_26", "name": "Cálice do Dragão das Profundezas", "materials": {"Fragmentos Místicos": 5, "Dente de Leviatã": 3}, "stats": {"elemental_damage_bonus": 0.2}, "icon": "relics/relic_26.png"},
+	{"id": "relic_coroa_do_eclipse_eterno_27", "name": "Coroa do Eclipse Eterno", "materials": {"Fragmentos Místicos": 4, "Pérola Abissal": 2}, "stats": {"hull_bonus": 250.0}, "icon": "relics/relic_27.png"},
+	{"id": "relic_lagrima_da_serpente_infinita_28", "name": "Lágrima da Serpente Infinita", "materials": {"Fragmentos Místicos": 3, "Osso de Titã": 2}, "stats": {"cargo_bonus": 35.0}, "icon": "relics/relic_28.png"},
+	{"id": "relic_fragmento_do_abismo_eterno_29", "name": "Fragmento do Abismo Eterno", "materials": {"Fragmentos Místicos": 5, "Coral Amaldiçoado": 3}, "stats": {"speed_bonus": 25.0}, "icon": "relics/relic_29.png"},
+	{"id": "relic_orbe_do_vazio_estelar_30", "name": "Orbe do Vazio Estelar", "materials": {"Fragmentos Místicos": 4, "Essência de Ebenruth": 2}, "stats": {"damage_mult_bonus": 0.3}, "icon": "relics/relic_30.png"},
+	{"id": "relic_relicario_da_maldicao_ancestral_31", "name": "Relicário da Maldição Ancestral", "materials": {"Fragmentos Místicos": 3, "Dente de Leviatã": 2}, "stats": {"leadership_bonus": 20.0}, "icon": "relics/relic_31.png"},
+	{"id": "relic_selo_do_leviata_ancestral_32", "name": "Selo do Leviatã Ancestral", "materials": {"Fragmentos Místicos": 5, "Dente de Leviatã": 3}, "stats": {"boarding_crit_bonus": 0.15}, "icon": "relics/relic_32.png"},
+	{"id": "relic_cajado_da_rainha_do_gelo_33", "name": "Cajado da Rainha do Gelo", "materials": {"Fragmentos Místicos": 4, "Pérola Abissal": 2}, "stats": {"node_speed_bonus": 20.0}, "icon": "relics/relic_33.png"},
+	{"id": "relic_veu_do_sangue_antigo_34", "name": "Véu do Sangue Antigo", "materials": {"Fragmentos Místicos": 3, "Osso de Titã": 2}, "stats": {"armor_pen_bonus": 0.15}, "icon": "relics/relic_34.png"},
+	{"id": "relic_garra_do_leviata_negro_35", "name": "Garra do Leviatã Negro", "materials": {"Fragmentos Místicos": 5, "Coral Amaldiçoado": 3}, "stats": {"elemental_damage_bonus": 0.25}, "icon": "relics/relic_35.png"},
+	{"id": "relic_presa_do_kraken_primordial_36", "name": "Presa do Kraken Primordial", "materials": {"Fragmentos Místicos": 4, "Essência de Ebenruth": 2}, "stats": {"hull_bonus": 100.0}, "icon": "relics/relic_36.png"},
+	{"id": "relic_chama_do_caos_runico_37", "name": "Chama do Caos Rúnico", "materials": {"Fragmentos Místicos": 3, "Dente de Leviatã": 2}, "stats": {"cargo_bonus": 15.0}, "icon": "relics/relic_37.png"},
+	{"id": "relic_cristal_do_trovao_divino_38", "name": "Cristal do Trovão Divino", "materials": {"Fragmentos Místicos": 5, "Dente de Leviatã": 3}, "stats": {"speed_bonus": 10.0}, "icon": "relics/relic_38.png"},
+	{"id": "relic_chifre_da_chama_negra_39", "name": "Chifre da Chama Negra", "materials": {"Fragmentos Místicos": 4, "Pérola Abissal": 2}, "stats": {"damage_mult_bonus": 0.1}, "icon": "relics/relic_39.png"},
+	{"id": "relic_cetro_do_deus_afogado_40", "name": "Cetro do Deus Afogado", "materials": {"Fragmentos Místicos": 3, "Osso de Titã": 2}, "stats": {"leadership_bonus": 8.0}, "icon": "relics/relic_40.png"},
+	{"id": "relic_medalhao_do_juizo_final_41", "name": "Medalhão do Juízo Final", "materials": {"Fragmentos Místicos": 5, "Coral Amaldiçoado": 3}, "stats": {"boarding_crit_bonus": 0.05}, "icon": "relics/relic_41.png"},
+	{"id": "relic_pingente_de_ebenruth_42", "name": "Pingente de Ebenruth", "materials": {"Fragmentos Místicos": 4, "Essência de Ebenruth": 2}, "stats": {"node_speed_bonus": 8.0}, "icon": "relics/relic_42.png"},
+	{"id": "relic_ancora_das_mares_sombrias_43", "name": "Âncora das Marés Sombrias", "materials": {"Fragmentos Místicos": 3, "Dente de Leviatã": 2}, "stats": {"armor_pen_bonus": 0.05}, "icon": "relics/relic_43.png"},
+	{"id": "relic_totem_do_tita_submerso_44", "name": "Totem do Titã Submerso", "materials": {"Fragmentos Místicos": 5, "Dente de Leviatã": 3}, "stats": {"elemental_damage_bonus": 0.1}, "icon": "relics/relic_44.png"},
+	{"id": "relic_pedra_do_juizo_da_nevoa_espectral_45", "name": "Pedra do Juízo da Névoa Espectral", "materials": {"Fragmentos Místicos": 4, "Pérola Abissal": 2}, "stats": {"hull_bonus": 150.0}, "icon": "relics/relic_45.png"},
+	{"id": "relic_espinha_do_mar_sem_fundo_46", "name": "Espinha do Mar Sem Fundo", "materials": {"Fragmentos Místicos": 3, "Osso de Titã": 2}, "stats": {"cargo_bonus": 20.0}, "icon": "relics/relic_46.png"},
+	{"id": "relic_elo_da_tempestade_esquecida_47", "name": "Elo da Tempestade Esquecida", "materials": {"Fragmentos Místicos": 5, "Coral Amaldiçoado": 3}, "stats": {"speed_bonus": 14.0}, "icon": "relics/relic_47.png"},
+	{"id": "relic_coracao_do_juizo_final_48", "name": "Coração do Juízo Final", "materials": {"Fragmentos Místicos": 4, "Essência de Ebenruth": 2}, "stats": {"damage_mult_bonus": 0.15}, "icon": "relics/relic_48.png"},
+	{"id": "relic_olho_de_ebenruth_49", "name": "Olho de Ebenruth", "materials": {"Fragmentos Místicos": 3, "Dente de Leviatã": 2}, "stats": {"leadership_bonus": 12.0}, "icon": "relics/relic_49.png"},
 ]
 
 ## Leme: nem a seção 1 (catálogo) nem a seção 2 (receitas) do pedido
@@ -187,7 +281,8 @@ const _GRIMOIRES: Array[Dictionary] = [
 
 func _ready() -> void:
 	_register_tiered_catalog()
-	_register_flat_catalog(_AMMO, "municao", "forja", "")
+	_register_flat_catalog(_build_ammo_catalog(), "municao", "forja", "")
+	_register_flat_catalog(_HARPOONS, "arpao", "forja", "")
 	_register_flat_catalog(_RELICS, "relíquia_ebenruth", "boticario", "")
 	_register_flat_catalog(_HELM, "leme", "estaleiro", _HELM_ICON)
 	_register_flat_catalog(_GRIMOIRES, "grimorio", "feira", "")

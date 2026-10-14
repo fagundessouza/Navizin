@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://scripts/ui/captain_profile_modal.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/ui/panels/captain_paperdoll_panel.png" id="2_bg"]
 [ext_resource type="PackedScene" path="res://scenes/ui/inventory_picker_submodal.tscn" id="3_picker"]
+[ext_resource type="PackedScene" path="res://scenes/ui/item_tooltip_zoom.tscn" id="4_tooltipzoom"]
 
 [node name="CaptainProfileModal" type="Control"]
 anchors_preset = 8
@@ -71,4 +72,7 @@ grow_vertical = 2
 mouse_filter = 2
 
 [node name="Picker" parent="." instance=ExtResource("3_picker")]
+layout_mode = 1
+
+[node name="ItemTooltipZoom" parent="." instance=ExtResource("4_tooltipzoom")]
 layout_mode = 1

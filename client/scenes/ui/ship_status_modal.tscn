@@ -4,9 +4,18 @@
 [ext_resource type="Texture2D" path="res://assets/ui/panels/galleon_warship_status_panel.png" id="2_bg"]
 [ext_resource type="PackedScene" path="res://scenes/ui/inventory_picker_submodal.tscn" id="3_picker"]
 [ext_resource type="PackedScene" path="res://scenes/ui/crew_management_submodal.tscn" id="4_crew"]
+[ext_resource type="PackedScene" path="res://scenes/ui/ship_info_modal.tscn" id="5_info"]
+[ext_resource type="PackedScene" path="res://scenes/ui/item_tooltip_zoom.tscn" id="6_tooltipzoom"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_weight_fill"]
 bg_color = Color(0.78, 0.68, 0.42, 0.92)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_left = 4
+corner_radius_bottom_right = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_stats_bg"]
+bg_color = Color(0.04, 0.03, 0.02, 0.72)
 corner_radius_top_left = 4
 corner_radius_top_right = 4
 corner_radius_bottom_left = 4
@@ -69,12 +78,27 @@ max_value = 100.0
 value = 0.0
 show_percentage = false
 
-[node name="StatsLabel" type="Label" parent="."]
-offset_left = 20.0
-offset_top = 503.0
-offset_right = 940.0
+[node name="WeightLabel" type="Label" parent="."]
+offset_left = 609.0
+offset_top = 417.0
+offset_right = 750.0
+offset_bottom = 432.0
+theme_override_colors/font_color = Color(0.88, 0.84, 0.7, 1)
+theme_override_font_sizes/font_size = 11
+horizontal_alignment = 1
+text = "Peso: 0/0"
+
+[node name="StatsPanel" type="PanelContainer" parent="."]
+offset_left = 160.0
+offset_top = 500.0
+offset_right = 800.0
 offset_bottom = 527.0
-theme_override_colors/font_color = Color(0.85, 0.8, 0.62, 1)
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_stats_bg")
+
+[node name="StatsLabel" type="Label" parent="StatsPanel"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.85, 0.65, 1)
 theme_override_font_sizes/font_size = 14
 horizontal_alignment = 1
 text = "Dano: 1.00x   Velocidade: 0 px/s   Casco Máx: 0   Carga Máx: 0"
@@ -83,4 +107,19 @@ text = "Dano: 1.00x   Velocidade: 0 px/s   Casco Máx: 0   Carga Máx: 0"
 layout_mode = 1
 
 [node name="CrewManagementSubmodal" parent="." instance=ExtResource("4_crew")]
+layout_mode = 1
+
+[node name="CargoModal" parent="." instance=ExtResource("5_info")]
+layout_mode = 1
+info_mode = "cargo"
+
+[node name="AmmoModal" parent="." instance=ExtResource("5_info")]
+layout_mode = 1
+info_mode = "ammo"
+
+[node name="LogModal" parent="." instance=ExtResource("5_info")]
+layout_mode = 1
+info_mode = "log"
+
+[node name="ItemTooltipZoom" parent="." instance=ExtResource("6_tooltipzoom")]
 layout_mode = 1

@@ -1,0 +1,106 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/item_tooltip_zoom.gd" id="1_script"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_durability_bg"]
+bg_color = Color(0.1, 0.09, 0.08, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_left = 3
+corner_radius_bottom_right = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_box"]
+bg_color = Color(0.06, 0.05, 0.04, 0.97)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.82, 0.68, 0.38, 0.95)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_left = 6
+corner_radius_bottom_right = 6
+shadow_color = Color(0, 0, 0, 0.7)
+shadow_size = 10
+content_margin_left = 12
+content_margin_top = 12
+content_margin_right = 12
+content_margin_bottom = 12
+
+[node name="ItemTooltipZoom" type="Control"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_script")
+
+[node name="Box" type="PanelContainer" parent="."]
+custom_minimum_size = Vector2(210, 0)
+layout_mode = 0
+offset_right = 210.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_box")
+
+[node name="Margin" type="MarginContainer" parent="Box"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="VBox" type="VBoxContainer" parent="Box/Margin"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+
+[node name="IconFrame" type="PanelContainer" parent="Box/Margin/VBox"]
+custom_minimum_size = Vector2(0, 96)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Icon" type="TextureRect" parent="Box/Margin/VBox/IconFrame"]
+layout_mode = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="NameLabel" type="Label" parent="Box/Margin/VBox"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 16
+text = "Nome do Item"
+autowrap_mode = 3
+horizontal_alignment = 1
+
+[node name="FloatLabel" type="Label" parent="Box/Margin/VBox"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.78, 0.74, 0.66, 1)
+theme_override_font_sizes/font_size = 12
+horizontal_alignment = 1
+text = "Float: 0.000 (Gasto)"
+
+[node name="DurabilityBar" type="ProgressBar" parent="Box/Margin/VBox"]
+layout_mode = 2
+mouse_filter = 2
+custom_minimum_size = Vector2(0, 10)
+theme_override_styles/background = SubResource("StyleBoxFlat_durability_bg")
+max_value = 100.0
+value = 100.0
+show_percentage = false
+
+[node name="DurabilityLabel" type="Label" parent="Box/Margin/VBox"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.78, 0.82, 0.7, 1)
+theme_override_font_sizes/font_size = 11
+horizontal_alignment = 1
+text = "Durabilidade: 100/100"
+
+[node name="HSeparator" type="HSeparator" parent="Box/Margin/VBox"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="StatsList" type="VBoxContainer" parent="Box/Margin/VBox"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 3
