@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://scripts/cities/city_district_base.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/sprites/environment/districts/interiors/dark_port.png" id="2_bg"]
 [ext_resource type="PackedScene" path="res://scenes/ui/trade_modal.tscn" id="3_modal"]
+[ext_resource type="PackedScene" path="res://scenes/ui/crafting_modal.tscn" id="4_crafting"]
 
 [node name="SupplyMarketDistrict" type="Control"]
 anchors_preset = 15
@@ -12,8 +13,8 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_script")
-district_title = "Feira de Suprimentos"
-district_body = "Peixe seco, barris e fogueiras sob as tendas do cais -- comida, bebida e suprimentos de bordo. Em construção."
+district_title = "Feira Comerciante"
+district_body = "Peixe seco, barris e fogueiras sob as tendas do cais -- comida, bebida e suprimentos de bordo, e agora também o bazar de equipamentos do capitão (anéis, brincos, colares, cintos, trajes, grimórios). Em construção."
 
 [node name="Background" type="TextureRect" parent="."]
 anchors_preset = 15
@@ -94,6 +95,21 @@ text = "Abrir Feira"
 
 [node name="TradeModal" parent="." instance=ExtResource("3_modal")]
 visible = false
-shop_title = "Feira de Suprimentos"
+shop_title = "Feira Comerciante"
 tabs = PackedStringArray("Alimentos e Bebidas", "Suprimentos de Bordo")
 action_buttons = PackedStringArray()
+resource_hint = "Use o botão \"Fabricar Equipamentos do Capitão\" abaixo pra abrir a estação de verdade."
+
+[node name="OpenCraftingButton" type="Button" parent="."]
+offset_left = 24.0
+offset_top = 188.0
+offset_right = 240.0
+offset_bottom = 220.0
+text = "Fabricar Equip. do Capitão"
+
+[node name="CraftingModal" parent="." instance=ExtResource("4_crafting")]
+visible = false
+panel_title = "Feira Comerciante -- Equipamentos do Capitão"
+station = "feira"
+categories = PackedStringArray("anel", "brincos", "colar", "cinto", "trajes", "grimorio")
+category_labels = PackedStringArray("Anéis", "Brincos", "Colares", "Cintos", "Trajes", "Grimórios")

@@ -110,5 +110,5 @@ text = "Fabricar Peças do Galeão"
 visible = false
 panel_title = "Estaleiro -- Peças do Galeão"
 station = "estaleiro"
-categories = PackedStringArray("vela", "casco", "proa", "relíquia_ebenruth", "leme")
-category_labels = PackedStringArray("Velas", "Cascos", "Proas", "Relíquias", "Leme")
+categories = PackedStringArray("proa", "casco", "vela", "leme")
+category_labels = PackedStringArray("Proas", "Cascos", "Velas", "Lemes")

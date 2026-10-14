@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://scripts/cities/city_district_base.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/sprites/environment/districts/interiors/market_cavern.png" id="2_bg"]
 [ext_resource type="PackedScene" path="res://scenes/ui/trade_modal.tscn" id="3_modal"]
+[ext_resource type="PackedScene" path="res://scenes/ui/vault_modal.tscn" id="4_vault"]
 
 [node name="TreasureVaultDistrict" type="Control"]
 anchors_preset = 15
@@ -96,4 +97,15 @@ text = "Abrir Caverna"
 visible = false
 shop_title = "Caverna do Tesouro e Contrabando"
 tabs = PackedStringArray("Itens Recuperados", "Contrabando")
-action_buttons = PackedStringArray("Comprar", "Vender")
+action_buttons = PackedStringArray()
+resource_hint = "Use o botão \"Abrir Cofre\" abaixo pra ver seus materiais e itens fabricados."
+
+[node name="OpenVaultButton" type="Button" parent="."]
+offset_left = 24.0
+offset_top = 188.0
+offset_right = 168.0
+offset_bottom = 220.0
+text = "Abrir Cofre"
+
+[node name="VaultModal" parent="." instance=ExtResource("4_vault")]
+visible = false

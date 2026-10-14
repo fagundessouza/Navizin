@@ -21,19 +21,26 @@ const PROTECTION_STARTER_QTY: int = 5
 
 ## Slots de peça única do Galeão (fora a grade de canhão, que é `equipped_cannons`).
 const SHIP_SLOTS: Array[String] = ["vela", "casco", "leme", "proa", "relíquia_ebenruth"]
+## Slots de equipamento do Capitão -- ficha do capitão, não o navio. Separado
+## de `SHIP_SLOTS` porque um brinco não deveria mexer no casco do navio
+## (`get_captain_bonuses()` é um total à parte de `get_total_bonuses()`).
+const CAPTAIN_SLOTS: Array[String] = ["brincos", "colar", "anel", "cinto", "trajes", "grimorio"]
 
 var materials: Dictionary = {}
 ## instance_id (String) -> {item_id, instance_id, rarity_id, display_name,
-## stats, refine_level}. `instance_id` existe porque dois Canhões Tier I
-## fabricados separados são objetos diferentes -- com `CraftingManager`,
-## também podem ter raridade e nome diferentes, e com `EnchantmentManager`,
-## refino diferente. `stats` aqui é o bônus-base multiplicado só pela
-## raridade; o bônus de REFINO (`EnchantmentManager.stat_multiplier_for()`)
-## é aplicado por cima dinamicamente em `get_total_bonuses()`, não gravado
-## aqui, porque `refine_level` muda ao longo da vida do item.
+## stats, refine_level, float_value}. `instance_id` existe porque dois
+## Canhões Tier I fabricados separados são objetos diferentes -- com
+## `CraftingManager`, também podem ter raridade, Float e nome diferentes, e
+## com `EnchantmentManager`, refino diferente. `stats` aqui já tem a
+## raridade E o Float multiplicados (os dois são fixados no craft, não mudam
+## depois); o bônus de REFINO é aplicado por cima dinamicamente em
+## `get_total_bonuses()`/`get_captain_bonuses()`, não gravado aqui, porque
+## `refine_level` muda ao longo da vida do item.
 var crafted_items: Dictionary = {}
 ## slot (de `SHIP_SLOTS`) -> instance_id equipado ali, ou "" se vazio.
 var equipped: Dictionary = {}
+## slot (de `CAPTAIN_SLOTS`) -> instance_id equipado ali, ou "" se vazio.
+var equipped_captain: Dictionary = {}
 ## índice 0..19 -> instance_id equipado naquele canhão, ou "" se vazio.
 var equipped_cannons: Array[String] = []
 
@@ -44,6 +51,8 @@ func _ready() -> void:
 	_seed_materials()
 	for slot in SHIP_SLOTS:
 		equipped[slot] = ""
+	for slot in CAPTAIN_SLOTS:
+		equipped_captain[slot] = ""
 	equipped_cannons.resize(CANNON_SLOT_COUNT)
 	equipped_cannons.fill("")
 
@@ -72,10 +81,11 @@ func has_materials_for(item_id: String) -> bool:
 	return true
 
 
-## Consome os materiais, sorteia a raridade (`CraftingManager.roll_rarity()`)
-## e acrescenta uma instância nova do item fabricado no Porão do Navio /
-## Mochila do Capitão -- nome e stats já vêm com o bônus de raridade
-## aplicado. Retorna "" se faltou material.
+## Consome os materiais, sorteia raridade E Float Value
+## (`CraftingManager.roll_rarity()`/`roll_float_value()`) e acrescenta uma
+## instância nova do item fabricado no Porão do Navio / Mochila do Capitão --
+## nome e stats já vêm com os dois bônus aplicados (multiplicam em cadeia,
+## raridade primeiro, Float depois). Retorna "" se faltou material.
 func craft(item_id: String) -> String:
 	if not has_materials_for(item_id):
 		return ""
@@ -85,8 +95,13 @@ func craft(item_id: String) -> String:
 
 	var item: Dictionary = ItemDatabase.get_item(item_id)
 	var rarity: Dictionary = CraftingManager.roll_rarity()
+	var float_value: float = CraftingManager.roll_float_value()
 	var display_name: String = CraftingManager.generate_name(item.get("name", item_id), rarity)
-	var stats: Dictionary = CraftingManager.apply_rarity_stats(item.get("stats", {}), rarity)
+	var rarity_stats: Dictionary = CraftingManager.apply_rarity_stats(item.get("stats", {}), rarity)
+	var float_mult: float = CraftingManager.float_stat_multiplier(float_value)
+	var stats: Dictionary = {}
+	for key in rarity_stats:
+		stats[key] = rarity_stats[key] * float_mult
 
 	var instance_id: String = "item_%d" % _next_instance_id
 	_next_instance_id += 1
@@ -96,18 +111,22 @@ func craft(item_id: String) -> String:
 		"rarity_id": rarity["id"],
 		"display_name": display_name,
 		"stats": stats,
+		"float_value": float_value,
 	}
 	changed.emit()
 	return instance_id
 
 
 ## Itens fabricados e NÃO equipados em lugar nenhum, da categoria pedida --
-## é o que o `InventoryPickerSubmodal` lista pra um slot do Galeão.
+## é o que o `InventoryPickerSubmodal` lista pra um slot do Galeão/Capitão.
 func get_unequipped_for_category(category: String) -> Array[Dictionary]:
 	var equipped_ids: Dictionary = {}
 	for slot in SHIP_SLOTS:
 		if equipped[slot] != "":
 			equipped_ids[equipped[slot]] = true
+	for slot in CAPTAIN_SLOTS:
+		if equipped_captain[slot] != "":
+			equipped_ids[equipped_captain[slot]] = true
 	for cannon_id in equipped_cannons:
 		if cannon_id != "":
 			equipped_ids[cannon_id] = true
@@ -127,6 +146,13 @@ func equip_slot(slot: String, instance_id: String) -> void:
 	if not SHIP_SLOTS.has(slot):
 		return
 	equipped[slot] = instance_id
+	changed.emit()
+
+
+func equip_captain_slot(slot: String, instance_id: String) -> void:
+	if not CAPTAIN_SLOTS.has(slot):
+		return
+	equipped_captain[slot] = instance_id
 	changed.emit()
 
 
@@ -192,6 +218,9 @@ func _unequip_everywhere(instance_id: String) -> void:
 	for slot in SHIP_SLOTS:
 		if equipped[slot] == instance_id:
 			equipped[slot] = ""
+	for slot in CAPTAIN_SLOTS:
+		if equipped_captain[slot] == instance_id:
+			equipped_captain[slot] = ""
 	for i in equipped_cannons.size():
 		if equipped_cannons[i] == instance_id:
 			equipped_cannons[i] = ""
@@ -215,6 +244,29 @@ func get_refine_level(instance_id: String) -> int:
 	if instance_id == "" or not crafted_items.has(instance_id):
 		return 0
 	return crafted_items[instance_id].get("refine_level", 0)
+
+
+func get_float_value(instance_id: String) -> float:
+	if instance_id == "" or not crafted_items.has(instance_id):
+		return 0.0
+	return crafted_items[instance_id].get("float_value", 0.0)
+
+
+## "Float: 0.990 (Perfeito)" -- linha pronta pra colar num tooltip, pedida
+## explicitamente ("exiba o valor do Float e a classificação... no
+## Tooltip").
+func get_float_tooltip_line(instance_id: String) -> String:
+	if instance_id == "" or not crafted_items.has(instance_id):
+		return ""
+	var value: float = get_float_value(instance_id)
+	return "Float: %.3f (%s)" % [value, CraftingManager.float_label(value)]
+
+
+func get_item_icon(instance_id: String) -> Texture2D:
+	if instance_id == "" or not crafted_items.has(instance_id):
+		return null
+	var item: Dictionary = ItemDatabase.get_item(crafted_items[instance_id]["item_id"])
+	return item.get("icon", null)
 
 
 ## Dicionário de `CraftingManager.RARITIES` (tem `id`/`name`/`color`/
@@ -243,6 +295,31 @@ func get_total_bonuses() -> Dictionary:
 			instance_ids.append(cannon_id)
 
 	for instance_id in instance_ids:
+		var entry: Dictionary = crafted_items.get(instance_id, {})
+		if entry.is_empty():
+			continue
+		var stats: Dictionary = entry.get("stats", {})
+		var refine_mult: float = EnchantmentManager.stat_multiplier_for(entry.get("refine_level", 0))
+		for key in stats:
+			if totals.has(key):
+				totals[key] += stats[key] * refine_mult
+	return totals
+
+
+## Mesma lógica de `get_total_bonuses()`, mas pros 6 slots do CAPITÃO
+## (`CAPTAIN_SLOTS`), somando `leadership_bonus`/`boarding_crit_bonus`/
+## `node_speed_bonus`/`armor_pen_bonus`/`elemental_damage_bonus` -- um brinco
+## ou colar nunca deveria entrar no total do navio, por isso é uma função
+## (e um total) à parte, não um `if` a mais dentro de `get_total_bonuses()`.
+func get_captain_bonuses() -> Dictionary:
+	var totals: Dictionary = {
+		"leadership_bonus": 0.0, "boarding_crit_bonus": 0.0, "node_speed_bonus": 0.0,
+		"armor_pen_bonus": 0.0, "elemental_damage_bonus": 0.0,
+	}
+	for slot in CAPTAIN_SLOTS:
+		var instance_id: String = equipped_captain[slot]
+		if instance_id == "":
+			continue
 		var entry: Dictionary = crafted_items.get(instance_id, {})
 		if entry.is_empty():
 			continue

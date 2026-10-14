@@ -148,8 +148,8 @@ offset_top = 472.0
 offset_right = 1049.0
 offset_bottom = 520.0
 district_id = "SupplyMarket"
-district_name = "Feira de Suprimentos"
-district_function = "Comida, bebida e suprimentos de bordo"
+district_name = "Feira Comerciante"
+district_function = "Suprimentos de bordo e equipamentos do capitão"
 icon = ExtResource("14_supplymarket")
 
 [node name="Title" type="Label" parent="."]

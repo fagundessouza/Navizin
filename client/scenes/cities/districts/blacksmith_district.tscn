@@ -97,9 +97,9 @@ text = "Abrir Forja"
 [node name="TradeModal" parent="." instance=ExtResource("3_modal")]
 visible = false
 shop_title = "Forja Naval"
-tabs = PackedStringArray("Armas e Armaduras do Capitão", "Pólvora e Munição")
-action_buttons = PackedStringArray("Fabricar")
-resource_hint = "Madeira · Ferro · Aço · Prata · Ouro · Pérola · Obsidiana · Adamantina · Diamante"
+tabs = PackedStringArray("Canhões", "Munições", "Refino")
+action_buttons = PackedStringArray()
+resource_hint = "Use os botões \"Fabricar Peças Navais\" e \"Refinar Equipamento\" abaixo pra abrir as estações de verdade."
 
 [node name="OpenCraftingButton" type="Button" parent="."]
 offset_left = 24.0

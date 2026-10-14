@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://scripts/cities/city_district_base.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/sprites/environment/districts/interiors/apothecary_lab_v2.png" id="2_bg"]
 [ext_resource type="PackedScene" path="res://scenes/ui/trade_modal.tscn" id="3_modal"]
+[ext_resource type="PackedScene" path="res://scenes/ui/crafting_modal.tscn" id="4_crafting"]
 
 [node name="ApothecaryDistrict" type="Control"]
 anchors_preset = 15
@@ -96,4 +97,19 @@ text = "Abrir Boticário"
 visible = false
 shop_title = "Boticário"
 tabs = PackedStringArray("Poções e Elixires", "Remédios da Tripulação")
-action_buttons = PackedStringArray("Fabricar")
+action_buttons = PackedStringArray()
+resource_hint = "Use o botão \"Fabricar Relíquias\" abaixo pra abrir a estação de verdade."
+
+[node name="OpenCraftingButton" type="Button" parent="."]
+offset_left = 24.0
+offset_top = 188.0
+offset_right = 232.0
+offset_bottom = 220.0
+text = "Fabricar Relíquias"
+
+[node name="CraftingModal" parent="." instance=ExtResource("4_crafting")]
+visible = false
+panel_title = "Boticário -- Relíquias Místicas"
+station = "boticario"
+categories = PackedStringArray("relíquia_ebenruth")
+category_labels = PackedStringArray("Relíquias")

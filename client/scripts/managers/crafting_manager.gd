@@ -85,3 +85,37 @@ func apply_rarity_stats(base_stats: Dictionary, rarity: Dictionary) -> Dictionar
 	for key in base_stats:
 		result[key] = base_stats[key] * mult
 	return result
+
+
+## Float Value (CS/Albion): 0.000 (Gasto) a 1.000 (Perfeito), independente
+## da raridade -- um Canhão White pode rolar Float 0.99 (sortudo na têmpera,
+## mas sem qualidade "de fábrica" especial) e um Red pode rolar Float 0.05
+## (raro, mas malfeito). Escala LINEAR, não por faixa: Float 1.000 concede
+## `FLOAT_MAX_BONUS` (20%) de atributo extra, Float 0.990 concede ~19.8%
+## (bate com o exemplo do pedido, "+20% sobre o tier base").
+const FLOAT_MAX_BONUS: float = 0.20
+
+## Faixas só pra CLASSIFICAÇÃO exibida (tooltip) -- o multiplicador em si é
+## contínuo, essas faixas não mudam o número, só rotulam ele.
+const FLOAT_LABELS: Array[Dictionary] = [
+	{"min": 0.95, "name": "Perfeito"},
+	{"min": 0.80, "name": "Excelente"},
+	{"min": 0.50, "name": "Bom"},
+	{"min": 0.20, "name": "Regular"},
+	{"min": 0.0, "name": "Gasto"},
+]
+
+
+func roll_float_value() -> float:
+	return randf()
+
+
+func float_stat_multiplier(float_value: float) -> float:
+	return 1.0 + float_value * FLOAT_MAX_BONUS
+
+
+func float_label(float_value: float) -> String:
+	for tier in FLOAT_LABELS:
+		if float_value >= tier["min"]:
+			return tier["name"]
+	return "Gasto"

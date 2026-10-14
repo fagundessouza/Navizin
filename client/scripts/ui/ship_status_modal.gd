@@ -239,16 +239,41 @@ func _refresh_one_slot(button: Button, glow: ColorRect, instance_id: String, emp
 		return
 
 	var rarity: Dictionary = PlayerInventory.get_item_rarity(instance_id)
-	button.tooltip_text = "%s\n[%s] %s" % [empty_label, rarity["name"], item_name]
+	var float_line: String = PlayerInventory.get_float_tooltip_line(instance_id)
+	button.tooltip_text = "%s\n[%s] %s\n%s" % [empty_label, rarity["name"], item_name, float_line]
 
-	if GLOWING_RARITIES.has(rarity["id"]):
+	var refine_level: int = PlayerInventory.get_refine_level(instance_id)
+	var float_value: float = PlayerInventory.get_float_value(instance_id)
+	var aura_mode: int = _aura_mode_for(instance_id, rarity, float_value, refine_level)
+	# Brilho aparece se a RARIDADE já pedia (Blue+) OU se o Float/Refino
+	# sozinho já rendeu uma aura -- um item White com Float 0.99 não devia
+	# ficar sem brilho nenhum só porque a raridade não ajudou.
+	if GLOWING_RARITIES.has(rarity["id"]) or aura_mode != 0:
 		glow.visible = true
 		var mat: ShaderMaterial = glow.material
 		mat.set_shader_parameter("rarity_color", rarity["color"])
-		mat.set_shader_parameter("lightning", rarity["lightning"])
-		mat.set_shader_parameter("refine_boost", _refine_boost_for(PlayerInventory.get_refine_level(instance_id)))
+		mat.set_shader_parameter("aura_mode", aura_mode)
+		mat.set_shader_parameter("refine_boost", _refine_boost_for(refine_level))
 	else:
 		glow.visible = false
+
+
+## Prioridade: Relíquia/Grimório com Float ou Refino alto -> rúnico (o tipo
+## de item manda); senão Float quase Perfeito (>=0.95) -> fogo sombrio;
+## senão Refino >= +10 OU a raridade já pedia faísca (Purple/Red) ->
+## elétrico (comportamento de antes desta rodada, preservado); senão nada
+## além do pulso comum.
+func _aura_mode_for(instance_id: String, rarity: Dictionary, float_value: float, refine_level: int) -> int:
+	var item_id: String = PlayerInventory.crafted_items.get(instance_id, {}).get("item_id", "")
+	var category: String = ItemDatabase.get_item(item_id).get("category", "")
+	var is_mystic: bool = category == "relíquia_ebenruth" or category == "grimorio"
+	if is_mystic and (float_value >= 0.90 or refine_level >= 10):
+		return 3  # AURA_RUNIC
+	if float_value >= 0.95:
+		return 2  # AURA_DARK_FIRE
+	if refine_level >= 10 or rarity.get("lightning", false):
+		return 1  # AURA_ELECTRIC
+	return 0  # AURA_NONE
 
 
 ## +10 pra cima intensifica as faíscas (pedido explícito) -- 0 até +9, sobe

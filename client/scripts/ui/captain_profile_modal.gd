@@ -10,6 +10,15 @@ extends Control
 ## arte de origem (1536x864) já convertidas pra escala de exibição (960x540,
 ## fator 0.625) -- ver a sessão que mediu isso com overlay de grade antes de
 ## escrever aqui, pra não depender de "mais ou menos no meio do slot".
+##
+## EQUIPAR DE VERDADE: os 6 slots agora abrem o `InventoryPickerSubmodal`
+## igual ao `ship_status_modal.gd` -- itens de verdade fabricados na Feira
+## Comerciante, raridade colorida, brilho de raridade/refino no slot, tooltip
+## com Float Value. `PlayerInventory.get_captain_bonuses()` alimenta
+## `_stats_label`, mostrando Liderança/Dano Crítico de Abordagem/Velocidade
+## Nodal/Penetração de Blindagem/Dano Elemental ao vivo -- sem sistema de
+## combate ou navegação pra CONSUMIR esses números ainda (mesma situação do
+## `cannon_damage_mult` do navio: o valor está certo, só não alimenta nada).
 
 signal opened
 signal closed
@@ -36,22 +45,32 @@ const EMBLEMS: Array[Dictionary] = [
 const PULSE_SCALE: Vector2 = Vector2(1.35, 1.35)
 const GLOW_COLOR: Color = Color(1.4, 1.25, 0.8, 1.0)
 
+const RARITY_GLOW_SHADER: Shader = preload("res://assets/shaders/item_rarity_glow.gdshader")
+const GLOWING_RARITIES: Array[String] = ["blue", "yellow", "orange", "purple", "red"]
+
 @onready var _equip_slots: Control = $EquipSlots
 @onready var _attr_buttons: Control = $AttributeButtons
 @onready var _picker: InventoryPickerSubmodal = $Picker
 @onready var _points_label: Label = $PointsLabel
+@onready var _stats_label: Label = $StatsLabel
 
 var _attr_value_labels: Dictionary = {}
+## category -> Button, pros 6 slots do paperdoll.
+var _slot_buttons: Dictionary = {}
+## category -> ColorRect (overlay de brilho), paralelo a `_slot_buttons`.
+var _slot_glows: Dictionary = {}
 
 
 func _ready() -> void:
 	visible = false
 	$CloseButton.pressed.connect(close)
-	_picker.item_selected.connect(_on_item_selected)
+	_picker.instance_selected.connect(_on_instance_selected)
 	CaptainAttributes.changed.connect(_refresh_attributes)
+	PlayerInventory.changed.connect(_refresh_slots)
 	_build_equip_slots()
 	_build_attribute_buttons()
 	_refresh_attributes()
+	_refresh_slots()
 
 
 func open() -> void:
@@ -76,6 +95,24 @@ func _build_equip_slots() -> void:
 		button.tooltip_text = data["label"]
 		button.pressed.connect(_on_slot_pressed.bind(button, data["category"], data["label"]))
 		_equip_slots.add_child(button)
+		_slot_buttons[data["category"]] = button
+		_slot_glows[data["category"]] = _make_rarity_glow(button)
+
+
+## Overlay de brilho de raridade -- mesma técnica de `ship_status_modal.gd`
+## (um `ColorRect` do tamanho do slot, filho dele, com
+## `item_rarity_glow.gdshader`).
+func _make_rarity_glow(button: Button) -> ColorRect:
+	var glow := ColorRect.new()
+	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	glow.set_anchors_preset(Control.PRESET_FULL_RECT)
+	glow.color = Color.WHITE
+	glow.visible = false
+	var mat := ShaderMaterial.new()
+	mat.shader = RARITY_GLOW_SHADER
+	glow.material = mat
+	button.add_child(glow)
+	return glow
 
 
 func _build_attribute_buttons() -> void:
@@ -110,18 +147,74 @@ func _on_attribute_pressed(button: Button, attr: String) -> void:
 		_pulse(button)
 
 
-func _on_item_selected(category: String, item_name: String) -> void:
-	for button in _equip_slots.get_children():
-		if button.tooltip_text.begins_with(_label_for(category)):
-			button.tooltip_text = "%s\n%s" % [_label_for(category), item_name]
-			return
+func _on_instance_selected(category: String, instance_id: String) -> void:
+	PlayerInventory.equip_captain_slot(category, instance_id)
 
 
-func _label_for(category: String) -> String:
+## Reescreve o tooltip de cada slot (nome + raridade + Float) e liga/desliga
+## o brilho de raridade/refino -- chamado em `_ready()` e toda vez que
+## `PlayerInventory.changed` dispara. Também atualiza `_stats_label` com os
+## 5 atributos reais do capitão.
+func _refresh_slots() -> void:
 	for data in PAPERDOLL_SLOTS:
-		if data["category"] == category:
-			return data["label"]
-	return category
+		var category: String = data["category"]
+		var instance_id: String = PlayerInventory.equipped_captain.get(category, "")
+		_refresh_one_slot(_slot_buttons[category], _slot_glows[category], instance_id, data["label"])
+	_update_stats_label()
+
+
+func _refresh_one_slot(button: Button, glow: ColorRect, instance_id: String, empty_label: String) -> void:
+	var item_name: String = PlayerInventory.get_item_name(instance_id)
+	if item_name == "":
+		button.tooltip_text = empty_label
+		glow.visible = false
+		return
+
+	var rarity: Dictionary = PlayerInventory.get_item_rarity(instance_id)
+	var float_line: String = PlayerInventory.get_float_tooltip_line(instance_id)
+	button.tooltip_text = "%s\n[%s] %s\n%s" % [empty_label, rarity["name"], item_name, float_line]
+
+	var refine_level: int = PlayerInventory.get_refine_level(instance_id)
+	var float_value: float = PlayerInventory.get_float_value(instance_id)
+	var aura_mode: int = _aura_mode_for(instance_id, rarity, float_value, refine_level)
+	# Brilho aparece se a RARIDADE já pedia (Blue+) OU se o Float/Refino
+	# sozinho já rendeu uma aura -- um item White com Float 0.99 não devia
+	# ficar sem brilho nenhum só porque a raridade não ajudou.
+	if GLOWING_RARITIES.has(rarity["id"]) or aura_mode != 0:
+		glow.visible = true
+		var mat: ShaderMaterial = glow.material
+		mat.set_shader_parameter("rarity_color", rarity["color"])
+		mat.set_shader_parameter("aura_mode", aura_mode)
+		mat.set_shader_parameter("refine_boost", clampf(float(refine_level - 9) / 6.0, 0.0, 1.0) * 2.0)
+	else:
+		glow.visible = false
+
+
+## Mesma regra de prioridade de `ship_status_modal.gd` -- duplicada em vez de
+## compartilhada porque os dois componentes não têm uma base comum ainda
+## (Grimório é o único slot do Capitão "místico" o bastante pra entrar na
+## checagem rúnica; os outros 5 nunca disparam esse modo).
+func _aura_mode_for(instance_id: String, rarity: Dictionary, float_value: float, refine_level: int) -> int:
+	var item_id: String = PlayerInventory.crafted_items.get(instance_id, {}).get("item_id", "")
+	var category: String = ItemDatabase.get_item(item_id).get("category", "")
+	if category == "grimorio" and (float_value >= 0.90 or refine_level >= 10):
+		return 3  # AURA_RUNIC
+	if float_value >= 0.95:
+		return 2  # AURA_DARK_FIRE
+	if refine_level >= 10 or rarity.get("lightning", false):
+		return 1  # AURA_ELECTRIC
+	return 0  # AURA_NONE
+
+
+func _update_stats_label() -> void:
+	var bonuses: Dictionary = PlayerInventory.get_captain_bonuses()
+	_stats_label.text = "Liderança: +%.0f   Crítico de Abordagem: +%.0f%%   Veloc. Nodal: +%.0f   Penetração: +%.0f%%   Dano Elemental: +%.0f%%" % [
+		bonuses["leadership_bonus"],
+		bonuses["boarding_crit_bonus"] * 100.0,
+		bonuses["node_speed_bonus"],
+		bonuses["armor_pen_bonus"] * 100.0,
+		bonuses["elemental_damage_bonus"] * 100.0,
+	]
 
 
 func _refresh_attributes() -> void:

@@ -35,6 +35,7 @@ func _ready() -> void:
 	_wire_modal("OpenShopButton", "TradeModal", true)
 	_wire_modal("OpenCraftingButton", "CraftingModal", false)
 	_wire_modal("OpenRefinementButton", "RefinementModal", false)
+	_wire_modal("OpenVaultButton", "VaultModal", false)
 
 
 ## Liga um botão "Abrir X" a um modal filho, se os dois nós existirem --
@@ -43,6 +44,10 @@ func _ready() -> void:
 ## (loja antiga + fabricação nova). `auto_open` abre o modal já ao entrar no
 ## distrito (só faz sentido pro TradeModal -- CraftingModal fica fechado até
 ## o jogador clicar, senão a tela entra com 2 janelas por cima uma da outra).
+##
+## Passa por `UIManager.open_modal()` em vez de chamar `modal.open` direto --
+## ele fecha qualquer outro modal urbano que já estivesse aberto antes
+## (Loja/Fabricar/Refinar não deveriam empilhar) e traz este pra frente.
 ##
 ## Enquanto QUALQUER modal está aberto, esconde "Mapa da Ilha"/"Voltar ao
 ## Mar" e o botão de abrir dele -- com os modais grandes (principalmente o
@@ -53,11 +58,11 @@ func _wire_modal(button_name: String, modal_name: String, auto_open: bool) -> vo
 	var modal: Control = get_node_or_null(modal_name)
 	if button == null or modal == null:
 		return
-	button.pressed.connect(modal.open)
+	button.pressed.connect(UIManager.open_modal.bind(modal))
 	modal.opened.connect(_on_modal_opened.bind(button))
 	modal.closed.connect(_on_modal_closed.bind(button))
 	if auto_open:
-		modal.open()
+		UIManager.open_modal(modal)
 
 
 func _on_modal_opened(open_button: Button) -> void:

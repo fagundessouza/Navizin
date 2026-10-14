@@ -26,6 +26,8 @@ const HOVER_COLOR: Color = Color(1.0, 0.92, 0.65, 1.0)
 const NORMAL_FONT_COLOR: Color = Color(0.93, 0.9, 0.84, 1.0)
 const OK_COLOR: Color = Color(0.6, 0.82, 0.5, 1.0)
 const MISSING_COLOR: Color = Color(0.85, 0.4, 0.35, 1.0)
+const ICON_FRAME_SIZE: float = 40.0
+const ICON_BORDER_COLOR: Color = Color(0.78, 0.65, 0.38, 0.9)
 
 @onready var _tabs_box: HBoxContainer = $Margin/VBox/Tabs
 @onready var _pages_root: Control = $Margin/VBox/Pages
@@ -126,9 +128,15 @@ func _build_recipe_row(item_id: String) -> Control:
 	row_style.content_margin_bottom = 6
 	row.add_theme_stylebox_override("panel", row_style)
 
+	var outer := HBoxContainer.new()
+	outer.add_theme_constant_override("separation", 10)
+	row.add_child(outer)
+	outer.add_child(_make_icon_frame(item.get("icon")))
+
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 4)
-	row.add_child(vbox)
+	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	outer.add_child(vbox)
 
 	var header := HBoxContainer.new()
 	vbox.add_child(header)
@@ -165,6 +173,38 @@ func _build_recipe_row(item_id: String) -> Control:
 		materials_box.add_child(mat_label)
 
 	return row
+
+
+## Miniatura com borda gótica ao lado do nome da receita -- "exibir a
+## miniatura da arte do item" pedido explicitamente. `icon` vem nulo pros
+## poucos itens sem arte dedicada ainda; `TextureRect` com textura nula só
+## fica em branco dentro da moldura, sem quebrar nada.
+func _make_icon_frame(icon: Texture2D) -> PanelContainer:
+	var frame := PanelContainer.new()
+	frame.custom_minimum_size = Vector2(ICON_FRAME_SIZE, ICON_FRAME_SIZE)
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.05, 0.04, 0.04, 0.9)
+	style.border_width_left = 1
+	style.border_width_top = 1
+	style.border_width_right = 1
+	style.border_width_bottom = 1
+	style.border_color = ICON_BORDER_COLOR
+	style.corner_radius_top_left = 3
+	style.corner_radius_top_right = 3
+	style.corner_radius_bottom_left = 3
+	style.corner_radius_bottom_right = 3
+	style.content_margin_left = 2
+	style.content_margin_top = 2
+	style.content_margin_right = 2
+	style.content_margin_bottom = 2
+	frame.add_theme_stylebox_override("panel", style)
+
+	var icon_rect := TextureRect.new()
+	icon_rect.texture = icon
+	icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	frame.add_child(icon_rect)
+	return frame
 
 
 func _on_craft_pressed(item_id: String) -> void:
