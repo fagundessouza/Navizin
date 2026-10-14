@@ -3,6 +3,22 @@
 > Arquivo de contexto. Ao iniciar uma sessão nova, diga **"Carregar checkpoint"** e leia só este arquivo.
 > Ao final de cada sessão ou marco, diga **"Salvar checkpoint"** para atualizá-lo.
 
+## Checkpoint atual (2026-10-13c) — branch `feature/town-hub-redesign`
+
+**`ShipStatusModal` reconstruído do zero com a arte "GalleonWarshipStatusEquipmentPanel", submodal de Tripulação novo.**
+
+- **Discrepância notada e resolvida em favor da arte real:** o pedido descrevia "24 (6x4)" slots de canhão, mas a imagem entregue só tem 20 (5x4) -- usei o que está desenhado, documentado no cabeçalho de `ship_status_modal.gd` pra não parecer um erro silencioso.
+- 5 slots de craft (Vela, Casco, Proa, Leme, Relíquia de Ebenruth) + 20 de canhão + barra de peso + 4 botões de rodapé, todos com coordenadas medidas por grade de calibração + detecção de blob dourado na arte de origem (1536x864), convertidas pra escala de exibição (960x540, fator 0.625) -- mesmo método das rodadas anteriores.
+- Os 2 círculos grandes "+" nas pontas do rodapé (visíveis na arte) ficaram de fora -- não estavam na lista do pedido (5 slots + grade + barra + 4 botões), então não inventei função pra eles.
+- `InventoryPickerSubmodal.STUB_INVENTORY` ganhou categorias novas (`leme`, `relíquia_ebenruth`) e a chave `velas` virou `proa`/`vela` pra bater com os nomes oficiais dos 5 slots.
+- **Barra de peso ligada em dado real**: `ShipData.cargo_weight`/`max_cargo` -- o mesmo valor que já reduz a velocidade do navio em `effective_max_factor()`, não um número novo.
+- **`CrewManagementSubmodal`** (novo): abre como overlay flutuante por cima do `ShipStatusModal` (não fecha o painel de baixo) ao clicar no 3º botão do rodapé (ícone de marinheiros). Mostra Oficiais/Tropas lidos de `ship.data.max_officers`/`max_troops` -- campos novos adicionados em `ShipData` (`@export_group("Tripulação")`, 4 oficiais/40 tropas por padrão pro Holandês Voador). Sem sistema de contratação ainda, "atual" fica em 0; só o teto é dado real.
+- **Arte pendente**: `Meshy_AI_CrewManagementSubmodal.png` (pedida junto) ainda não apareceu em `~/Downloads/Tortuga/` até escrever isto -- o submodal usa a mesma moldura gótica (`modal_frame_iron.png`+shader) dos outros painéis como visual provisório. Documentado no cabeçalho do script pra trocar assim que a arte chegar.
+
+**Verificado rodando o jogo de verdade:** 11 checagens, todas passaram -- painel novo com 25 slots + 4 botões de rodapé; barra de peso em ~60% depois de forçar `cargo_weight=60`; picker do slot Vela mostra os 2 itens certos; clicar no 3º botão do rodapé abre a Tripulação por cima do painel do navio (ambos visíveis ao mesmo tempo), mostrando "Oficiais 0/4" e "Tropas 0/40" -- os valores reais do `ShipData`.
+
+---
+
 ## Checkpoint atual (2026-10-13b) — branch `feature/town-hub-redesign`
 
 **Barras de recurso do `ShipStatusModal` ligadas aos dados reais do navio/vento.**

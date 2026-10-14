@@ -18,9 +18,11 @@ const STUB_INVENTORY: Dictionary = {
 	"cinto": ["Cinturão de Couro Reforçado", "Faixa Escarlate"],
 	"trajes": ["Sobretudo do Corsário", "Casaca da Guarda Real"],
 	"grimorio": ["Grimório das Marés Negras", "Compêndio do Kraken"],
-	"velas": ["Velas Negras Reforçadas", "Velas de Seda Encantada"],
+	"vela": ["Velas Negras Reforçadas", "Velas de Seda Encantada"],
 	"casco": ["Blindagem de Ferro Naval", "Placas de Bronze Antigo"],
-	"mastro_proa": ["Mascarão de Dragão", "Mascarão de Sereia"],
+	"leme": ["Leme de Carvalho Reforçado", "Leme Ornamentado de Latão"],
+	"proa": ["Mascarão de Dragão", "Mascarão de Sereia"],
+	"relíquia_ebenruth": ["Fragmento do Olho de Ebenruth", "Âncora Amaldiçoada"],
 	"armamento": ["Canhão Longo Naval", "Canhão Giratório", "Bombarda Pesada", "Culverina"],
 }
 

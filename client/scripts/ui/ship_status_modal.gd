@@ -1,60 +1,72 @@
 class_name ShipStatusModal
 extends Control
-## Ficha de equipamento do navio: 3 slots especiais (velas, casco/blindagem,
-## mastro de proa) e uma grade 5x4 de slots de armamento, montados sobre a
-## arte `galleon_ship_panel.png` -- ela já vem com a moldura e os '+'
-## desenhados em cada slot, os botões daqui são só a área de clique.
+## Ficha de equipamento do Galeão: 5 slots de peça de craft (Vela, Casco,
+## Leme, Proa, Relíquia de Ebenruth), uma grade de canhões, a barra de peso
+## da carga e 4 botões de rodapé -- montados sobre a arte
+## `galleon_warship_status_panel.png`, que já vem com a moldura e os '+'
+## desenhados em cada slot; os botões daqui são só a área de clique.
 ##
-## Mesma lógica de coordenadas de `captain_profile_modal.gd`: centros
-## medidos na arte de origem (1536x864), convertidos pra escala de exibição
-## (960x540, fator 0.625). A grade de armamento é construída em loop a
-## partir de `GRID_COLS`/`GRID_ROWS` em vez de 20 entradas escritas à mão.
+## Coordenadas medidas na arte de origem (1536x864, grade de calibração +
+## detecção de blob dourado pros centros da grade de canhão) e convertidas
+## pra escala de exibição (960x540, fator 0.625) -- mesmo método de
+## `captain_profile_modal.gd`.
 ##
-## As 3 barras de recurso (carga/blindagem/vento) na faixa de baixo da arte
-## leem direto do navio (`supply`/`hull`) e do `WindManager`, mesma fonte que
-## a barra de HUD do canto inferior esquerdo -- não é um segundo sistema de
-## status, é o mesmo dado mostrado de novo aqui.
+## NOTA: o pedido original descrevia a grade de canhões como "24 (6x4)", mas
+## a arte entregue só tem 20 (5x4) -- usado o que está desenhado, não o que
+## foi descrito, pra não inventar uma 6ª coluna que não existe na imagem.
+##
+## Os 2 círculos grandes "+" nas pontas do rodapé (visíveis na arte) não
+## entraram na lista do pedido (5 slots + grade + barra + 4 botões) e ficaram
+## de fora por ora -- decorativos, sem função atribuída.
 
 signal opened
 signal closed
-
-## Força do vento (`WindManager.wind_strength`) varia de 0.3 a 1.5; mesmo
-## teto usado em `hud_controller.gd._update_wind()`.
-const WIND_MAX: float = 1.5
 
 const PANEL_SIZE: Vector2 = Vector2(960, 540)
 const PICKER_WIDTH_ESTIMATE: float = 226.0
 const PICKER_HEIGHT_ESTIMATE: float = 170.0
 
-const SPECIAL_SLOTS: Array[Dictionary] = [
-	{"category": "velas", "label": "Velas", "cx": 96.9, "cy": 118.8, "size": 64.0},
-	{"category": "casco", "label": "Casco / Blindagem", "cx": 483.1, "cy": 118.8, "size": 64.0},
-	{"category": "mastro_proa", "label": "Mascarão de Proa", "cx": 507.5, "cy": 288.8, "size": 64.0},
+const CRAFT_SLOTS: Array[Dictionary] = [
+	{"category": "vela", "label": "Vela", "cx": 178.1, "cy": 115.6, "size": 50.0},
+	{"category": "casco", "label": "Casco", "cx": 378.1, "cy": 115.6, "size": 50.0},
+	{"category": "proa", "label": "Proa", "cx": 483.1, "cy": 196.9, "size": 50.0},
+	{"category": "leme", "label": "Leme", "cx": 178.1, "cy": 333.1, "size": 50.0},
+	{"category": "relíquia_ebenruth", "label": "Relíquia de Ebenruth", "cx": 460.6, "cy": 333.1, "size": 50.0},
 ]
 
-const GRID_COLS: Array[float] = [640.0, 705.0, 770.0, 834.4, 898.8]
-const GRID_ROWS: Array[float] = [117.5, 190.6, 262.5, 336.2]
-const GRID_SLOT_SIZE: float = 48.0
+const CANNON_COLS: Array[float] = [572.5, 630.0, 687.5, 743.8, 801.9]
+const CANNON_ROWS: Array[float] = [115.0, 195.0, 275.0, 349.4]
+const CANNON_SLOT_SIZE: float = 34.0
+
+const FOOTER_BUTTONS: Array[Dictionary] = [
+	{"label": "Porão de Carga", "cx": 281.3, "cy": 436.3},
+	{"label": "Munição", "cx": 346.9, "cy": 436.3},
+	{"label": "Tripulação", "cx": 415.6, "cy": 436.3},
+	{"label": "Diário de Navegação", "cx": 484.4, "cy": 436.3},
+]
+const FOOTER_BUTTON_SIZE: float = 46.0
+const CREW_BUTTON_INDEX: int = 2
+
+const WEIGHT_BAR_RECT: Rect2 = Rect2(609.4, 433.1, 140.6, 15.6)
 
 const PULSE_SCALE: Vector2 = Vector2(1.3, 1.3)
 const GLOW_COLOR: Color = Color(1.4, 1.25, 0.8, 1.0)
 
 @onready var _slots_root: Control = $Slots
+@onready var _footer_root: Control = $Footer
 @onready var _picker: InventoryPickerSubmodal = $Picker
-@onready var _cargo_bar: ProgressBar = $CargoBar
-@onready var _hull_bar: ProgressBar = $HullBar
-@onready var _wind_bar: ProgressBar = $WindBar
+@onready var _crew_submodal: CrewManagementSubmodal = $CrewManagementSubmodal
+@onready var _weight_bar: ProgressBar = $WeightBar
 
 var _ship: Node2D = null
-var _wind: Node = null
 
 
 func _ready() -> void:
 	visible = false
 	$CloseButton.pressed.connect(close)
-	_build_special_slots()
-	_build_armament_grid()
-	_wind = get_node("/root/WindManager")
+	_build_craft_slots()
+	_build_cannon_grid()
+	_build_footer_buttons()
 
 
 func _process(_delta: float) -> void:
@@ -62,7 +74,7 @@ func _process(_delta: float) -> void:
 		return
 	if _ship == null:
 		_ship = get_tree().get_first_node_in_group("player_ship") as Node2D
-	_update_resource_bars()
+	_update_weight_bar()
 
 
 func open() -> void:
@@ -72,41 +84,23 @@ func open() -> void:
 
 func close() -> void:
 	_picker.close()
+	_crew_submodal.close()
 	visible = false
 	closed.emit()
 
 
-## Mesma fonte de dado que `hud_controller.gd`: `ship.supply`/`max_supply`,
-## `ship.hull`/`max_hull` lidos direto (não só pelo sinal `hull_changed`,
-## que não dispara de novo só porque o jogador abriu este painel) e
-## `WindManager.wind_strength` sobre o teto de 1.5.
-func _update_resource_bars() -> void:
-	if _ship != null:
-		var supply: float = _ship.get("supply")
-		var max_supply: float = _ship.get("max_supply")
-		_cargo_bar.max_value = max_supply
-		_cargo_bar.value = supply
-
-		var hull: float = _ship.get("hull")
-		var max_hull: float = _ship.get("max_hull")
-		_hull_bar.max_value = max_hull
-		_hull_bar.value = hull
-	_wind_bar.max_value = WIND_MAX
-	_wind_bar.value = clampf(_wind.wind_strength, 0.0, WIND_MAX)
+func _build_craft_slots() -> void:
+	for data in CRAFT_SLOTS:
+		_add_equip_slot(data["cx"], data["cy"], data["size"], data["category"], data["label"])
 
 
-func _build_special_slots() -> void:
-	for data in SPECIAL_SLOTS:
-		_add_slot(data["cx"], data["cy"], data["size"], data["category"], data["label"])
+func _build_cannon_grid() -> void:
+	for row_y in CANNON_ROWS:
+		for col_x in CANNON_COLS:
+			_add_equip_slot(col_x, row_y, CANNON_SLOT_SIZE, "armamento", "Armamento")
 
 
-func _build_armament_grid() -> void:
-	for row_y in GRID_ROWS:
-		for col_x in GRID_COLS:
-			_add_slot(col_x, row_y, GRID_SLOT_SIZE, "armamento", "Armamento")
-
-
-func _add_slot(cx: float, cy: float, size: float, category: String, label: String) -> void:
+func _add_equip_slot(cx: float, cy: float, size: float, category: String, label: String) -> void:
 	var button := Button.new()
 	button.flat = true
 	button.custom_minimum_size = Vector2(size, size)
@@ -117,9 +111,34 @@ func _add_slot(cx: float, cy: float, size: float, category: String, label: Strin
 	_slots_root.add_child(button)
 
 
+func _build_footer_buttons() -> void:
+	for i in FOOTER_BUTTONS.size():
+		var data: Dictionary = FOOTER_BUTTONS[i]
+		var size: float = FOOTER_BUTTON_SIZE
+		var button := Button.new()
+		button.flat = true
+		button.custom_minimum_size = Vector2(size, size)
+		button.position = Vector2(data["cx"] - size / 2.0, data["cy"] - size / 2.0)
+		button.size = Vector2(size, size)
+		button.tooltip_text = data["label"]
+		if i == CREW_BUTTON_INDEX:
+			button.pressed.connect(_on_crew_button_pressed.bind(button))
+		else:
+			button.pressed.connect(_pulse.bind(button))
+		_footer_root.add_child(button)
+
+
 func _on_slot_pressed(button: Button, category: String, label: String) -> void:
 	_pulse(button)
 	_open_picker_near(button, category, label)
+
+
+## Abre a Tripulação como um overlay flutuante sobre a própria ficha do
+## navio -- não fecha este painel, só sobrepõe (mesmo padrão do submodal de
+## inventário: um popup por cima, não uma troca de tela).
+func _on_crew_button_pressed(button: Button) -> void:
+	_pulse(button)
+	_crew_submodal.open()
 
 
 func _pulse(button: Button) -> void:
@@ -143,3 +162,14 @@ func _open_picker_near(button: Button, category: String, label: String) -> void:
 	if open_y + PICKER_HEIGHT_ESTIMATE > PANEL_SIZE.y - 10.0:
 		open_y = PANEL_SIZE.y - PICKER_HEIGHT_ESTIMATE - 10.0
 	_picker.open_at(Vector2(open_x, open_y), category, label)
+
+
+## `ShipData.cargo_weight`/`max_cargo` -- mesmo dado que já reduz a
+## velocidade máxima do navio em `effective_max_factor()`, não um número
+## novo inventado só pra essa barra.
+func _update_weight_bar() -> void:
+	if _ship == null or _ship.data == null:
+		return
+	var data: ShipData = _ship.data
+	_weight_bar.max_value = data.max_cargo
+	_weight_bar.value = data.cargo_weight

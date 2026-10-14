@@ -56,6 +56,14 @@ extends Resource
 ## Tempo de vida do projétil, em segundos.
 @export var projectile_lifetime: float = 1.2
 
+@export_group("Tripulação")
+## Vagas de oficiais a bordo (comandam canhões, reparam avarias...). Sem
+## sistema de contratação ainda -- é só o teto que o painel de tripulação
+## mostra.
+@export var max_officers: int = 4
+## Vagas de tropas de abordagem a bordo.
+@export var max_troops: int = 40
+
 @export_group("Física e efeitos")
 ## Impulso de recuo com força total, em px/s.
 @export var recoil_strength: float = 90.0
