@@ -3,6 +3,21 @@
 > Arquivo de contexto. Ao iniciar uma sessão nova, diga **"Carregar checkpoint"** e leia só este arquivo.
 > Ao final de cada sessão ou marco, diga **"Salvar checkpoint"** para atualizá-lo.
 
+## Checkpoint atual (2026-10-13e) — branch `feature/town-hub-redesign`
+
+**Raridade de crafting (estilo Albion) + nomes dinâmicos (estilo MU/Diablo IV) + shader de brilho/faíscas por raridade.**
+
+- **`CraftingManager` (novo, em `scripts/managers/` como pedido explicitamente, não em `scripts/autoload/` como os outros)**: sorteio por peso cumulativo -- White 50% / Green 25% / Blue 13% / Yellow 7% / Orange 3% / Purple 1.5% / Red 0.5% (testado com 20 mil sorteios, distribuição bateu certinho com o esperado). Cada raridade tem multiplicador de atributo (1.0x a 3.5x) aplicado em cima do `stats` base do item.
+- **Nome dinâmico**: `generate_name("Canhão Tier I", raridade)` insere o prefixo logo após a primeira palavra do nome-base e o sufixo no fim -- "Canhão Abissal Tier I do Caos" pra Orange, "Munição Ancestral de Fogo dos Mares Eternos" pra Purple. White fica sem prefixo/sufixo (só o nome simples), de propósito -- fácil reconhecer um item "sem graça" só pela cor cinza, sem precisar ler o tooltip.
+- **Raridade é por INSTÂNCIA, não por item-base**: `PlayerInventory.craft()` agora sorteia a raridade e guarda `rarity_id`/`display_name`/`stats` (já multiplicado) em cada entrada de `crafted_items` -- dois Canhões Tier I fabricados separados podem sair com raridades (e portanto nomes e bônus) diferentes. `get_total_bonuses()` lê esse `stats` por instância, não mais o `stats` genérico de `ItemDatabase`.
+- **`item_rarity_glow.gdshader` (novo)**: overlay de brilho pulsante pra borda de um slot, cor vinda de `rarity_color`; raridades Lendário/Divino (Purple/Red) ganham também faíscas correndo pela borda (`lightning=true`, mesma técnica de hash+seno do `gothic_panel.gdshader`). White/Green não ganham brilho nenhum -- convenção de ARPG, só chama atenção a partir de Raro (Blue).
+- **Integração no `ShipStatusModal`**: cada um dos 25 slots (5 de peça + 20 de canhão) ganhou um `ColorRect` filho com esse shader, escondido quando vazio ou White/Green, aceso na cor certa (e com faísca, se for o caso) quando equipado. Tooltip ganhou o nome da raridade entre colchetes (`tooltip_text` é texto puro, sem cor, no Godot) já que não dá pra colorir tooltip nativo.
+- **Integração no `InventoryPickerSubmodal`**: a lista de itens fabricados pra equipar mostra cada linha com o texto colorido na cor da própria raridade (`font_color` do botão) -- "exibam o nome colorido do item" literal, não só no tooltip.
+
+**Verificado rodando o jogo de verdade:** 20 mil sorteios bateram com os pesos pedidos; fabriquei canhões até achar um de cada raridade-alvo (White/Blue/Purple/Red) e equipei os 4 em slots diferentes -- captura confirma brilho azul/roxo/vermelho visível nos slots certos e NENHUM brilho no White; captura do picker mostra a lista inteira com cada nome na cor certa da sua raridade (verde/azul/amarelo/laranja/roxo).
+
+---
+
 ## Checkpoint atual (2026-10-13d) — branch `feature/town-hub-redesign`
 
 **Sistema de crafting naval completo: catálogo de itens, receitas por estação, fabricação real na Forja/Estaleiro, equipar no Galeão e atributos do navio recalculados de verdade.**

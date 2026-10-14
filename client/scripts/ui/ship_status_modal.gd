@@ -26,6 +26,13 @@ extends Control
 ## e atualizar o tooltip. `PlayerInventory.changed` (equipar OU fabricar)
 ## também recalcula os atributos reais do navio via
 ## `ship_base.gd.recalc_equipment_bonuses()`, mostrados ao vivo em `_stats_label`.
+##
+## RARIDADE: cada slot ganha um `ColorRect` filho do tamanho dele com
+## `item_rarity_glow.gdshader` -- escondido pra slot vazio ou White/Green
+## (sem efeito nessas duas), aceso na cor da raridade pra Blue/Yellow/
+## Orange (pulso) e com `lightning=true` pra Purple/Red (faíscas na borda).
+## Tooltip também ganha o nome da raridade entre colchetes, já que
+## `tooltip_text` é texto puro (sem cor) no Godot.
 
 signal opened
 signal closed
@@ -58,6 +65,11 @@ const CREW_BUTTON_INDEX: int = 2
 const PULSE_SCALE: Vector2 = Vector2(1.3, 1.3)
 const GLOW_COLOR: Color = Color(1.4, 1.25, 0.8, 1.0)
 
+const RARITY_GLOW_SHADER: Shader = preload("res://assets/shaders/item_rarity_glow.gdshader")
+## White/Green não ganham brilho -- só a partir de Raro (Blue) pra cima, como
+## é convenção em ARPG (item comum/bom não chama atenção, raro em diante sim).
+const GLOWING_RARITIES: Array[String] = ["blue", "yellow", "orange", "purple", "red"]
+
 @onready var _slots_root: Control = $Slots
 @onready var _footer_root: Control = $Footer
 @onready var _picker: InventoryPickerSubmodal = $Picker
@@ -68,8 +80,12 @@ const GLOW_COLOR: Color = Color(1.4, 1.25, 0.8, 1.0)
 var _ship: Node2D = null
 ## category -> Button, pros 5 slots de peça única.
 var _slot_buttons: Dictionary = {}
+## category -> ColorRect (overlay de brilho), paralelo a `_slot_buttons`.
+var _slot_glows: Dictionary = {}
 ## índice 0..19 -> Button, pra grade de canhão.
 var _cannon_buttons: Array[Button] = []
+## índice 0..19 -> ColorRect (overlay de brilho), paralelo a `_cannon_buttons`.
+var _cannon_glows: Array[ColorRect] = []
 ## Qual canhão (índice) o picker está servindo agora -- só importa quando
 ## `_picker._category == "armamento"`, já que aí um nome de categoria sozinho
 ## não diz QUAL dos 20 slots equipar.
@@ -113,6 +129,7 @@ func _build_craft_slots() -> void:
 		var button := _make_slot_button(data["cx"], data["cy"], data["size"], data["label"])
 		button.pressed.connect(_on_slot_pressed.bind(button, data["category"], data["label"]))
 		_slot_buttons[data["category"]] = button
+		_slot_glows[data["category"]] = _make_rarity_glow(button)
 
 
 func _build_cannon_grid() -> void:
@@ -122,6 +139,7 @@ func _build_cannon_grid() -> void:
 			var button := _make_slot_button(col_x, row_y, CANNON_SLOT_SIZE, "Armamento")
 			button.pressed.connect(_on_cannon_pressed.bind(button, index))
 			_cannon_buttons.append(button)
+			_cannon_glows.append(_make_rarity_glow(button))
 			index += 1
 
 
@@ -134,6 +152,23 @@ func _make_slot_button(cx: float, cy: float, size: float, label: String) -> Butt
 	button.tooltip_text = label
 	_slots_root.add_child(button)
 	return button
+
+
+## Overlay de brilho de raridade: um `ColorRect` do tamanho exato do slot,
+## filho dele (segue posição/escala do pulso de clique de graça), ignorando
+## mouse pra nunca roubar o clique do botão por baixo. Começa escondido --
+## `_refresh_slots()` decide se/como aparece.
+func _make_rarity_glow(button: Button) -> ColorRect:
+	var glow := ColorRect.new()
+	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	glow.set_anchors_preset(Control.PRESET_FULL_RECT)
+	glow.color = Color.WHITE
+	glow.visible = false
+	var mat := ShaderMaterial.new()
+	mat.shader = RARITY_GLOW_SHADER
+	glow.material = mat
+	button.add_child(glow)
+	return glow
 
 
 func _build_footer_buttons() -> void:
@@ -174,21 +209,38 @@ func _on_instance_selected(category: String, instance_id: String) -> void:
 		PlayerInventory.equip_slot(category, instance_id)
 
 
-## Reescreve o tooltip de cada slot com o nome do item equipado (ou a
-## etiqueta genérica se vazio) -- chamado em `_ready()` e toda vez que
-## `PlayerInventory.changed` dispara, pra refletir equipar/fabricar/trocar.
+## Reescreve o tooltip de cada slot (nome do item + raridade entre
+## colchetes, já que `tooltip_text` não aceita cor) e liga/desliga o brilho
+## de raridade -- chamado em `_ready()` e toda vez que `PlayerInventory.changed`
+## dispara, pra refletir equipar/fabricar/trocar.
 func _refresh_slot_labels() -> void:
 	for data in CRAFT_SLOTS:
 		var category: String = data["category"]
-		var button: Button = _slot_buttons[category]
 		var instance_id: String = PlayerInventory.equipped.get(category, "")
-		var item_name: String = PlayerInventory.get_item_name(instance_id)
-		button.tooltip_text = "%s\n%s" % [data["label"], item_name] if item_name != "" else data["label"]
+		_refresh_one_slot(_slot_buttons[category], _slot_glows[category], instance_id, data["label"])
 
 	for i in _cannon_buttons.size():
 		var instance_id: String = PlayerInventory.equipped_cannons[i]
-		var item_name: String = PlayerInventory.get_item_name(instance_id)
-		_cannon_buttons[i].tooltip_text = "Slot %d\n%s" % [i + 1, item_name] if item_name != "" else "Armamento (slot %d)" % (i + 1)
+		_refresh_one_slot(_cannon_buttons[i], _cannon_glows[i], instance_id, "Armamento (slot %d)" % (i + 1))
+
+
+func _refresh_one_slot(button: Button, glow: ColorRect, instance_id: String, empty_label: String) -> void:
+	var item_name: String = PlayerInventory.get_item_name(instance_id)
+	if item_name == "":
+		button.tooltip_text = empty_label
+		glow.visible = false
+		return
+
+	var rarity: Dictionary = PlayerInventory.get_item_rarity(instance_id)
+	button.tooltip_text = "%s\n[%s] %s" % [empty_label, rarity["name"], item_name]
+
+	if GLOWING_RARITIES.has(rarity["id"]):
+		glow.visible = true
+		var mat: ShaderMaterial = glow.material
+		mat.set_shader_parameter("rarity_color", rarity["color"])
+		mat.set_shader_parameter("lightning", rarity["lightning"])
+	else:
+		glow.visible = false
 
 
 ## Abre a Tripulação como um overlay flutuante sobre a própria ficha do

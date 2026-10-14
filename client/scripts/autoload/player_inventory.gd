@@ -15,9 +15,12 @@ const CANNON_SLOT_COUNT: int = 20
 const SHIP_SLOTS: Array[String] = ["vela", "casco", "leme", "proa", "relíquia_ebenruth"]
 
 var materials: Dictionary = {}
-## instance_id (String) -> {item_id, instance_id}. `instance_id` existe
-## porque dois canhões Tier I fabricados separados são objetos diferentes,
-## mesmo com o mesmo `item_id`.
+## instance_id (String) -> {item_id, instance_id, rarity_id, display_name,
+## stats}. `instance_id` existe porque dois Canhões Tier I fabricados
+## separados são objetos diferentes -- com `CraftingManager`, também podem
+## ter raridade e nome diferentes. `stats` aqui já é o bônus-base
+## multiplicado pela raridade ROLADA NESSA INSTÂNCIA, não o `stats` genérico
+## de `ItemDatabase` (que é só o bônus de referência do item branco).
 var crafted_items: Dictionary = {}
 ## slot (de `SHIP_SLOTS`) -> instance_id equipado ali, ou "" se vazio.
 var equipped: Dictionary = {}
@@ -57,17 +60,31 @@ func has_materials_for(item_id: String) -> bool:
 	return true
 
 
-## Consome os materiais e acrescenta uma instância nova do item fabricado no
-## Porão do Navio / Mochila do Capitão. Retorna "" se faltou material.
+## Consome os materiais, sorteia a raridade (`CraftingManager.roll_rarity()`)
+## e acrescenta uma instância nova do item fabricado no Porão do Navio /
+## Mochila do Capitão -- nome e stats já vêm com o bônus de raridade
+## aplicado. Retorna "" se faltou material.
 func craft(item_id: String) -> String:
 	if not has_materials_for(item_id):
 		return ""
 	var recipe: Dictionary = ItemDatabase.get_recipe(item_id)
 	for material_name in recipe["materials"]:
 		materials[material_name] -= recipe["materials"][material_name]
+
+	var item: Dictionary = ItemDatabase.get_item(item_id)
+	var rarity: Dictionary = CraftingManager.roll_rarity()
+	var display_name: String = CraftingManager.generate_name(item.get("name", item_id), rarity)
+	var stats: Dictionary = CraftingManager.apply_rarity_stats(item.get("stats", {}), rarity)
+
 	var instance_id: String = "item_%d" % _next_instance_id
 	_next_instance_id += 1
-	crafted_items[instance_id] = {"item_id": item_id, "instance_id": instance_id}
+	crafted_items[instance_id] = {
+		"item_id": item_id,
+		"instance_id": instance_id,
+		"rarity_id": rarity["id"],
+		"display_name": display_name,
+		"stats": stats,
+	}
 	changed.emit()
 	return instance_id
 
@@ -108,16 +125,28 @@ func equip_cannon(index: int, instance_id: String) -> void:
 	changed.emit()
 
 
+## Nome já com prefixo/sufixo de raridade (ex: "Canhão Abissal Tier I da
+## Devastação") -- o que a UI deveria mostrar em vez do `item_id`/nome-base.
 func get_item_name(instance_id: String) -> String:
 	if instance_id == "" or not crafted_items.has(instance_id):
 		return ""
-	var item: Dictionary = ItemDatabase.get_item(crafted_items[instance_id]["item_id"])
-	return item.get("name", "")
+	return crafted_items[instance_id].get("display_name", "")
+
+
+## Dicionário de `CraftingManager.RARITIES` (tem `id`/`name`/`color`/
+## `lightning`) -- "" devolve White, pra quem for colorir um slot vazio não
+## precisar checar nulo.
+func get_item_rarity(instance_id: String) -> Dictionary:
+	if instance_id == "" or not crafted_items.has(instance_id):
+		return CraftingManager.get_rarity("white")
+	return CraftingManager.get_rarity(crafted_items[instance_id].get("rarity_id", "white"))
 
 
 ## Soma os bônus (`hull_bonus`/`cargo_bonus`/`speed_bonus`/`damage_mult_bonus`)
 ## de tudo que está equipado -- `ship_base.gd.recalc_equipment_bonuses()`
-## chama isso direto, sem duplicar a lógica de percorrer slots lá.
+## chama isso direto, sem duplicar a lógica de percorrer slots lá. Lê
+## `entry["stats"]` (já multiplicado pela raridade daquela instância), não
+## `ItemDatabase`, que só tem o bônus-base de referência.
 func get_total_bonuses() -> Dictionary:
 	var totals: Dictionary = {"hull_bonus": 0.0, "cargo_bonus": 0.0, "speed_bonus": 0.0, "damage_mult_bonus": 0.0}
 	var instance_ids: Array = []
@@ -132,8 +161,7 @@ func get_total_bonuses() -> Dictionary:
 		var entry: Dictionary = crafted_items.get(instance_id, {})
 		if entry.is_empty():
 			continue
-		var item: Dictionary = ItemDatabase.get_item(entry["item_id"])
-		var stats: Dictionary = item.get("stats", {})
+		var stats: Dictionary = entry.get("stats", {})
 		for key in stats:
 			if totals.has(key):
 				totals[key] += stats[key]

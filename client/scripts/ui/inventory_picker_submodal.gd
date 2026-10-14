@@ -62,9 +62,11 @@ func open_at(local_pos: Vector2, category: String, label: String) -> void:
 		var entries: Array[Dictionary] = PlayerInventory.get_unequipped_for_category(category)
 		for entry in entries:
 			has_any = true
-			var item: Dictionary = ItemDatabase.get_item(entry["item_id"])
+			var rarity: Dictionary = PlayerInventory.get_item_rarity(entry["instance_id"])
 			var row := Button.new()
-			row.text = item.get("name", entry["item_id"])
+			row.text = "[%s] %s" % [rarity["name"], PlayerInventory.get_item_name(entry["instance_id"])]
+			row.add_theme_color_override("font_color", rarity["color"])
+			row.add_theme_color_override("font_hover_color", rarity["color"].lightened(0.3))
 			row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			row.pressed.connect(_on_instance_pressed.bind(entry["instance_id"]))
 			_list.add_child(row)
