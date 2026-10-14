@@ -34,6 +34,7 @@ func _ready() -> void:
 	$Buttons/BackToSea.pressed.connect(_on_back_to_sea)
 	_wire_modal("OpenShopButton", "TradeModal", true)
 	_wire_modal("OpenCraftingButton", "CraftingModal", false)
+	_wire_modal("OpenRefinementButton", "RefinementModal", false)
 
 
 ## Liga um botão "Abrir X" a um modal filho, se os dois nós existirem --

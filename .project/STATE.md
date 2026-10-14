@@ -3,6 +3,20 @@
 > Arquivo de contexto. Ao iniciar uma sessão nova, diga **"Carregar checkpoint"** e leia só este arquivo.
 > Ao final de cada sessão ou marco, diga **"Salvar checkpoint"** para atualizá-lo.
 
+## Checkpoint atual (2026-10-13f) — branch `feature/town-hub-redesign`
+
+**Refino de equipamento (+0 a +15, estilo Lineage2/Ragnarok/Grand Chase), integrado na Forja Naval e nos slots do Galeão.**
+
+- **`EnchantmentManager` (novo, em `scripts/managers/` ao lado do `CraftingManager`)**: `refine_item(item_data, protection_scroll_used)` muta o dicionário recebido direto (Dictionary é referência em GDScript). Tabela de chance exata do pedido (+1-3 sempre sucesso; +4-7 de 80% a 50%, falha regride 1 nível sem destruir; +8-12 de 40% a 20%, falha sem pergaminho tem 50/50 entre voltar pra +0 ou destruir; +13-15 de 15% a 5%, falha sem pergaminho destrói na hora). Multiplicador de atributo é COMPOSTO (não somado) -- "exponencial" de verdade: +7 é 1.08^7≈1.71x, +15 é esse valor vezes 1.15^5 vezes 1.25^3 ≈6.73x. Testado: `success_rate_for()` bate os números pedidos, `stat_multiplier_for()` bate o composto calculado à mão.
+- **`PlayerInventory` ganhou `refine_instance()`/`can_refine()`/`get_refine_level()`**: cada item fabricado tem seu próprio `refine_level` (0-15, independente de raridade). Refinar consome "Pedra de Refino" (1/2/3 por tentativa, conforme a zona de risco) e, se pedido, "Pergaminho de Proteção" -- os dois materiais novos são seedados à parte (não vêm de receita de craft). Se o resultado destrói o item, ele é desequipado de onde estiver e apagado de `crafted_items`. `get_total_bonuses()` agora multiplica o bônus de cada peça equipada pela raridade E pelo refino, nessa ordem.
+- **Nome do item**: `get_item_name()` prefixa "[+N]" quando refinado (ex: "[+12] Canhão Afiado Tier I da Precisão") -- como todo lugar na UI já chamava essa função (tooltips do navio, lista do picker, linhas do crafting), o prefixo apareceu em todo canto de graça, sem precisar tocar nesses arquivos.
+- **`item_rarity_glow.gdshader` ganhou `refine_boost`**: 0 até +9 (sem mudança no visual), rampa de +10 a +15 até o teto -- intensifica o pulso de qualquer raridade com brilho e, de forma bem mais visível, a frequência/limiar das faíscas de Lendário/Divino. `ship_status_modal.gd` calcula isso por slot (`_refine_boost_for()`) a partir do `refine_level` do item equipado ali.
+- **`RefinementModal` (novo painel, só na Forja Naval)**: lista à esquerda os itens fabricados (coloridos por raridade, já com o prefixo de refino), painel de detalhe à direita com chance pro próximo nível, custo em material (tem/precisa), checkbox de Pergaminho de Proteção (só habilitado a partir de +8, onde o pergaminho de fato protege de algo) e botão "Tentar Refino". `city_district_base.gd` generalizado de novo -- agora wireia um TERCEIRO par botão+modal por distrito (`OpenRefinementButton`+`RefinementModal`), só na Forja por enquanto, já que foi só ela que o pedido citou.
+
+**Verificado rodando o jogo de verdade:** refinei um Canhão até +3 (zona segura, 3 sucessos seguidos como esperado) e continuei até ver uma falha na zona 4-7 regredir sem destruir; forcei o nível pra +12 pra testar o visual (brilho verde correto pra raridade Bom, que não ganha efeito -- comportamento certo, não ausência de teste); abri o painel de Refino na Forja pela UI de verdade, selecionei o item, vi a chance (15% pra +13) e o custo (3x Pedra de Refino) exibidos certos, cliquei "Tentar Refino" e o item foi destruído de verdade -- sumiu da lista, "O item foi DESTRUÍDO." apareceu em vermelho.
+
+---
+
 ## Checkpoint atual (2026-10-13e) — branch `feature/town-hub-redesign`
 
 **Raridade de crafting (estilo Albion) + nomes dinâmicos (estilo MU/Diablo IV) + shader de brilho/faíscas por raridade.**

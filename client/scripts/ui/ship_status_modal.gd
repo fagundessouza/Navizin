@@ -33,6 +33,13 @@ extends Control
 ## Orange (pulso) e com `lightning=true` pra Purple/Red (faíscas na borda).
 ## Tooltip também ganha o nome da raridade entre colchetes, já que
 ## `tooltip_text` é texto puro (sem cor) no Godot.
+##
+## REFINO: `PlayerInventory.get_item_name()` já devolve o nome com o
+## prefixo "[+N]" quando refinado, então nenhuma mudança extra precisou
+## aqui pra isso aparecer no tooltip. O que SIM é calculado aqui é
+## `_refine_boost_for()`, que só liga a partir de +10 (pedido explícito) e
+## intensifica o shader de brilho/faísca -- a refinada +15 de um Divino
+## pulsa e faísca muito mais forte que a mesma peça recém-equipada em +0.
 
 signal opened
 signal closed
@@ -239,8 +246,15 @@ func _refresh_one_slot(button: Button, glow: ColorRect, instance_id: String, emp
 		var mat: ShaderMaterial = glow.material
 		mat.set_shader_parameter("rarity_color", rarity["color"])
 		mat.set_shader_parameter("lightning", rarity["lightning"])
+		mat.set_shader_parameter("refine_boost", _refine_boost_for(PlayerInventory.get_refine_level(instance_id)))
 	else:
 		glow.visible = false
+
+
+## +10 pra cima intensifica as faíscas (pedido explícito) -- 0 até +9, sobe
+## em rampa de +10 a +15 até o teto de 2.0 que o shader aceita.
+func _refine_boost_for(refine_level: int) -> float:
+	return clampf(float(refine_level - 9) / 6.0, 0.0, 1.0) * 2.0
 
 
 ## Abre a Tripulação como um overlay flutuante sobre a própria ficha do

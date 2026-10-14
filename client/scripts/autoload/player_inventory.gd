@@ -11,16 +11,26 @@ signal changed
 const STARTER_QTY: int = 15
 const CANNON_SLOT_COUNT: int = 20
 
+## Materiais de refino -- não vêm de nenhuma receita de craft, então não
+## entram no `_seed_materials()` genérico; seedados à parte, com um estoque
+## menor que `STARTER_QTY` pra "pedra de refino acaba rápido" ser visível.
+const REFINE_STONE: String = "Pedra de Refino"
+const PROTECTION_SCROLL: String = "Pergaminho de Proteção"
+const REFINE_STARTER_QTY: int = 30
+const PROTECTION_STARTER_QTY: int = 5
+
 ## Slots de peça única do Galeão (fora a grade de canhão, que é `equipped_cannons`).
 const SHIP_SLOTS: Array[String] = ["vela", "casco", "leme", "proa", "relíquia_ebenruth"]
 
 var materials: Dictionary = {}
 ## instance_id (String) -> {item_id, instance_id, rarity_id, display_name,
-## stats}. `instance_id` existe porque dois Canhões Tier I fabricados
-## separados são objetos diferentes -- com `CraftingManager`, também podem
-## ter raridade e nome diferentes. `stats` aqui já é o bônus-base
-## multiplicado pela raridade ROLADA NESSA INSTÂNCIA, não o `stats` genérico
-## de `ItemDatabase` (que é só o bônus de referência do item branco).
+## stats, refine_level}. `instance_id` existe porque dois Canhões Tier I
+## fabricados separados são objetos diferentes -- com `CraftingManager`,
+## também podem ter raridade e nome diferentes, e com `EnchantmentManager`,
+## refino diferente. `stats` aqui é o bônus-base multiplicado só pela
+## raridade; o bônus de REFINO (`EnchantmentManager.stat_multiplier_for()`)
+## é aplicado por cima dinamicamente em `get_total_bonuses()`, não gravado
+## aqui, porque `refine_level` muda ao longo da vida do item.
 var crafted_items: Dictionary = {}
 ## slot (de `SHIP_SLOTS`) -> instance_id equipado ali, ou "" se vazio.
 var equipped: Dictionary = {}
@@ -47,6 +57,8 @@ func _seed_materials() -> void:
 		for material_name in recipe["materials"]:
 			if not materials.has(material_name):
 				materials[material_name] = STARTER_QTY
+	materials[REFINE_STONE] = REFINE_STARTER_QTY
+	materials[PROTECTION_SCROLL] = PROTECTION_STARTER_QTY
 
 
 func has_materials_for(item_id: String) -> bool:
@@ -125,12 +137,84 @@ func equip_cannon(index: int, instance_id: String) -> void:
 	changed.emit()
 
 
-## Nome já com prefixo/sufixo de raridade (ex: "Canhão Abissal Tier I da
-## Devastação") -- o que a UI deveria mostrar em vez do `item_id`/nome-base.
+## Custo em Pedra de Refino por tentativa -- cresce com a zona de risco do
+## nível-alvo, não é um número fixo (refinar além de +12 custa mais que
+## refinar de +1 a +3). Público porque `RefinementModal` mostra esse custo
+## antes de tentar, não só no momento de gastar.
+func refine_stone_cost(target_level: int) -> int:
+	if target_level <= 7:
+		return 1
+	elif target_level <= 12:
+		return 2
+	return 3
+
+
+## Se dá pra tentar refinar: tem o item, não está no +15, e tem material
+## suficiente pro custo (e pro pergaminho, se for usar um). A UI de refino
+## chama isso pra desabilitar o botão "Tentar Refino" antes mesmo de tentar.
+func can_refine(instance_id: String, use_protection: bool) -> bool:
+	if not crafted_items.has(instance_id):
+		return false
+	var level: int = crafted_items[instance_id].get("refine_level", 0)
+	if level >= EnchantmentManager.MAX_LEVEL:
+		return false
+	if materials.get(REFINE_STONE, 0) < refine_stone_cost(level + 1):
+		return false
+	if use_protection and materials.get(PROTECTION_SCROLL, 0) < 1:
+		return false
+	return true
+
+
+## Consome Pedra de Refino (e Pergaminho de Proteção, se pedido) e chama
+## `EnchantmentManager.refine_item()` -- se o resultado destrói o item,
+## também desequipa (de onde quer que estivesse) e apaga de `crafted_items`.
+## Retorna o mesmo dicionário de `refine_item()`, ou `{"outcome": "cannot"}`
+## se `can_refine()` já tivesse recusado.
+func refine_instance(instance_id: String, use_protection: bool) -> Dictionary:
+	if not can_refine(instance_id, use_protection):
+		return {"outcome": "cannot", "new_level": 0, "destroyed": false}
+
+	var entry: Dictionary = crafted_items[instance_id]
+	var target_level: int = entry.get("refine_level", 0) + 1
+	materials[REFINE_STONE] -= refine_stone_cost(target_level)
+	if use_protection:
+		materials[PROTECTION_SCROLL] -= 1
+
+	var result: Dictionary = EnchantmentManager.refine_item(entry, use_protection)
+	if result["destroyed"]:
+		_unequip_everywhere(instance_id)
+		crafted_items.erase(instance_id)
+	changed.emit()
+	return result
+
+
+func _unequip_everywhere(instance_id: String) -> void:
+	for slot in SHIP_SLOTS:
+		if equipped[slot] == instance_id:
+			equipped[slot] = ""
+	for i in equipped_cannons.size():
+		if equipped_cannons[i] == instance_id:
+			equipped_cannons[i] = ""
+
+
+## Nome com prefixo de raridade embutido (ex: "Canhão Abissal Tier I da
+## Devastação") e, se refinado, o prefixo de nível na frente (ex: "[+12]
+## Canhão de Ouro") -- o que a UI deveria mostrar em vez do `item_id`/nome-base.
 func get_item_name(instance_id: String) -> String:
 	if instance_id == "" or not crafted_items.has(instance_id):
 		return ""
-	return crafted_items[instance_id].get("display_name", "")
+	var entry: Dictionary = crafted_items[instance_id]
+	var name: String = entry.get("display_name", "")
+	var level: int = entry.get("refine_level", 0)
+	if level > 0:
+		return "[+%d] %s" % [level, name]
+	return name
+
+
+func get_refine_level(instance_id: String) -> int:
+	if instance_id == "" or not crafted_items.has(instance_id):
+		return 0
+	return crafted_items[instance_id].get("refine_level", 0)
 
 
 ## Dicionário de `CraftingManager.RARITIES` (tem `id`/`name`/`color`/
@@ -145,8 +229,9 @@ func get_item_rarity(instance_id: String) -> Dictionary:
 ## Soma os bônus (`hull_bonus`/`cargo_bonus`/`speed_bonus`/`damage_mult_bonus`)
 ## de tudo que está equipado -- `ship_base.gd.recalc_equipment_bonuses()`
 ## chama isso direto, sem duplicar a lógica de percorrer slots lá. Lê
-## `entry["stats"]` (já multiplicado pela raridade daquela instância), não
-## `ItemDatabase`, que só tem o bônus-base de referência.
+## `entry["stats"]` (já multiplicado pela raridade daquela instância) e
+## multiplica de novo pelo bônus de REFINO atual daquela instância --
+## `ItemDatabase` só tem o bônus-base de referência, sem raridade nem refino.
 func get_total_bonuses() -> Dictionary:
 	var totals: Dictionary = {"hull_bonus": 0.0, "cargo_bonus": 0.0, "speed_bonus": 0.0, "damage_mult_bonus": 0.0}
 	var instance_ids: Array = []
@@ -162,7 +247,8 @@ func get_total_bonuses() -> Dictionary:
 		if entry.is_empty():
 			continue
 		var stats: Dictionary = entry.get("stats", {})
+		var refine_mult: float = EnchantmentManager.stat_multiplier_for(entry.get("refine_level", 0))
 		for key in stats:
 			if totals.has(key):
-				totals[key] += stats[key]
+				totals[key] += stats[key] * refine_mult
 	return totals

@@ -4,6 +4,7 @@
 [ext_resource type="Texture2D" path="res://assets/sprites/environment/districts/interiors/blacksmith_forge.png" id="2_bg"]
 [ext_resource type="PackedScene" path="res://scenes/ui/trade_modal.tscn" id="3_modal"]
 [ext_resource type="PackedScene" path="res://scenes/ui/crafting_modal.tscn" id="4_crafting"]
+[ext_resource type="PackedScene" path="res://scenes/ui/refinement_modal.tscn" id="5_refinement"]
 
 [node name="BlacksmithDistrict" type="Control"]
 anchors_preset = 15
@@ -113,3 +114,13 @@ panel_title = "Forja Naval -- Peças do Galeão"
 station = "forja"
 categories = PackedStringArray("armamento", "municao")
 category_labels = PackedStringArray("Canhões", "Munições")
+
+[node name="OpenRefinementButton" type="Button" parent="."]
+offset_left = 24.0
+offset_top = 228.0
+offset_right = 232.0
+offset_bottom = 260.0
+text = "Refinar Equipamento"
+
+[node name="RefinementModal" parent="." instance=ExtResource("5_refinement")]
+visible = false
