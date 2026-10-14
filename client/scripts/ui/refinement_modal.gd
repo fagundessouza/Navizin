@@ -1,12 +1,19 @@
 class_name RefinementModal
 extends Control
 ## Painel de Refino da Forja Naval: lista os itens fabricados do jogador à
-## esquerda, detalhe de refino à direita -- nível atual, chance de sucesso
-## pro próximo nível, custo em Pedra de Refino, opção de usar Pergaminho de
-## Proteção (só relevante a partir de +8, onde existe risco de destruição) e
-## o botão "Tentar Refino". `PlayerInventory.refine_instance()` faz o
-## trabalho de verdade; este painel só monta a interface em cima do que ele
-## já expõe (`can_refine()`, `get_refine_level()`, `get_item_rarity()`).
+## esquerda (com miniatura + nome colorido pela raridade), detalhe de refino
+## à direita -- nível atual, chance de sucesso pro próximo nível, barra de
+## durabilidade (estilo BDO), custo em Pedra de Refino, opção de usar
+## Pergaminho de Proteção (só relevante a partir de +8, onde existe risco de
+## destruição) e o botão "Tentar Refino". `PlayerInventory.refine_instance()`
+## faz o trabalho de verdade; este painel só monta a interface em cima do
+## que ele já expõe (`can_refine()`, `get_refine_level()`, `get_durability()`,
+## `get_item_rarity()`).
+##
+## Auto-seleciona o primeiro item fabricado ao abrir (se houver algum) --
+## antes a tela de detalhe sempre nascia em branco ("Selecione um item à
+## esquerda"), o que podia ler como "abriu vazio"/quebrado mesmo com itens
+## na lista.
 
 signal opened
 signal closed
@@ -16,9 +23,13 @@ const HOVER_COLOR: Color = Color(1.0, 0.92, 0.65, 1.0)
 const NORMAL_FONT_COLOR: Color = Color(0.93, 0.9, 0.84, 1.0)
 const OK_COLOR: Color = Color(0.6, 0.82, 0.5, 1.0)
 const MISSING_COLOR: Color = Color(0.85, 0.4, 0.35, 1.0)
+const ICON_FRAME_SIZE: float = 32.0
+const ICON_BORDER_COLOR: Color = Color(0.78, 0.65, 0.38, 0.9)
 
 @onready var _item_list: VBoxContainer = $Margin/VBox/HBox/Left/Scroll/List
 @onready var _selected_name: Label = $Margin/VBox/HBox/Right/SelectedName
+@onready var _durability_bar: ProgressBar = $Margin/VBox/HBox/Right/DurabilityBar
+@onready var _durability_label: Label = $Margin/VBox/HBox/Right/DurabilityLabel
 @onready var _chance_label: Label = $Margin/VBox/HBox/Right/ChanceLabel
 @onready var _cost_label: Label = $Margin/VBox/HBox/Right/CostLabel
 @onready var _protection_check: CheckBox = $Margin/VBox/HBox/Right/ProtectionCheck
@@ -71,21 +82,61 @@ func _rebuild_item_list() -> void:
 
 	var still_exists: bool = false
 	for instance_id in PlayerInventory.crafted_items:
-		var rarity: Dictionary = PlayerInventory.get_item_rarity(instance_id)
-		var row := Button.new()
-		row.flat = true
-		row.text = PlayerInventory.get_item_name(instance_id)
-		row.add_theme_color_override("font_color", rarity["color"])
-		row.add_theme_color_override("font_hover_color", rarity["color"].lightened(0.3))
-		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		row.pressed.connect(_on_item_row_pressed.bind(instance_id))
-		_item_list.add_child(row)
+		_item_list.add_child(_build_item_row(instance_id))
 		if instance_id == _selected_instance_id:
 			still_exists = true
 
 	if not still_exists:
-		_selected_instance_id = ""
+		# Auto-seleciona o primeiro da lista em vez de deixar o painel de
+		# detalhe em branco -- primeira abertura, ou o item selecionado
+		# sumiu (foi destruído, por exemplo).
+		_selected_instance_id = PlayerInventory.crafted_items.keys()[0]
 	_update_details()
+
+
+func _build_item_row(instance_id: String) -> Control:
+	var rarity: Dictionary = PlayerInventory.get_item_rarity(instance_id)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	row.add_child(_make_icon_frame(PlayerInventory.get_item_icon(instance_id)))
+
+	var button := Button.new()
+	button.flat = true
+	button.text = PlayerInventory.get_item_name(instance_id)
+	button.add_theme_color_override("font_color", rarity["color"])
+	button.add_theme_color_override("font_hover_color", rarity["color"].lightened(0.3))
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.pressed.connect(_on_item_row_pressed.bind(instance_id))
+	row.add_child(button)
+	return row
+
+
+func _make_icon_frame(icon: Texture2D) -> PanelContainer:
+	var frame := PanelContainer.new()
+	frame.custom_minimum_size = Vector2(ICON_FRAME_SIZE, ICON_FRAME_SIZE)
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.05, 0.04, 0.04, 0.9)
+	style.border_width_left = 1
+	style.border_width_top = 1
+	style.border_width_right = 1
+	style.border_width_bottom = 1
+	style.border_color = ICON_BORDER_COLOR
+	style.corner_radius_top_left = 3
+	style.corner_radius_top_right = 3
+	style.corner_radius_bottom_left = 3
+	style.corner_radius_bottom_right = 3
+	style.content_margin_left = 2
+	style.content_margin_top = 2
+	style.content_margin_right = 2
+	style.content_margin_bottom = 2
+	frame.add_theme_stylebox_override("panel", style)
+
+	var icon_rect := TextureRect.new()
+	icon_rect.texture = icon
+	icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	frame.add_child(icon_rect)
+	return frame
 
 
 func _on_item_row_pressed(instance_id: String) -> void:
@@ -106,6 +157,8 @@ func _update_details() -> void:
 	if _selected_instance_id == "" or not PlayerInventory.crafted_items.has(_selected_instance_id):
 		_selected_name.text = "Selecione um item à esquerda."
 		_selected_name.remove_theme_color_override("font_color")
+		_durability_bar.value = 0.0
+		_durability_label.text = ""
 		_chance_label.text = ""
 		_cost_label.text = ""
 		_protection_check.disabled = true
@@ -118,6 +171,11 @@ func _update_details() -> void:
 	var rarity: Dictionary = PlayerInventory.get_item_rarity(instance_id)
 	_selected_name.text = PlayerInventory.get_item_name(instance_id)
 	_selected_name.add_theme_color_override("font_color", rarity["color"])
+
+	var durability: float = PlayerInventory.get_durability(instance_id)
+	_durability_bar.max_value = PlayerInventory.MAX_DURABILITY
+	_durability_bar.value = durability
+	_durability_label.text = "Durabilidade: %d/%d" % [int(durability), int(PlayerInventory.MAX_DURABILITY)]
 
 	if level >= EnchantmentManager.MAX_LEVEL:
 		_chance_label.text = "Nível máximo (+15) já alcançado."

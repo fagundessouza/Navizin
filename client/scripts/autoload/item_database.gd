@@ -41,7 +41,7 @@ const _TIER_MATERIALS: Dictionary = {
 	],
 	"vela": [
 		{"Lona": 3, "Cordame": 2, "Vento Rúnico": 1},
-		{"Couro": 3, "Cordame": 3, "Vento Rúnico": 2},
+		{"Lona Reforçada": 3, "Cordame": 3, "Vento Rúnico": 2},
 		{"Seda": 3, "Cordame": 4, "Vento Rúnico": 3},
 		{"Seda": 5, "Cordame": 6, "Vento Rúnico": 5},
 	],
@@ -107,15 +107,24 @@ const _TIER_DISPLAY_NAMES: Dictionary = {
 	"brincos": "Brincos", "colar": "Colar", "anel": "Anel", "cinto": "Cinto", "trajes": "Trajes",
 }
 
-## Ícone por categoria: um só por tier pros 4 itens de peça do Galeão (não há
-## arte dedicada por tier ainda), 4 distintos (um por tier, ordem de
-## "fantasia" crescente) pros acessórios do Capitão -- extraídos da prancha
-## `Gemini_Generated_Image...zb2.jpeg` que o pedido referenciou por nome de
-## arquivo genérico.
-const _CATEGORY_ICON: Dictionary = {
-	"armamento": "armamento.png", "vela": "vela.png", "casco": "casco.png", "proa": "proa_figurehead.png",
-}
+## Ícone POR TIER (4 distintos, ordem de "fantasia" crescente) pra cada
+## categoria tierizada -- Canhão/Vela/Casco/Proa vêm de
+## "Catálogo Gótico de Armas Navais.png" (Linha 1 = Canhões, Linhas 2/3/4 =
+## Velas/Cascos/Proas, nessa ordem -- é como a própria imagem organiza, não
+## uma escolha nossa); os 5 acessórios do Capitão vêm da prancha
+## `Gemini_Generated_Image...zb2.jpeg` (uma rodada anterior).
+##
+## ROLETA ANTERIOR CORRIGIDA: até a rodada passada, Canhão/Vela/Casco/Proa
+## usavam 1 ícone genérico reaproveitado de OUTRAS pranchas (pin de distrito,
+## traje de capitão) por categoria inteira -- "Catálogo Gótico de Armas
+## Navais.png" já existia em `~/Downloads/Tortuga/` desde antes, só nunca
+## tinha sido localizado/usado. Agora cada tier tem o ícone de verdade da
+## linha/coluna certa dessa prancha.
 const _TIER_ICONS: Dictionary = {
+	"armamento": ["armamento_t1.png", "armamento_t2.png", "armamento_t3.png", "armamento_t4.png"],
+	"vela": ["vela_t1.png", "vela_t2.png", "vela_t3.png", "vela_t4.png"],
+	"casco": ["casco_t1.png", "casco_t2.png", "casco_t3.png", "casco_t4.png"],
+	"proa": ["proa_t1.png", "proa_t2.png", "proa_t3.png", "proa_t4.png"],
 	"brincos": ["brincos_t1.png", "brincos_t2.png", "brincos_t3.png", "brincos_t4.png"],
 	"colar": ["colar_t1.png", "colar_t2.png", "colar_t3.png", "colar_t4.png"],
 	"anel": ["anel_t1.png", "anel_t2.png", "anel_t3.png", "anel_t4.png"],
@@ -128,18 +137,23 @@ const _TIER_ICONS: Dictionary = {
 ## existir bordada por tipo de bala. `elemental_damage_bonus` é só pra
 ## tooltip mostrar o dano elemental da munição, sem sistema de troca de
 ## bala pra consumir isso ainda.
+##
+## Ícone de cada tipo vem da LINHA certa de "Catálogo de Munições
+## Fantásticas.png" (Pólvora/Fogo/Gelo/Veneno/Prata/Ouro/Diamante/Cursada,
+## 8 linhas) -- a prancha não tem uma 9ª linha separada pra Alma, então
+## reaproveita o ícone de Cursada (os dois são "sombrios", a diferença fica
+## só no nome/bônus).
 const _AMMO: Array[Dictionary] = [
-	{"id": "municao_polvora", "name": "Munição de Pólvora", "materials": {"Esfera de Ferro": 2, "Pólvora": 1}, "stats": {}},
-	{"id": "municao_fogo", "name": "Munição de Fogo", "materials": {"Esfera de Ferro": 2, "Minério de Fogo": 1}, "stats": {"elemental_damage_bonus": 0.12}},
-	{"id": "municao_gelo", "name": "Munição de Gelo", "materials": {"Esfera de Ferro": 2, "Minério de Gelo": 1}, "stats": {"elemental_damage_bonus": 0.12}},
-	{"id": "municao_veneno", "name": "Munição de Veneno", "materials": {"Esfera de Ferro": 2, "Minério de Veneno": 1}, "stats": {"elemental_damage_bonus": 0.1}},
-	{"id": "municao_prata", "name": "Munição de Prata", "materials": {"Esfera de Ferro": 2, "Minério de Prata": 1}, "stats": {"elemental_damage_bonus": 0.15}},
-	{"id": "municao_ouro", "name": "Munição de Ouro", "materials": {"Esfera de Ferro": 2, "Minério de Ouro": 1}, "stats": {"elemental_damage_bonus": 0.15}},
-	{"id": "municao_diamante", "name": "Munição de Diamante", "materials": {"Esfera de Ferro": 2, "Minério de Diamante": 1}, "stats": {"elemental_damage_bonus": 0.2}},
-	{"id": "municao_alma", "name": "Munição de Alma", "materials": {"Esfera de Ferro": 2, "Minério de Alma": 1}, "stats": {"elemental_damage_bonus": 0.22}},
-	{"id": "municao_cursada", "name": "Munição Cursada", "materials": {"Esfera de Ferro": 2, "Minério Amaldiçoado": 1}, "stats": {"elemental_damage_bonus": 0.25}},
+	{"id": "municao_polvora", "name": "Munição de Pólvora", "materials": {"Esfera de Ferro": 2, "Pólvora": 1}, "stats": {}, "icon": "municao_polvora.png"},
+	{"id": "municao_fogo", "name": "Munição de Fogo", "materials": {"Esfera de Ferro": 2, "Minério de Fogo": 1}, "stats": {"elemental_damage_bonus": 0.12}, "icon": "municao_fogo.png"},
+	{"id": "municao_gelo", "name": "Munição de Gelo", "materials": {"Esfera de Ferro": 2, "Minério de Gelo": 1}, "stats": {"elemental_damage_bonus": 0.12}, "icon": "municao_gelo.png"},
+	{"id": "municao_veneno", "name": "Munição de Veneno", "materials": {"Esfera de Ferro": 2, "Minério de Veneno": 1}, "stats": {"elemental_damage_bonus": 0.1}, "icon": "municao_veneno.png"},
+	{"id": "municao_prata", "name": "Munição de Prata", "materials": {"Esfera de Ferro": 2, "Minério de Prata": 1}, "stats": {"elemental_damage_bonus": 0.15}, "icon": "municao_prata.png"},
+	{"id": "municao_ouro", "name": "Munição de Ouro", "materials": {"Esfera de Ferro": 2, "Minério de Ouro": 1}, "stats": {"elemental_damage_bonus": 0.15}, "icon": "municao_ouro.png"},
+	{"id": "municao_diamante", "name": "Munição de Diamante", "materials": {"Esfera de Ferro": 2, "Minério de Diamante": 1}, "stats": {"elemental_damage_bonus": 0.2}, "icon": "municao_diamante.png"},
+	{"id": "municao_alma", "name": "Munição de Alma", "materials": {"Esfera de Ferro": 2, "Minério de Alma": 1}, "stats": {"elemental_damage_bonus": 0.22}, "icon": "municao_alma.png"},
+	{"id": "municao_cursada", "name": "Munição Cursada", "materials": {"Esfera de Ferro": 2, "Minério Amaldiçoado": 1}, "stats": {"elemental_damage_bonus": 0.25}, "icon": "municao_cursada.png"},
 ]
-const _AMMO_ICON: String = "municao.png"
 
 ## "Relíquias Místicas em Grade Gótica": 4 relíquias distintas (o pedido diz
 ## "etc.", ficou em 4 pra cobrir os dois materiais-chave citados -- Essência
@@ -173,7 +187,7 @@ const _GRIMOIRES: Array[Dictionary] = [
 
 func _ready() -> void:
 	_register_tiered_catalog()
-	_register_flat_catalog(_AMMO, "municao", "forja", _AMMO_ICON)
+	_register_flat_catalog(_AMMO, "municao", "forja", "")
 	_register_flat_catalog(_RELICS, "relíquia_ebenruth", "boticario", "")
 	_register_flat_catalog(_HELM, "leme", "estaleiro", _HELM_ICON)
 	_register_flat_catalog(_GRIMOIRES, "grimorio", "feira", "")
@@ -195,7 +209,7 @@ func _register_tiered_catalog() -> void:
 			var tier_num: int = tier_index + 1
 			var item_id: String = "%s_t%d" % [category, tier_num]
 			var item_name: String = "%s Tier %s" % [display, TIER_NAMES[tier_index]]
-			var icon_file: String = _TIER_ICONS[category][tier_index] if _TIER_ICONS.has(category) else _CATEGORY_ICON.get(category, "")
+			var icon_file: String = _TIER_ICONS[category][tier_index]
 			ITEMS[item_id] = {
 				"id": item_id,
 				"name": item_name,

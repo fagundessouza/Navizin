@@ -28,6 +28,13 @@ const OK_COLOR: Color = Color(0.6, 0.82, 0.5, 1.0)
 const MISSING_COLOR: Color = Color(0.85, 0.4, 0.35, 1.0)
 const ICON_FRAME_SIZE: float = 40.0
 const ICON_BORDER_COLOR: Color = Color(0.78, 0.65, 0.38, 0.9)
+const RARITY_GLOW_SHADER: Shader = preload("res://assets/shaders/item_rarity_glow.gdshader")
+## Pulso ambiente dourado em toda miniatura de receita (não é uma raridade de
+## verdade -- a receita ainda não foi fabricada, não rolou nada). Tier IV
+## (o mais alto de cada categoria tierizada) ganha o efeito de faíscas, no
+## espírito de "Lendário/Divino" pedido -- é o tier mais cobiçado da
+## categoria, mesmo antes de qualquer raridade rolar.
+const AMBIENT_GLOW_COLOR: Color = Color(0.9, 0.8, 0.5, 1.0)
 
 @onready var _tabs_box: HBoxContainer = $Margin/VBox/Tabs
 @onready var _pages_root: Control = $Margin/VBox/Pages
@@ -131,7 +138,7 @@ func _build_recipe_row(item_id: String) -> Control:
 	var outer := HBoxContainer.new()
 	outer.add_theme_constant_override("separation", 10)
 	row.add_child(outer)
-	outer.add_child(_make_icon_frame(item.get("icon")))
+	outer.add_child(_make_icon_frame(item.get("icon"), item.get("tier", 0)))
 
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 4)
@@ -178,8 +185,10 @@ func _build_recipe_row(item_id: String) -> Control:
 ## Miniatura com borda gótica ao lado do nome da receita -- "exibir a
 ## miniatura da arte do item" pedido explicitamente. `icon` vem nulo pros
 ## poucos itens sem arte dedicada ainda; `TextureRect` com textura nula só
-## fica em branco dentro da moldura, sem quebrar nada.
-func _make_icon_frame(icon: Texture2D) -> PanelContainer:
+## fica em branco dentro da moldura, sem quebrar nada. A borda usa
+## `item_rarity_glow.gdshader` ativo (pedido explícito), com faíscas pro
+## Tier IV de cada categoria.
+func _make_icon_frame(icon: Texture2D, tier: int) -> PanelContainer:
 	var frame := PanelContainer.new()
 	frame.custom_minimum_size = Vector2(ICON_FRAME_SIZE, ICON_FRAME_SIZE)
 	var style := StyleBoxFlat.new()
@@ -204,6 +213,18 @@ func _make_icon_frame(icon: Texture2D) -> PanelContainer:
 	icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	frame.add_child(icon_rect)
+
+	var glow := ColorRect.new()
+	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	glow.set_anchors_preset(Control.PRESET_FULL_RECT)
+	glow.color = Color.WHITE
+	var mat := ShaderMaterial.new()
+	mat.shader = RARITY_GLOW_SHADER
+	mat.set_shader_parameter("rarity_color", AMBIENT_GLOW_COLOR)
+	mat.set_shader_parameter("aura_mode", 1 if tier >= 4 else 0)
+	mat.set_shader_parameter("intensity", 0.7)
+	glow.material = mat
+	frame.add_child(glow)
 	return frame
 
 

@@ -19,6 +19,15 @@ const PROTECTION_SCROLL: String = "Pergaminho de Proteção"
 const REFINE_STARTER_QTY: int = 30
 const PROTECTION_STARTER_QTY: int = 5
 
+## Durabilidade estilo BDO: todo item nasce no máximo, refinar gasta um
+## pouco mesmo quando dá certo (o metal/tecido sofre no processo), e gasta
+## MUITO mais numa falha (o jato de pólvora/martelada que não deu certo
+## estressa o material). Não trava o refino em 0 -- é desgaste visível, não
+## um bloqueio duro, pra não precisar de um sistema de "reparo" nesta rodada.
+const MAX_DURABILITY: float = 100.0
+const DURABILITY_COST_SUCCESS: float = 3.0
+const DURABILITY_COST_FAILURE: float = 10.0
+
 ## Slots de peça única do Galeão (fora a grade de canhão, que é `equipped_cannons`).
 const SHIP_SLOTS: Array[String] = ["vela", "casco", "leme", "proa", "relíquia_ebenruth"]
 ## Slots de equipamento do Capitão -- ficha do capitão, não o navio. Separado
@@ -111,6 +120,7 @@ func craft(item_id: String) -> String:
 		"rarity_id": rarity["id"],
 		"display_name": display_name,
 		"stats": stats,
+		"durability": MAX_DURABILITY,
 		"float_value": float_value,
 	}
 	changed.emit()
@@ -210,8 +220,17 @@ func refine_instance(instance_id: String, use_protection: bool) -> Dictionary:
 	if result["destroyed"]:
 		_unequip_everywhere(instance_id)
 		crafted_items.erase(instance_id)
+	else:
+		var cost: float = DURABILITY_COST_SUCCESS if result["outcome"] == "success" else DURABILITY_COST_FAILURE
+		entry["durability"] = clampf(entry.get("durability", MAX_DURABILITY) - cost, 0.0, MAX_DURABILITY)
 	changed.emit()
 	return result
+
+
+func get_durability(instance_id: String) -> float:
+	if instance_id == "" or not crafted_items.has(instance_id):
+		return 0.0
+	return crafted_items[instance_id].get("durability", MAX_DURABILITY)
 
 
 func _unequip_everywhere(instance_id: String) -> void:

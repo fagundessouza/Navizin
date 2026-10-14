@@ -197,12 +197,15 @@ func _refresh_one_slot(button: Button, glow: ColorRect, instance_id: String, emp
 func _aura_mode_for(instance_id: String, rarity: Dictionary, float_value: float, refine_level: int) -> int:
 	var item_id: String = PlayerInventory.crafted_items.get(instance_id, {}).get("item_id", "")
 	var category: String = ItemDatabase.get_item(item_id).get("category", "")
+	var default_aura: int = rarity.get("default_aura", 0)
 	if category == "grimorio" and (float_value >= 0.90 or refine_level >= 10):
 		return 3  # AURA_RUNIC
 	if float_value >= 0.95:
 		return 2  # AURA_DARK_FIRE
-	if refine_level >= 10 or rarity.get("lightning", false):
-		return 1  # AURA_ELECTRIC
+	if refine_level >= 10:
+		return default_aura if default_aura != 0 else 1
+	if default_aura != 0:
+		return default_aura
 	return 0  # AURA_NONE
 
 

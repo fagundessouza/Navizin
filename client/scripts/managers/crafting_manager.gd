@@ -8,14 +8,26 @@ extends Node
 
 ## Ordem importa pro sorteio por peso (cumulativo), mas também é a ordem de
 ## "poder": White é a mais fraca, Red a mais forte.
+##
+## Cores em hex exato pedido (White/Blue/Yellow/Purple/Red) -- as 2 faixas
+## intermediárias que o pedido não listou (Bom/Místico) tiveram sua cor
+## trocada também, pra "remover a fonte em verde genérico": Bom usava um
+## verde puro antes, virou um creme pálido (nem branco puro de Normal, nem
+## nenhuma cor nova inventada sem pedido).
+##
+## `default_aura`: a aura que a raridade liga por padrão mesmo sem Float/
+## Refino alto (`_aura_mode_for()` em `ship_status_modal.gd`/
+## `captain_profile_modal.gd` só cai nisso depois de checar Relíquia/
+## Grimório e Float≥0.95) -- Lendário "com brilho" = elétrico (1), Divino
+## "com chama" = fogo sombrio (2), o resto fica 0 (só pulso) por padrão.
 const RARITIES: Array[Dictionary] = [
-	{"id": "white", "name": "Normal", "color": Color(0.82, 0.82, 0.8, 1.0), "weight": 50.0, "mult": 1.0, "lightning": false},
-	{"id": "green", "name": "Bom", "color": Color(0.35, 0.85, 0.4, 1.0), "weight": 25.0, "mult": 1.15, "lightning": false},
-	{"id": "blue", "name": "Raro", "color": Color(0.35, 0.6, 0.98, 1.0), "weight": 13.0, "mult": 1.35, "lightning": false},
-	{"id": "yellow", "name": "Épico", "color": Color(0.96, 0.85, 0.25, 1.0), "weight": 7.0, "mult": 1.6, "lightning": false},
-	{"id": "orange", "name": "Místico", "color": Color(0.96, 0.55, 0.15, 1.0), "weight": 3.0, "mult": 2.0, "lightning": false},
-	{"id": "purple", "name": "Lendário", "color": Color(0.68, 0.32, 0.92, 1.0), "weight": 1.5, "mult": 2.5, "lightning": true},
-	{"id": "red", "name": "Divino", "color": Color(0.92, 0.18, 0.18, 1.0), "weight": 0.5, "mult": 3.5, "lightning": true},
+	{"id": "white", "name": "Normal", "color": Color("#FFFFFF"), "weight": 50.0, "mult": 1.0, "default_aura": 0},
+	{"id": "green", "name": "Bom", "color": Color(0.88, 0.85, 0.72, 1.0), "weight": 25.0, "mult": 1.15, "default_aura": 0},
+	{"id": "blue", "name": "Raro", "color": Color("#0088FF"), "weight": 13.0, "mult": 1.35, "default_aura": 0},
+	{"id": "yellow", "name": "Épico", "color": Color("#FFD700"), "weight": 7.0, "mult": 1.6, "default_aura": 0},
+	{"id": "orange", "name": "Místico", "color": Color(0.96, 0.55, 0.15, 1.0), "weight": 3.0, "mult": 2.0, "default_aura": 0},
+	{"id": "purple", "name": "Lendário", "color": Color("#A020F0"), "weight": 1.5, "mult": 2.5, "default_aura": 1},
+	{"id": "red", "name": "Divino", "color": Color("#FF2222"), "weight": 0.5, "mult": 3.5, "default_aura": 2},
 ]
 
 ## Sem prefixo/sufixo pro White -- ele fica só com o nome-base do item

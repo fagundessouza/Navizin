@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/refinement_modal.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/ui/processed/modal_frame_iron.png" id="2_frame"]
@@ -8,6 +8,36 @@
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_gothic"]
 shader = ExtResource("3_gothic")
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_left"]
+bg_color = Color(0.07, 0.06, 0.05, 0.85)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.5, 0.42, 0.26, 0.6)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_left = 4
+corner_radius_bottom_right = 4
+content_margin_left = 6
+content_margin_top = 6
+content_margin_right = 6
+content_margin_bottom = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_durability_fill"]
+bg_color = Color(0.6, 0.75, 0.42, 0.92)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_left = 3
+corner_radius_bottom_right = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_durability_bg"]
+bg_color = Color(0.12, 0.1, 0.08, 0.9)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_left = 3
+corner_radius_bottom_right = 3
 
 [node name="RefinementModal" type="Control"]
 anchors_preset = 8
@@ -100,6 +130,7 @@ theme_override_constants/separation = 16
 [node name="Left" type="PanelContainer" parent="Margin/VBox/HBox"]
 custom_minimum_size = Vector2(230, 0)
 layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_left")
 
 [node name="Scroll" type="ScrollContainer" parent="Margin/VBox/HBox/Left"]
 layout_mode = 2
@@ -119,6 +150,21 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "Selecione um item à esquerda."
 autowrap_mode = 3
+
+[node name="DurabilityBar" type="ProgressBar" parent="Margin/VBox/HBox/Right"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 14)
+theme_override_styles/fill = SubResource("StyleBoxFlat_durability_fill")
+theme_override_styles/background = SubResource("StyleBoxFlat_durability_bg")
+max_value = 100.0
+value = 100.0
+show_percentage = false
+
+[node name="DurabilityLabel" type="Label" parent="Margin/VBox/HBox/Right"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.78, 0.82, 0.7, 1)
+theme_override_font_sizes/font_size = 12
+text = "Durabilidade: 100/100"
 
 [node name="ChanceLabel" type="Label" parent="Margin/VBox/HBox/Right"]
 layout_mode = 2

@@ -3,6 +3,21 @@
 > Arquivo de contexto. Ao iniciar uma sessão nova, diga **"Carregar checkpoint"** e leia só este arquivo.
 > Ao final de cada sessão ou marco, diga **"Salvar checkpoint"** para atualizá-lo.
 
+## Checkpoint atual (2026-10-13h) — branch `feature/town-hub-redesign`
+
+**Correção de fundo: os ícones de Canhão/Vela/Casco/Proa/Munição estavam reaproveitados de pranchas erradas. Cores de raridade exatas. Durabilidade estilo BDO no Refino.**
+
+- **As 3 imagens que faltavam JÁ ESTAVAM em `~/Downloads/Tortuga/`** desde a rodada passada (`Catálogo Gótico de Armas Navais.png`, `Catálogo de Munições Fantásticas.png`, `Relíquias Místicas em Grade Gótica.png`, datadas de 13/10 21:54-21:55) -- só nunca tinham sido localizadas/usadas. Até este checkpoint, Canhão/Vela/Casco/Proa usavam 1 ícone genérico reaproveitado de OUTRAS pranchas (pin de distrito, traje de capitão) por categoria inteira; Munição usava o mesmo ícone genérico pros 9 tipos. Corrigido: extraí 16 ícones por tier (Linha 1 = Canhões, Linhas 2/3/4 = Velas/Cascos/Proas, exatamente como a prancha organiza) + 9 por tipo de munição (uma linha por elemento) + recortei de novo as 4 Relíquias com arte mais fiel ao tema de cada uma.
+- **Vela Tier II usava "Couro" como material** -- sinalizado como colisão temática com os materiais do Capitão (Cinto/Trajes também usam Couro); trocado pra "Lona Reforçada".
+- **Cores de raridade exatas** (`CraftingManager.RARITIES`): Normal #FFFFFF, Raro #0088FF, Épico #FFD700, Lendário #A020F0, Divino #FF2222 -- Bom (que usava um verde puro, a "fonte verde genérico" do pedido) virou um creme pálido, sem usar verde em lugar nenhum.
+- **Aura por raridade, não só por Refino/Float**: Lendário "com brilho" agora sempre pulsa elétrico por padrão (`default_aura`), Divino "com chama" sempre pulsa fogo sombrio por padrão -- antes os dois caíam genericamente no mesmo efeito elétrico.
+- **`CraftingModal`**: cada card de receita ganhou o shader de brilho ativo (pulso ambiente dourado; Tier IV de cada categoria ganha faíscas, no espírito "Lendário/Divino" já que ainda não existe raridade antes de fabricar).
+- **`RefinementModal` corrigido**: painel esquerdo tinha ZERO estilo de fundo próprio (herdava o estilo padrão do tema, podendo parecer "transparência bugada") -- ganhou um `StyleBoxFlat` sólido explícito. Lista de itens ganhou miniatura com borda gótica (antes só texto). Auto-seleciona o primeiro item fabricado ao abrir, em vez de nascer com o painel de detalhe em branco. Ganhou barra de durabilidade estilo BDO: todo item nasce em 100, refinar gasta um pouco mesmo no sucesso (-3) e bem mais na falha (-10) -- não trava o refino em 0, é desgaste visível, sem sistema de reparo ainda.
+
+**Verificado rodando o jogo de verdade:** as 5 cores de raridade batem exatamente com o hex pedido; ícones por tier/tipo são todos distintos entre si; cards de receita mostram o canhão/vela/casco/proa certo da prancha nova, com brilho ativo; painel de Refino abre já com um item selecionado, mostra a barra de durabilidade em 100/100, e depois de um refino bem-sucedido ela caiu pra 97/100 com "[+1]" aparecendo no nome -- tudo confirmado por captura de tela.
+
+---
+
 ## Checkpoint atual (2026-10-13g) — branch `feature/town-hub-redesign`
 
 **Rodada enorme: gerenciador de modais, ícones reais nos acessórios do Capitão, reestruturação de 6 distritos, Float Value e auras D&D/BDO.**
