@@ -18,6 +18,14 @@ extends Control
 ## Os 2 círculos grandes "+" nas pontas do rodapé (visíveis na arte) não
 ## entraram na lista do pedido (5 slots + grade + barra + 4 botões) e ficaram
 ## de fora por ora -- decorativos, sem função atribuída.
+##
+## EQUIPAR DE VERDADE: cada slot (os 5 de craft + os 20 de canhão) abre o
+## `InventoryPickerSubmodal` em modo de equipamento -- ele já sabe ler
+## `PlayerInventory` sozinho, aqui só processamos `instance_selected` pra
+## chamar `PlayerInventory.equip_slot()`/`equip_cannon()` com o slot certo
+## e atualizar o tooltip. `PlayerInventory.changed` (equipar OU fabricar)
+## também recalcula os atributos reais do navio via
+## `ship_base.gd.recalc_equipment_bonuses()`, mostrados ao vivo em `_stats_label`.
 
 signal opened
 signal closed
@@ -47,8 +55,6 @@ const FOOTER_BUTTONS: Array[Dictionary] = [
 const FOOTER_BUTTON_SIZE: float = 46.0
 const CREW_BUTTON_INDEX: int = 2
 
-const WEIGHT_BAR_RECT: Rect2 = Rect2(609.4, 433.1, 140.6, 15.6)
-
 const PULSE_SCALE: Vector2 = Vector2(1.3, 1.3)
 const GLOW_COLOR: Color = Color(1.4, 1.25, 0.8, 1.0)
 
@@ -57,8 +63,17 @@ const GLOW_COLOR: Color = Color(1.4, 1.25, 0.8, 1.0)
 @onready var _picker: InventoryPickerSubmodal = $Picker
 @onready var _crew_submodal: CrewManagementSubmodal = $CrewManagementSubmodal
 @onready var _weight_bar: ProgressBar = $WeightBar
+@onready var _stats_label: Label = $StatsLabel
 
 var _ship: Node2D = null
+## category -> Button, pros 5 slots de peça única.
+var _slot_buttons: Dictionary = {}
+## índice 0..19 -> Button, pra grade de canhão.
+var _cannon_buttons: Array[Button] = []
+## Qual canhão (índice) o picker está servindo agora -- só importa quando
+## `_picker._category == "armamento"`, já que aí um nome de categoria sozinho
+## não diz QUAL dos 20 slots equipar.
+var _pending_cannon_index: int = -1
 
 
 func _ready() -> void:
@@ -67,6 +82,9 @@ func _ready() -> void:
 	_build_craft_slots()
 	_build_cannon_grid()
 	_build_footer_buttons()
+	_picker.instance_selected.connect(_on_instance_selected)
+	PlayerInventory.changed.connect(_refresh_slot_labels)
+	_refresh_slot_labels()
 
 
 func _process(_delta: float) -> void:
@@ -75,6 +93,7 @@ func _process(_delta: float) -> void:
 	if _ship == null:
 		_ship = get_tree().get_first_node_in_group("player_ship") as Node2D
 	_update_weight_bar()
+	_update_stats_label()
 
 
 func open() -> void:
@@ -91,24 +110,30 @@ func close() -> void:
 
 func _build_craft_slots() -> void:
 	for data in CRAFT_SLOTS:
-		_add_equip_slot(data["cx"], data["cy"], data["size"], data["category"], data["label"])
+		var button := _make_slot_button(data["cx"], data["cy"], data["size"], data["label"])
+		button.pressed.connect(_on_slot_pressed.bind(button, data["category"], data["label"]))
+		_slot_buttons[data["category"]] = button
 
 
 func _build_cannon_grid() -> void:
+	var index: int = 0
 	for row_y in CANNON_ROWS:
 		for col_x in CANNON_COLS:
-			_add_equip_slot(col_x, row_y, CANNON_SLOT_SIZE, "armamento", "Armamento")
+			var button := _make_slot_button(col_x, row_y, CANNON_SLOT_SIZE, "Armamento")
+			button.pressed.connect(_on_cannon_pressed.bind(button, index))
+			_cannon_buttons.append(button)
+			index += 1
 
 
-func _add_equip_slot(cx: float, cy: float, size: float, category: String, label: String) -> void:
+func _make_slot_button(cx: float, cy: float, size: float, label: String) -> Button:
 	var button := Button.new()
 	button.flat = true
 	button.custom_minimum_size = Vector2(size, size)
 	button.position = Vector2(cx - size / 2.0, cy - size / 2.0)
 	button.size = Vector2(size, size)
 	button.tooltip_text = label
-	button.pressed.connect(_on_slot_pressed.bind(button, category, label))
 	_slots_root.add_child(button)
+	return button
 
 
 func _build_footer_buttons() -> void:
@@ -129,8 +154,41 @@ func _build_footer_buttons() -> void:
 
 
 func _on_slot_pressed(button: Button, category: String, label: String) -> void:
+	_pending_cannon_index = -1
 	_pulse(button)
 	_open_picker_near(button, category, label)
+
+
+func _on_cannon_pressed(button: Button, index: int) -> void:
+	_pending_cannon_index = index
+	_pulse(button)
+	_open_picker_near(button, "armamento", "Armamento (slot %d)" % (index + 1))
+
+
+func _on_instance_selected(category: String, instance_id: String) -> void:
+	if category == "armamento":
+		if _pending_cannon_index >= 0:
+			PlayerInventory.equip_cannon(_pending_cannon_index, instance_id)
+		_pending_cannon_index = -1
+	else:
+		PlayerInventory.equip_slot(category, instance_id)
+
+
+## Reescreve o tooltip de cada slot com o nome do item equipado (ou a
+## etiqueta genérica se vazio) -- chamado em `_ready()` e toda vez que
+## `PlayerInventory.changed` dispara, pra refletir equipar/fabricar/trocar.
+func _refresh_slot_labels() -> void:
+	for data in CRAFT_SLOTS:
+		var category: String = data["category"]
+		var button: Button = _slot_buttons[category]
+		var instance_id: String = PlayerInventory.equipped.get(category, "")
+		var item_name: String = PlayerInventory.get_item_name(instance_id)
+		button.tooltip_text = "%s\n%s" % [data["label"], item_name] if item_name != "" else data["label"]
+
+	for i in _cannon_buttons.size():
+		var instance_id: String = PlayerInventory.equipped_cannons[i]
+		var item_name: String = PlayerInventory.get_item_name(instance_id)
+		_cannon_buttons[i].tooltip_text = "Slot %d\n%s" % [i + 1, item_name] if item_name != "" else "Armamento (slot %d)" % (i + 1)
 
 
 ## Abre a Tripulação como um overlay flutuante sobre a própria ficha do
@@ -173,3 +231,18 @@ func _update_weight_bar() -> void:
 	var data: ShipData = _ship.data
 	_weight_bar.max_value = data.max_cargo
 	_weight_bar.value = data.cargo_weight
+
+
+## Os 4 atributos reais recalculados por `ship_base.gd.recalc_equipment_bonuses()`
+## -- não é um resumo cosmético, são os valores que o navio está usando de
+## verdade pra velocidade/casco/carga (o dano só não tem onde ser testado em
+## combate ainda, mas o número já é o que um sistema de dano usaria).
+func _update_stats_label() -> void:
+	if _ship == null:
+		return
+	_stats_label.text = "Dano: %.2fx   Velocidade: %d px/s   Casco Máx: %d   Carga Máx: %d" % [
+		_ship.cannon_damage_mult,
+		int(_ship.data.max_speed),
+		int(_ship.max_hull),
+		int(_ship.data.max_cargo),
+	]

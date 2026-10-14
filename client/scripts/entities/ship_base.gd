@@ -186,6 +186,18 @@ var hull: float = 1000.0
 var supply: float = 1000.0
 const SUPPLY_PER_PX: float = 0.02
 
+## Teto de casco/carga/velocidade ANTES de bônus de equipamento -- capturado
+## uma vez em `_ready()`, porque `recalc_equipment_bonuses()` soma em cima
+## disso a cada vez que o `PlayerInventory` muda, nunca em cima do valor já
+## bonificado da chamada anterior (senão reequipar duplicava o bônus).
+var _base_max_hull: float = 1000.0
+var _base_max_cargo: float = 100.0
+var _base_max_speed: float = 78.0
+## Multiplicador de dano por disparo somado pelos canhões equipados (1.0 =
+## sem bônus). Calculado e exposto pra UI mesmo sem resolução de combate de
+## verdade ainda (nenhum navio inimigo/alvo existe pra aplicar isso hoje).
+var cannon_damage_mult: float = 1.0
+
 
 ## Casco mudou: valor atual e máximo, para a interface do capitão.
 signal hull_changed(hull_value: float, max_value: float)
@@ -224,6 +236,18 @@ func _ready() -> void:
 	_wind = get_node("/root/WindManager")
 	if data == null:
 		data = ShipData.new()
+	else:
+		# Duplica o recurso: sem isso, equipar um Canhão Tier IV mudaria
+		# `data.max_speed` no `.tres` compartilhado, afetando qualquer outro
+		# navio que aponte pro mesmo recurso (ainda não existe NPC usando
+		# `ship_base.tscn`, mas é barato evitar a armadilha agora).
+		data = data.duplicate()
+	_base_max_hull = max_hull
+	_base_max_cargo = data.max_cargo
+	_base_max_speed = data.max_speed
+	if player_controlled:
+		PlayerInventory.changed.connect(recalc_equipment_bonuses)
+		recalc_equipment_bonuses()
 	for node in [_sprite, _shadow]:
 		node.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	# O sprite fica atrás do desenho do próprio navio (trilhos de mira).
@@ -926,3 +950,25 @@ func broadside_ratio() -> float:
 ## Reabastece em ilha. Ainda sem ilhas no mapa, fica disponível para quando existirem.
 func regen_supply(amount: float) -> void:
 	supply = minf(max_supply, supply + amount)
+
+
+## Recalcula casco máximo, carga máxima, velocidade máxima e o multiplicador
+## de dano por disparo a partir do que está equipado em `PlayerInventory`
+## (Vela/Casco/Leme/Proa/Relíquia + os 20 canhões) -- chamado toda vez que
+## `PlayerInventory.changed` dispara (equipar/desequipar/fabricar), não só
+## uma vez no `_ready()`.
+##
+## Sempre soma em cima de `_base_*` (o valor ANTES de qualquer bônus), nunca
+## em cima do `max_hull`/`data.max_speed` já bonificado -- senão reequipar o
+## mesmo item duas vezes ia empilhar o bônus de novo a cada chamada.
+func recalc_equipment_bonuses() -> void:
+	var bonuses: Dictionary = PlayerInventory.get_total_bonuses()
+
+	var old_max_hull: float = max_hull
+	max_hull = _base_max_hull + bonuses["hull_bonus"]
+	hull = clampf(hull + (max_hull - old_max_hull), 0.0, max_hull)
+	hull_changed.emit(hull, max_hull)
+
+	data.max_cargo = _base_max_cargo + bonuses["cargo_bonus"]
+	data.max_speed = _base_max_speed + bonuses["speed_bonus"]
+	cannon_damage_mult = 1.0 + bonuses["damage_mult_bonus"]

@@ -3,6 +3,23 @@
 > Arquivo de contexto. Ao iniciar uma sessão nova, diga **"Carregar checkpoint"** e leia só este arquivo.
 > Ao final de cada sessão ou marco, diga **"Salvar checkpoint"** para atualizá-lo.
 
+## Checkpoint atual (2026-10-13d) — branch `feature/town-hub-redesign`
+
+**Sistema de crafting naval completo: catálogo de itens, receitas por estação, fabricação real na Forja/Estaleiro, equipar no Galeão e atributos do navio recalculados de verdade.**
+
+- **`ItemDatabase` (novo autoload)**: 31 itens -- Canhão/Vela/Casco/Proa em Tiers I-IV (16, gerados em loop a partir de uma tabela de materiais+bônus por tier, não escritos 4x à mão), 9 Munições (sem slot no navio, nenhum dos 5 slots do Galeão é de munição), 4 Relíquias distintas (Luz Divina de Ebenruth, Totem de Tempestade, Dente de Kraken, Âncora Espectral) e 2 itens de Leme.
+  - **Leme não tinha catálogo nem receita no pedido** (as seções 1/2 descrevem Vela/Casco/Proa/Canhão/Munição/Relíquia, mas a seção 3 pede pra equipar Leme também) -- inferi 2 itens simples (tema madeira nobre + latão, mesmo material da Proa) pra fechar os 5 slots do Galeão. Sinalizado no código.
+- **`PlayerInventory` (novo autoload)**: materiais (seedados automaticamente a partir de TODA receita existente, 15 unidades cada -- sem sistema de Sea Hunt/coleta ainda), itens fabricados (Porão do Navio/Mochila do Capitão) e o que está equipado (5 slots de peça única + 20 de canhão). `craft()` consome material e devolve o id da instância; `get_total_bonuses()` soma os bônus de tudo equipado.
+- **`CraftingModal` (novo componente)**: uma aba por categoria, linhas de receita de verdade (material "tenho/preciso" colorido verde/vermelho, botão Fabricar desabilitado se faltar material). Mesma cena serve Forja (`station="forja"`, abas Canhões/Munições) e Estaleiro (`station="estaleiro"`, abas Velas/Cascos/Proas/Relíquias/Leme) -- só muda o que é passado na instância.
+- **`city_district_base.gd` generalizado**: `_wire_shop()` virou `_wire_modal()` reutilizável, agora liga DOIS pares botão+modal por distrito (TradeModal antigo, que auto-abre; CraftingModal novo, que só abre se o jogador clicar) -- Forja e Estaleiro ganharam um botão "Fabricar Peças Navais"/"Fabricar Peças do Galeão" ao lado do botão de loja existente.
+- **Equipar de verdade**: `InventoryPickerSubmodal` ganhou um modo de equipamento -- pras categorias do Galeão (vela/casco/leme/proa/relíquia_ebenruth/armamento) lista itens REAIS fabricados e ainda não equipados em lugar nenhum (`PlayerInventory.get_unequipped_for_category()`), e selecionar EQUIPA de fato (`equip_slot()`/`equip_cannon()`), não só troca um texto de tooltip. Acessórios do capitão (brincos/colar/etc, sem sistema de fabricação nesta rodada) continuam no `STUB_INVENTORY` cosmético de antes.
+- **`ship_base.gd` recalcula atributos reais**: `recalc_equipment_bonuses()`, chamado toda vez que `PlayerInventory.changed` dispara, soma os bônus equipados em cima de `_base_max_hull`/`_base_max_cargo`/`_base_max_speed` (capturados uma vez, pra reequipar não empilhar o bônus de novo) e aplica em `max_hull`/`data.max_cargo`/`data.max_speed` de verdade -- são os MESMOS campos que já movem/flutuam/limitam o navio, não um número decorativo novo. `data` (o `ShipData` resource) é duplicado em `_ready()` pra essa mutação não vazar pro `.tres` compartilhado (só existe 1 navio no jogo hoje, mas é barato evitar a armadilha agora). `cannon_damage_mult` é calculado e exposto, mas **sem combate de verdade pra aplicar nele ainda** -- `Cannonball`/`apply_damage()` existem mas nada chama `apply_damage()`, não há detecção de acerto nem navio inimigo. O número está certo, só não alimenta nada ainda.
+- `ShipStatusModal` ganhou um `StatsLabel` ("Dano: Nx · Velocidade · Casco Máx · Carga Máx") que lê esses 4 valores ao vivo, direto do navio -- não um resumo cosmético.
+
+**Verificado rodando o jogo de verdade:** craftei um Canhão Tier I na Forja (materiais caíram de 15→12/3 na tela, confirmado por captura antes/depois), fabriquei Vela Tier II e Canhão Tier IV via código, voltei pro navio, equipei os três -- velocidade subiu de 78 pra 93 (bônus da Vela II = +15), multiplicador de dano foi pra 2.00x (soma dos bônus dos 2 canhões equipados). `StatsLabel` mostrou os 4 valores certos na tela.
+
+---
+
 ## Checkpoint atual (2026-10-13c) — branch `feature/town-hub-redesign`
 
 **`ShipStatusModal` reconstruído do zero com a arte "GalleonWarshipStatusEquipmentPanel", submodal de Tripulação novo.**

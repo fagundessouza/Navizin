@@ -20,42 +20,56 @@ extends Control
 @onready var _title: Label = $Title
 @onready var _body: Label = $Body
 
+## Quantos modais de distrito estão abertos agora -- os botões de navegação
+## só reaparecem quando chega a 0. Mais de um pode ficar aberto ao mesmo
+## tempo (ex: TradeModal auto-aberto + CraftingModal que o jogador abriu
+## por cima), então não dá pra só alternar um bool no abrir/fechar de cada um.
+var _open_modal_count: int = 0
+
 
 func _ready() -> void:
 	_title.text = district_title
 	_body.text = district_body
 	$Buttons/BackToIsland.pressed.connect(_on_back_to_island)
 	$Buttons/BackToSea.pressed.connect(_on_back_to_sea)
-	_wire_shop()
+	_wire_modal("OpenShopButton", "TradeModal", true)
+	_wire_modal("OpenCraftingButton", "CraftingModal", false)
 
 
-## Abre o `TradeModal` IMEDIATAMENTE ao entrar no distrito -- nada de clicar
-## num botão primeiro, só nos distritos que têm os dois nós (Mural de
-## Recompensas e Guilda não são loja, não têm essa dupla). O botão continua
-## ligado, pra reabrir o modal se o jogador fechar e quiser ver de novo.
+## Liga um botão "Abrir X" a um modal filho, se os dois nós existirem --
+## Mural de Recompensas e Guilda não são loja, não têm essa dupla; Taverna/
+## Boticário/Feira têm só o par de loja; Forja/Estaleiro têm os dois pares
+## (loja antiga + fabricação nova). `auto_open` abre o modal já ao entrar no
+## distrito (só faz sentido pro TradeModal -- CraftingModal fica fechado até
+## o jogador clicar, senão a tela entra com 2 janelas por cima uma da outra).
 ##
-## Enquanto o modal está aberto, esconde "Mapa da Ilha"/"Voltar ao Mar" e o
-## próprio botão de abrir -- com o modal grande (principalmente o da Taverna,
-## de 4 abas) eles ficavam sobrepostos/por baixo, clicáveis sem aparecer.
-func _wire_shop() -> void:
-	var button: Button = get_node_or_null("OpenShopButton")
-	var modal: Control = get_node_or_null("TradeModal")
+## Enquanto QUALQUER modal está aberto, esconde "Mapa da Ilha"/"Voltar ao
+## Mar" e o botão de abrir dele -- com os modais grandes (principalmente o
+## de Fabricação, bem cheio) eles ficavam sobrepostos/por baixo, clicáveis
+## sem aparecer.
+func _wire_modal(button_name: String, modal_name: String, auto_open: bool) -> void:
+	var button: Button = get_node_or_null(button_name)
+	var modal: Control = get_node_or_null(modal_name)
 	if button == null or modal == null:
 		return
 	button.pressed.connect(modal.open)
 	modal.opened.connect(_on_modal_opened.bind(button))
 	modal.closed.connect(_on_modal_closed.bind(button))
-	modal.open()
+	if auto_open:
+		modal.open()
 
 
 func _on_modal_opened(open_button: Button) -> void:
+	_open_modal_count += 1
 	$Buttons.visible = false
 	open_button.visible = false
 
 
 func _on_modal_closed(open_button: Button) -> void:
-	$Buttons.visible = true
+	_open_modal_count = maxi(0, _open_modal_count - 1)
 	open_button.visible = true
+	if _open_modal_count == 0:
+		$Buttons.visible = true
 
 
 func _unhandled_input(event: InputEvent) -> void:

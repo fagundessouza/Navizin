@@ -1,0 +1,102 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/crafting_modal.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/ui/processed/modal_frame_iron.png" id="2_frame"]
+[ext_resource type="Shader" path="res://assets/shaders/gothic_panel.gdshader" id="3_gothic"]
+[ext_resource type="Texture2D" path="res://assets/ui/processed/nine_patch_skull_banner.png" id="4_skullbanner"]
+[ext_resource type="Texture2D" path="res://assets/ui/processed/nine_patch_anchor_seal.png" id="5_anchorseal"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_gothic"]
+shader = ExtResource("3_gothic")
+
+[node name="CraftingModal" type="Control"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -320.0
+offset_top = -260.0
+offset_right = 320.0
+offset_bottom = 260.0
+script = ExtResource("1_script")
+
+[node name="Frame" type="NinePatchRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("2_frame")
+patch_margin_left = 85
+patch_margin_top = 85
+patch_margin_right = 85
+patch_margin_bottom = 85
+material = SubResource("ShaderMaterial_gothic")
+
+[node name="SkullBanner" type="TextureRect" parent="."]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -42.0
+offset_top = -18.0
+offset_right = 43.0
+offset_bottom = 27.0
+mouse_filter = 2
+texture = ExtResource("4_skullbanner")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="AnchorSeal" type="TextureRect" parent="."]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -42.0
+offset_top = -27.0
+offset_right = 43.0
+offset_bottom = 18.0
+mouse_filter = 2
+texture = ExtResource("5_anchorseal")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Margin" type="MarginContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 26
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 26
+theme_override_constants/margin_bottom = 24
+
+[node name="VBox" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Header" type="HBoxContainer" parent="Margin/VBox"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Margin/VBox/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.95, 0.85, 0.55, 1)
+theme_override_font_sizes/font_size = 22
+text = "Fabricação"
+
+[node name="CloseButton" type="Button" parent="Margin/VBox/Header"]
+layout_mode = 2
+text = "X"
+
+[node name="Tabs" type="HBoxContainer" parent="Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Pages" type="Control" parent="Margin/VBox"]
+custom_minimum_size = Vector2(0, 320)
+layout_mode = 2
+size_flags_vertical = 3
