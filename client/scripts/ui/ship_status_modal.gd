@@ -164,6 +164,7 @@ func _process(_delta: float) -> void:
 
 func open() -> void:
 	visible = true
+	UIManager.animate_modal_open(self)
 	opened.emit()
 
 
@@ -232,6 +233,7 @@ func _make_slot_button(cx: float, cy: float, size: float, label: String) -> Butt
 	button.size = Vector2(size, size)
 	button.tooltip_text = label
 	_slots_root.add_child(button)
+	UIManager.add_hover_pop(button)
 	return button
 
 

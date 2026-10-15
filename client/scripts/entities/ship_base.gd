@@ -256,6 +256,7 @@ func _ready() -> void:
 	if player_controlled:
 		ShipInventory.changed.connect(recalc_equipment_bonuses)
 		OfficerRoster.changed.connect(recalc_equipment_bonuses)
+		TavernHireSystem.changed.connect(recalc_equipment_bonuses)
 		recalc_equipment_bonuses()
 	for node in [_sprite, _shadow]:
 		node.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
@@ -989,9 +990,12 @@ func regen_supply(amount: float) -> void:
 ## Recalcula casco máximo, carga máxima, velocidade máxima e o multiplicador
 ## de dano por disparo a partir do que está equipado em `ShipInventory`
 ## (Vela/Casco/Leme/Proa/Relíquia + os 20 canhões) MAIS os Oficiais de Bordo
-## contratados (`OfficerRoster`) -- chamado toda vez que `ShipInventory.changed`
-## ou `OfficerRoster.changed` dispara (equipar/desequipar/fabricar/contratar/
-## dispensar), não só uma vez no `_ready()`. Equipamento do CAPITÃO
+## contratados (`OfficerRoster`) MAIS os Marinheiros/Operários da Taverna
+## (`TavernHireSystem`, só os ativos/com ração em dia) -- chamado toda vez
+## que `ShipInventory.changed`, `OfficerRoster.changed` ou
+## `TavernHireSystem.changed` dispara (equipar/desequipar/fabricar/
+## contratar/dispensar/rolar/ficar sem ração), não só uma vez no `_ready()`.
+## Equipamento do CAPITÃO
 ## (`CaptainInventory`) nunca entra aqui -- um anel não deveria mexer no
 ## casco do navio (mesma separação de sempre, só que agora em autoloads
 ## distintos em vez de dois dicionários dentro do mesmo).
@@ -1004,6 +1008,9 @@ func recalc_equipment_bonuses() -> void:
 	var officer_bonuses: Dictionary = OfficerRoster.get_officer_bonuses()
 	for key in officer_bonuses:
 		bonuses[key] = bonuses.get(key, 0.0) + officer_bonuses[key]
+	var sailor_bonuses: Dictionary = TavernHireSystem.get_total_bonuses()
+	for key in sailor_bonuses:
+		bonuses[key] = bonuses.get(key, 0.0) + sailor_bonuses[key]
 
 	var old_max_hull: float = max_hull
 	max_hull = _base_max_hull + bonuses["hull_bonus"]

@@ -2,12 +2,16 @@ class_name CrewManagementSubmodal
 extends Control
 ## Overlay flutuante da Tripulação, aberto pelo 3º botão do rodapé da Ficha
 ## do Navio (`ship_status_modal.gd`). Duas seções:
-## - OFICIAIS DE BORDO (pedido explícito desta rodada): 5 vagas FIXAS por
-##   cargo (Timoneiro/Mestre Canhoneiro/Carpinteiro/Navegador/Cozinheiro,
-##   `OfficerRoster`), cada uma contratável por Ouro, concedendo um bônus
-##   direto ao navio quando preenchida.
-## - Capacidade de Tropas: lida de `ship.data` (`ShipData.max_troops`), sem
-##   sistema de recrutamento de tropa ainda (só o teto é real).
+## - OFICIAIS DE BORDO: 5 vagas FIXAS por cargo (Timoneiro/Mestre
+##   Canhoneiro/Carpinteiro/Navegador/Cozinheiro, `OfficerRoster`), cada uma
+##   contratável por Ouro, concedendo um bônus direto ao navio quando
+##   preenchida.
+## - MARINHEIROS/OPERÁRIOS (pedido explícito desta rodada, substitui a
+##   antiga barra de texto seca "Tropas: 0/40"): `CrewCardModal` embutido
+##   (`show_own_chrome = false`, sem moldura própria pra não aninhar com a
+##   deste painel) -- grade de cards visuais dos marinheiros contratados na
+##   Taverna (`TavernHireSystem`), com a mesma roleta de contratação
+##   disponível ali dentro.
 ##
 ## ARTE PENDENTE: `Meshy_AI_CrewManagementSubmodal.png` (pedida junto com
 ## este painel, rodada antiga) ainda não chegou em `~/Downloads/Tortuga/`
@@ -26,7 +30,6 @@ const HIRED_COLOR: Color = Color(0.82, 0.68, 0.32, 1.0)
 const EMPTY_COLOR: Color = Color(0.35, 0.33, 0.3, 1.0)
 
 @onready var _officers_list: VBoxContainer = $Margin/VBox/OfficersList
-@onready var _troop_list: VBoxContainer = $Margin/VBox/List
 
 
 func _ready() -> void:
@@ -38,6 +41,7 @@ func _ready() -> void:
 func open() -> void:
 	_refresh()
 	visible = true
+	UIManager.animate_modal_open(self)
 	opened.emit()
 
 
@@ -53,13 +57,6 @@ func _on_officer_changed() -> void:
 
 func _refresh() -> void:
 	_refresh_officers()
-	for child in _troop_list.get_children():
-		child.queue_free()
-	var ship: Node2D = get_tree().get_first_node_in_group("player_ship") as Node2D
-	var max_troops: int = 40
-	if ship != null and ship.data != null:
-		max_troops = ship.data.max_troops
-	_add_bar_row(_troop_list, "Tropas", 0, max_troops, Color(0.56, 0.64, 0.74, 1.0))
 
 
 ## Uma linha por cargo: nome + cargo contratado/vago + botão
@@ -140,45 +137,6 @@ func _bonus_summary(role: String) -> String:
 	return ", ".join(parts)
 
 
-func _add_bar_row(list: VBoxContainer, label: String, current: int, max_value: int, color: Color) -> void:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 10)
-
-	var name_label := Label.new()
-	name_label.text = label
-	name_label.custom_minimum_size = Vector2(80, 0)
-	name_label.add_theme_color_override("font_color", NORMAL_FONT_COLOR)
-	row.add_child(name_label)
-
-	var bar := ProgressBar.new()
-	bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	bar.max_value = max_value if max_value > 0 else 1
-	bar.value = current
-	bar.show_percentage = false
-	bar.custom_minimum_size = Vector2(0, 16)
-	bar.add_theme_stylebox_override("fill", _bar_style(color))
-	bar.add_theme_stylebox_override("background", _bar_style(Color(0.12, 0.1, 0.08, 0.9)))
-	row.add_child(bar)
-
-	var value_label := Label.new()
-	value_label.text = "%d / %d" % [current, max_value]
-	value_label.custom_minimum_size = Vector2(70, 0)
-	value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	value_label.add_theme_color_override("font_color", Color(0.78, 0.7, 0.5))
-	value_label.add_theme_font_size_override("font_size", 13)
-	row.add_child(value_label)
-
-	list.add_child(row)
-
-
-func _bar_style(color: Color) -> StyleBoxFlat:
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = color
-	sb.corner_radius_top_left = 3
-	sb.corner_radius_top_right = 3
-	sb.corner_radius_bottom_left = 3
-	sb.corner_radius_bottom_right = 3
-	return sb
 
 
 func _style_button(button: Button) -> void:

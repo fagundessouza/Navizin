@@ -54,6 +54,7 @@ func _process(_delta: float) -> void:
 
 func open() -> void:
 	visible = true
+	UIManager.animate_modal_open(self)
 	_refresh()
 	opened.emit()
 

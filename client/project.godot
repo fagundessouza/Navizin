@@ -35,6 +35,7 @@ ShipInventory="*res://scripts/autoload/ship_inventory.gd"
 CaptainInventory="*res://scripts/autoload/captain_inventory.gd"
 OfficerRoster="*res://scripts/autoload/officer_roster.gd"
 BoardingManager="*res://scripts/autoload/boarding_manager.gd"
+TavernHireSystem="*res://scripts/autoload/tavern_hire_system.gd"
 
 [display]
 

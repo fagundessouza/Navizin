@@ -69,6 +69,7 @@ func _ready() -> void:
 
 func open() -> void:
 	visible = true
+	UIManager.animate_modal_open(self)
 	_rebuild()
 	opened.emit()
 
@@ -228,6 +229,7 @@ func _make_icon_frame(icon: Texture2D) -> PanelContainer:
 	icon_rect.material = ShaderMaterial.new()
 	icon_rect.material.shader = ITEM_SOFTENER_SHADER
 	frame.add_child(icon_rect)
+	UIManager.add_hover_pop(frame)
 	return frame
 
 

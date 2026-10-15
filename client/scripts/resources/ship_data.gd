@@ -63,6 +63,10 @@ extends Resource
 @export var max_officers: int = 4
 ## Vagas de tropas de abordagem a bordo.
 @export var max_troops: int = 40
+## Vagas de Marinheiros/Operários contratados na Taverna (`TavernHireSystem`)
+## -- pool genérico, separado dos 5 cargos fixos de `OfficerRoster` e das
+## tropas de abordagem acima.
+@export var max_sailors: int = 12
 
 @export_group("Física e efeitos")
 ## Impulso de recuo com força total, em px/s.

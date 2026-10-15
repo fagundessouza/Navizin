@@ -20,7 +20,10 @@ extends Control
 ## nenhuma categoria "loja" com conteúdo nenhum pra justificar o botão a
 ## mais, e o Refino passou a morar DENTRO do `CraftingModal`
 ## (`RefineButton` no cabeçalho dele), não mais um botão separado aqui. Só
-## sobrou `OpenCraftingButton`/`OpenVaultButton`, um por distrito.
+## sobrou `OpenCraftingButton`/`OpenVaultButton`, um por distrito -- mais
+## `OpenCrewButton`/`CrewCardModal` na Taverna (rodada seguinte, roleta de
+## Marinheiros), que `_wire_modal()` também tenta em todo distrito mas só
+## encontra onde o par de nós existe de verdade.
 ##
 ## BRILHO DE ESTAÇÃO REMOVIDO (pedido explícito -- "elimine a iluminação
 ## amarela borrada"): a rodada anterior botava um `ColorRect` com
@@ -51,6 +54,7 @@ func _ready() -> void:
 	$Buttons/BackToSea.pressed.connect(_on_back_to_sea)
 	_wire_modal("OpenCraftingButton", "CraftingModal")
 	_wire_modal("OpenVaultButton", "VaultModal")
+	_wire_modal("OpenCrewButton", "CrewCardModal")
 
 
 ## Liga o botão "Abrir X" (um só por distrito agora) ao modal filho, se os

@@ -60,6 +60,7 @@ func _ready() -> void:
 
 func open() -> void:
 	visible = true
+	UIManager.animate_modal_open(self)
 	_result_label.text = ""
 	_rebuild_item_list()
 	opened.emit()

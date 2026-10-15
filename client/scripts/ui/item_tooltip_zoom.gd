@@ -26,12 +26,13 @@ const STAT_LABELS: Dictionary = {
 	"reload_speed_bonus": "Velocidade de Recarga", "turn_rate_bonus": "Giro",
 	"braking_bonus": "Frenagem", "wind_resistance_bonus": "Resistência ao Vento",
 	"boarding_damage_bonus": "Dano de Abordagem", "effect_resistance_bonus": "Resistência a Efeitos",
+	"hull_repair_bonus": "Reparo de Casco",
 }
 ## Fração (0.15 = +15%); o resto é número cru (+200, +0.3x...).
 const PERCENT_STATS: Array[String] = [
 	"damage_mult_bonus", "boarding_crit_bonus", "armor_pen_bonus", "elemental_damage_bonus",
 	"reload_speed_bonus", "turn_rate_bonus", "braking_bonus", "wind_resistance_bonus",
-	"boarding_damage_bonus", "effect_resistance_bonus",
+	"boarding_damage_bonus", "effect_resistance_bonus", "hull_repair_bonus",
 ]
 
 const BOX_SIZE: Vector2 = Vector2(210, 260)

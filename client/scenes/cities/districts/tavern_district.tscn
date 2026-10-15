@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/cities/city_district_base.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/sprites/environment/districts/interiors/tavern_interior.png" id="2_bg"]
-[ext_resource type="PackedScene" path="res://scenes/ui/trade_modal.tscn" id="3_modal"]
+[ext_resource type="PackedScene" path="res://scenes/ui/crew_card_modal.tscn" id="3_crewcards"]
 
 [node name="TavernDistrict" type="Control"]
 anchors_preset = 15
@@ -13,7 +13,7 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_script")
 district_title = "Taverna do Oculto"
-district_body = "Rum, rumores e tripulação sob a caveira pintada na parede -- mural de procurados, leilão de escoltas, fretes e boatos das ilhas. Em construção."
+district_body = "Rum, rumores e tripulação sob a caveira pintada na parede -- é aqui que se contrata Marinheiros e Operários pra tripular o Galeão."
 
 [node name="Background" type="TextureRect" parent="."]
 anchors_preset = 15
@@ -85,17 +85,12 @@ text = "Mapa da Ilha"
 layout_mode = 2
 text = "Voltar ao Mar"
 
-[node name="OpenShopButton" type="Button" parent="."]
+[node name="OpenCrewButton" type="Button" parent="."]
 offset_left = 24.0
 offset_top = 148.0
 offset_right = 168.0
 offset_bottom = 180.0
 text = "Abrir Taverna"
 
-[node name="TradeModal" parent="." instance=ExtResource("3_modal")]
+[node name="CrewCardModal" parent="." instance=ExtResource("3_crewcards")]
 visible = false
-offset_left = -300.0
-offset_right = 300.0
-shop_title = "Taverna do Oculto"
-tabs = PackedStringArray("Tripulação", "Quadro de Procurados", "Contratos de Serviço")
-action_buttons = PackedStringArray()

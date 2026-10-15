@@ -30,6 +30,7 @@ func _ready() -> void:
 
 func open() -> void:
 	visible = true
+	UIManager.animate_modal_open(self)
 	opened.emit()
 
 
