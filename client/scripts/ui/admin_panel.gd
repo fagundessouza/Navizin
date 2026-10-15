@@ -364,9 +364,10 @@ func _on_force_boarding() -> void:
 	GameManager.saved_hull = ship.hull
 	GameManager.saved_supply = ship.supply
 	var leadership_attr: int = CaptainAttributes.leadership
-	var captain_bonuses: Dictionary = CaptainInventory.get_captain_bonuses()
+	var leadership_gear: float = CaptainInventory.get_captain_bonuses().get("leadership_bonus", 0.0)
+	var leadership_officer: float = OfficerRoster.get_officer_bonuses().get("leadership_bonus", 0.0)
 	var cannon_mult: float = ship.cannon_damage_mult if ("cannon_damage_mult" in ship) else 1.0
-	var attacker_power: float = 1.0 + leadership_attr * 0.04 + captain_bonuses.get("leadership_bonus", 0.0) * 0.015 + (cannon_mult - 1.0) * 0.5
+	var attacker_power: float = 1.0 + leadership_attr * 0.04 + (leadership_gear + leadership_officer) * 0.015 + (cannon_mult - 1.0) * 0.5
 	BoardingManager.pending = {
 		"attacker_power": attacker_power,
 		"defender_power": 1.0,

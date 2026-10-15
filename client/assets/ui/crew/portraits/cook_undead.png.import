@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bkasbpujq5q2e"
-path="res://.godot/imported/portrait_human.png-e1f973bbad5e6e5f94545998246c72a5.ctex"
+uid="uid://c0fgwv6p0vv0w"
+path="res://.godot/imported/cook_undead.png-e022710840cfd5d2f1205546bff8fb8c.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/crew/portrait_human.png"
-dest_files=["res://.godot/imported/portrait_human.png-e1f973bbad5e6e5f94545998246c72a5.ctex"]
+source_file="res://assets/ui/crew/portraits/cook_undead.png"
+dest_files=["res://.godot/imported/cook_undead.png-e022710840cfd5d2f1205546bff8fb8c.ctex"]
 
 [params]
 

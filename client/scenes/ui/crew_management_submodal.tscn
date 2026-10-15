@@ -99,8 +99,13 @@ theme_override_colors/font_color = Color(0.95, 0.85, 0.55, 1)
 theme_override_font_sizes/font_size = 16
 text = "Oficiais de Bordo"
 
-[node name="OfficersList" type="VBoxContainer" parent="Margin/VBox"]
+[node name="OfficersScroll" type="ScrollContainer" parent="Margin/VBox"]
 layout_mode = 2
+custom_minimum_size = Vector2(0, 220)
+
+[node name="OfficersList" type="VBoxContainer" parent="Margin/VBox/OfficersScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
 theme_override_constants/separation = 6
 
 [node name="HSeparator" type="HSeparator" parent="Margin/VBox"]

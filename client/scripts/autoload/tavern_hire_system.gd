@@ -38,10 +38,24 @@ const RACE_NAMES: Dictionary = {
 	Race.HUMAN: "Humano", Race.GOBLIN: "Goblin", Race.GOBLIN_PURE: "Goblin Puro", Race.GIANT: "Gigante",
 }
 
+## Trocado nesta rodada pela arte Dark Fantasy AAA de verdade (32 retratos
+## processados de `~/Downloads/Tortuga/Tripulação/`, 4 lotes x 2 profissões
+## x 4 raças) -- MAS aquela arte só cobre Humano/Goblin/Anão/Morto-Vivo,
+## enquanto as raças de Marinheiro aqui são Humano/Goblin/Goblin Puro/
+## Gigante. "Anão" e "Morto-Vivo" não têm raça correspondente neste sistema
+## (ficaram só nos 8 cargos de Oficial, ver `OfficerRoster`); "Gigante" não
+## tem arte correspondente na entrega (Anão é baixo, Gigante é alto -- usar
+## a arte de Anão aqui seria trocar uma raça pela outra, não só reaproveitar
+## uma pose) -- PERMANECE no retrato placeholder desenhado via PIL até
+## chegar arte de verdade pra Gigante. Goblin Puro reaproveita uma pose de
+## Goblin DIFERENTE da do Goblin comum (mesma raça, retrato distinto) --
+## ele é descrito como uma variante rara do Goblin, não uma raça própria à
+## parte, então não tem (nem devia ter) um retrato "Goblin Puro" inventado
+## do zero.
 const RACE_PORTRAITS: Dictionary = {
-	Race.HUMAN: "res://assets/ui/crew/portrait_human.png",
-	Race.GOBLIN: "res://assets/ui/crew/portrait_goblin.png",
-	Race.GOBLIN_PURE: "res://assets/ui/crew/portrait_goblin_pure.png",
+	Race.HUMAN: "res://assets/ui/crew/portraits/helmsman_human.png",
+	Race.GOBLIN: "res://assets/ui/crew/portraits/helmsman_goblin.png",
+	Race.GOBLIN_PURE: "res://assets/ui/crew/portraits/cannoneer_goblin.png",
 	Race.GIANT: "res://assets/ui/crew/portrait_giant.png",
 }
 

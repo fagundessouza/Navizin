@@ -35,15 +35,19 @@ func is_vulnerable(ship: Node2D) -> bool:
 
 ## Potência do atacante: base 1.0 + Liderança (atributo, `CaptainAttributes`)
 ## + bônus de Liderança de equipamento (brincos/trajes, `CaptainInventory`)
-## + o multiplicador de dano dos canhões equipados -- Liderança e Trajes
+## + bônus de Liderança do Imediato do Capitão (`OfficerRoster`, rodada dos
+## 8 oficiais -- o único bônus de oficial com consumidor de verdade até
+## agora, o resto ainda é "calculado, sem física pra ler") + o
+## multiplicador de dano dos canhões equipados -- Liderança e Trajes
 ## concedem o "Reversal" pedido explicitamente contra navio mais forte (ver
 ## `_roll_outcome()`), o resto da fórmula já eram números reais existentes
 ## no jogo (só nunca combinados num confronto até agora).
 func _attacker_power(ship: Node2D) -> float:
 	var leadership_attr: int = CaptainAttributes.leadership
-	var captain_bonuses: Dictionary = CaptainInventory.get_captain_bonuses()
+	var leadership_gear: float = CaptainInventory.get_captain_bonuses().get("leadership_bonus", 0.0)
+	var leadership_officer: float = OfficerRoster.get_officer_bonuses().get("leadership_bonus", 0.0)
 	var cannon_mult: float = ship.cannon_damage_mult if ("cannon_damage_mult" in ship) else 1.0
-	return 1.0 + leadership_attr * 0.04 + captain_bonuses.get("leadership_bonus", 0.0) * 0.015 + (cannon_mult - 1.0) * 0.5
+	return 1.0 + leadership_attr * 0.04 + (leadership_gear + leadership_officer) * 0.015 + (cannon_mult - 1.0) * 0.5
 
 
 ## Potência do alvo: só o que o `ship_base.gd` dele já expõe -- sem
@@ -72,7 +76,8 @@ func start_boarding(attacker_ship: Node2D, target_ship: Node2D) -> void:
 	# virar garantido.
 	var leadership_attr: int = CaptainAttributes.leadership
 	var leadership_gear: float = CaptainInventory.get_captain_bonuses().get("leadership_bonus", 0.0)
-	var reversal_chance: float = clampf(leadership_attr * 0.03 + leadership_gear * 0.01, 0.0, 0.35)
+	var leadership_officer: float = OfficerRoster.get_officer_bonuses().get("leadership_bonus", 0.0)
+	var reversal_chance: float = clampf(leadership_attr * 0.03 + (leadership_gear + leadership_officer) * 0.01, 0.0, 0.35)
 
 	pending = {
 		"attacker_power": attacker_power,

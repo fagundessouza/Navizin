@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cp7urdtgry8et"
-path="res://.godot/imported/portrait_goblin.png-ccc09aa89ba60672430ead7f53620fef.ctex"
+uid="uid://bhhv5xoxe2n4u"
+path="res://.godot/imported/musician_dwarf.png-c32e29b9b8cb6d004fcf63008e6c56f7.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/crew/portrait_goblin.png"
-dest_files=["res://.godot/imported/portrait_goblin.png-ccc09aa89ba60672430ead7f53620fef.ctex"]
+source_file="res://assets/ui/crew/portraits/musician_dwarf.png"
+dest_files=["res://.godot/imported/musician_dwarf.png-c32e29b9b8cb6d004fcf63008e6c56f7.ctex"]
 
 [params]
 
