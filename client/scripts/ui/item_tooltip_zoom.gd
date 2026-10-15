@@ -53,7 +53,7 @@ func show_for_instance(instance_id: String, anchor_pos: Vector2, parent_size: Ve
 	var rarity: Dictionary = PlayerInventory.get_item_rarity(instance_id)
 	_icon_rect.texture = PlayerInventory.get_item_icon(instance_id)
 	_name_label.text = PlayerInventory.get_item_name(instance_id)
-	_name_label.add_theme_color_override("font_color", rarity["color"])
+	CraftingManager.style_item_label(_name_label, rarity)
 
 	var float_value: float = PlayerInventory.get_float_value(instance_id)
 	_float_label.visible = true
@@ -82,7 +82,7 @@ func show_for_recipe(item_id: String, anchor_pos: Vector2, parent_size: Vector2)
 		return
 	_icon_rect.texture = item.get("icon")
 	_name_label.text = item.get("name", item_id)
-	_name_label.add_theme_color_override("font_color", Color(0.93, 0.9, 0.84))
+	CraftingManager.style_item_label(_name_label, {"color": Color(0.93, 0.9, 0.84)})
 
 	_float_label.visible = false
 	_durability_bar.visible = false
@@ -100,7 +100,7 @@ func show_for_recipe(item_id: String, anchor_pos: Vector2, parent_size: Vector2)
 func show_for_material(material_name: String, quantity: int, anchor_pos: Vector2, parent_size: Vector2) -> void:
 	_icon_rect.texture = ItemDatabase.get_material_icon(material_name)
 	_name_label.text = material_name
-	_name_label.add_theme_color_override("font_color", Color(0.85, 0.8, 0.72))
+	CraftingManager.style_item_label(_name_label, {"color": Color(0.85, 0.8, 0.72)})
 
 	_float_label.visible = false
 	_durability_bar.visible = false

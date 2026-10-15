@@ -33,7 +33,7 @@ const PAPERDOLL_SLOTS: Array[Dictionary] = [
 	{"category": "anel", "label": "Anel", "cx": 232.5, "cy": 353.1, "size": 56.0},
 	{"category": "cinto", "label": "Cinto", "cx": 728.1, "cy": 125.0, "size": 56.0},
 	{"category": "trajes", "label": "Trajes", "cx": 728.1, "cy": 239.4, "size": 56.0},
-	{"category": "grimorio", "label": "Grimório", "cx": 728.1, "cy": 353.1, "size": 56.0},
+	{"category": "secundaria", "label": "Equipamento Secundário", "cx": 728.1, "cy": 353.1, "size": 56.0},
 ]
 
 const EMBLEMS: Array[Dictionary] = [
@@ -46,7 +46,7 @@ const PULSE_SCALE: Vector2 = Vector2(1.35, 1.35)
 const GLOW_COLOR: Color = Color(1.4, 1.25, 0.8, 1.0)
 
 const RARITY_GLOW_SHADER: Shader = preload("res://assets/shaders/item_rarity_glow.gdshader")
-const GLOWING_RARITIES: Array[String] = ["blue", "yellow", "orange", "purple", "red"]
+const GLOWING_RARITIES: Array[String] = ["blue", "gold"]
 
 @onready var _equip_slots: Control = $EquipSlots
 @onready var _attr_buttons: Control = $AttributeButtons
@@ -216,13 +216,14 @@ func _refresh_one_slot(button: Button, glow: ColorRect, instance_id: String, emp
 
 ## Mesma regra de prioridade de `ship_status_modal.gd` -- duplicada em vez de
 ## compartilhada porque os dois componentes não têm uma base comum ainda
-## (Grimório é o único slot do Capitão "místico" o bastante pra entrar na
-## checagem rúnica; os outros 5 nunca disparam esse modo).
+## (Equipamento Secundário -- ex-"grimorio" -- é o único slot do Capitão
+## "místico" o bastante pra entrar na checagem rúnica; os outros 5 nunca
+## disparam esse modo).
 func _aura_mode_for(instance_id: String, rarity: Dictionary, float_value: float, refine_level: int) -> int:
 	var item_id: String = PlayerInventory.crafted_items.get(instance_id, {}).get("item_id", "")
 	var category: String = ItemDatabase.get_item(item_id).get("category", "")
 	var default_aura: int = rarity.get("default_aura", 0)
-	if category == "grimorio" and (float_value >= 0.90 or refine_level >= 10):
+	if category == "secundaria" and (float_value >= 0.90 or refine_level >= 10):
 		return 3  # AURA_RUNIC
 	if float_value >= 0.95:
 		return 2  # AURA_DARK_FIRE

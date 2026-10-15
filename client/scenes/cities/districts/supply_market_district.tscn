@@ -14,7 +14,7 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_script")
 district_title = "Feira Comerciante"
-district_body = "Peixe seco, barris e fogueiras sob as tendas do cais -- comida, bebida e suprimentos de bordo, e agora também o bazar de equipamentos do capitão (anéis, brincos, colares, cintos, trajes, grimórios). Em construção."
+district_body = "Peixe seco, barris e fogueiras sob as tendas do cais -- comida, bebida e suprimentos de bordo, e agora também o bazar de equipamentos do capitão (anéis, brincos, colares, cintos, trajes, equipamento secundário). Em construção."
 
 [node name="Background" type="TextureRect" parent="."]
 anchors_preset = 15
@@ -111,5 +111,5 @@ text = "Fabricar Equip. do Capitão"
 visible = false
 panel_title = "Feira Comerciante -- Equipamentos do Capitão"
 station = "feira"
-categories = PackedStringArray("anel", "brincos", "colar", "cinto", "trajes", "grimorio")
-category_labels = PackedStringArray("Anéis", "Brincos", "Colares", "Cintos", "Trajes", "Grimórios")
+categories = PackedStringArray("anel", "brincos", "colar", "cinto", "trajes", "secundaria")
+category_labels = PackedStringArray("Anéis", "Brincos", "Colares", "Cintos", "Trajes", "Secundária")

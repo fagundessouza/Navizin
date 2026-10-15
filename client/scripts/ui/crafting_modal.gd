@@ -28,18 +28,10 @@ const OK_COLOR: Color = Color(0.6, 0.82, 0.5, 1.0)
 const MISSING_COLOR: Color = Color(0.85, 0.4, 0.35, 1.0)
 const ICON_FRAME_SIZE: float = 40.0
 const ICON_BORDER_COLOR: Color = Color(0.78, 0.65, 0.38, 0.9)
-const RARITY_GLOW_SHADER: Shader = preload("res://assets/shaders/item_rarity_glow.gdshader")
-## Pulso ambiente dourado em toda miniatura de receita (não é uma raridade de
-## verdade -- a receita ainda não foi fabricada, não rolou nada). Tier IV
-## (o mais alto de cada categoria tierizada) ganha o efeito de faíscas, no
-## espírito de "Lendário/Divino" pedido -- é o tier mais cobiçado da
-## categoria, mesmo antes de qualquer raridade rolar.
-const AMBIENT_GLOW_COLOR: Color = Color(0.9, 0.8, 0.5, 1.0)
 
 ## Itens por página -- "6 a 8 itens por página" pedido explicitamente; 6
 ## cobre a lista sem precisar de `ScrollContainer` pra nenhuma categoria
-## atual (a mais cheia, Relíquias, tem 50 -- 9 páginas, mas cada página
-## individual cabe sem rolar).
+## atual.
 const PAGE_SIZE: int = 6
 
 @onready var _tabs_box: HBoxContainer = $Margin/VBox/Tabs
@@ -208,7 +200,7 @@ func _build_recipe_row(item_id: String) -> Control:
 	var outer := HBoxContainer.new()
 	outer.add_theme_constant_override("separation", 10)
 	row.add_child(outer)
-	var icon_frame := _make_icon_frame(item.get("icon"), item.get("tier", 0), item_id)
+	var icon_frame := _make_icon_frame(item.get("icon"))
 	icon_frame.mouse_entered.connect(_on_icon_hover.bind(icon_frame, item_id))
 	icon_frame.mouse_exited.connect(_tooltip_zoom.hide_tooltip)
 	outer.add_child(icon_frame)
@@ -225,7 +217,7 @@ func _build_recipe_row(item_id: String) -> Control:
 	var display_name: String = item.get("name", item_id)
 	name_label.text = display_name
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_label.add_theme_color_override("font_color", Color(0.95, 0.85, 0.55))
+	CraftingManager.style_item_label(name_label, {"color": Color(0.95, 0.85, 0.55)})
 	name_label.add_theme_font_size_override("font_size", 15)
 	header.add_child(name_label)
 
@@ -258,10 +250,15 @@ func _build_recipe_row(item_id: String) -> Control:
 ## Miniatura com borda gótica ao lado do nome da receita -- "exibir a
 ## miniatura da arte do item" pedido explicitamente. `icon` vem nulo pros
 ## poucos itens sem arte dedicada ainda; `TextureRect` com textura nula só
-## fica em branco dentro da moldura, sem quebrar nada. A borda usa
-## `item_rarity_glow.gdshader` ativo (pedido explícito), com faíscas pro
-## Tier IV de cada categoria.
-func _make_icon_frame(icon: Texture2D, tier: int, item_id: String) -> PanelContainer:
+## fica em branco dentro da moldura, sem quebrar nada.
+##
+## SEM BRILHO AQUI (removido nesta rodada): isto é uma RECEITA, não um item
+## fabricado -- não existe Qualidade de Craft nenhuma rolada ainda pra
+## justificar um brilho de raridade. O pulso âmbar que ficava ligado em todo
+## card de Tier IV, raridade nenhuma por trás, era exatamente a "luz/spray
+## amarelo desposicionado poluindo a modal" pedida pra remover -- borda
+## estática simples até o jogador realmente fabricar o item.
+func _make_icon_frame(icon: Texture2D) -> PanelContainer:
 	var frame := PanelContainer.new()
 	frame.custom_minimum_size = Vector2(ICON_FRAME_SIZE, ICON_FRAME_SIZE)
 	var style := StyleBoxFlat.new()
@@ -286,22 +283,6 @@ func _make_icon_frame(icon: Texture2D, tier: int, item_id: String) -> PanelConta
 	icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	frame.add_child(icon_rect)
-
-	var glow := ColorRect.new()
-	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	glow.set_anchors_preset(Control.PRESET_FULL_RECT)
-	glow.color = Color.WHITE
-	var mat := ShaderMaterial.new()
-	mat.shader = RARITY_GLOW_SHADER
-	mat.set_shader_parameter("rarity_color", AMBIENT_GLOW_COLOR)
-	mat.set_shader_parameter("aura_mode", 1 if tier >= 4 else 0)
-	mat.set_shader_parameter("intensity", 0.7)
-	# Fase por hash do item_id (não um contador) -- determinístico mesmo
-	# depois de `_rebuild_pages()` recriar a linha do zero, e já evita todo
-	# card pulsando junto sem precisar guardar estado entre reconstruções.
-	mat.set_shader_parameter("phase_offset", fmod(float(item_id.hash() % 1000) * 0.37, TAU))
-	glow.material = mat
-	frame.add_child(glow)
 	return frame
 
 

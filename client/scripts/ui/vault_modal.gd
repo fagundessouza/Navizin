@@ -176,7 +176,7 @@ func _build_item_cell(instance_id: String) -> Control:
 	name_label.text = PlayerInventory.get_item_name(instance_id)
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	name_label.add_theme_color_override("font_color", rarity["color"])
+	CraftingManager.style_item_label(name_label, rarity)
 	name_label.add_theme_font_size_override("font_size", 11)
 	cell.add_child(name_label)
 	return cell

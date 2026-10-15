@@ -38,7 +38,7 @@ extends Control
 ## prefixo "[+N]" quando refinado, então nenhuma mudança extra precisou
 ## aqui pra isso aparecer no tooltip. O que SIM é calculado aqui é
 ## `_refine_boost_for()`, que só liga a partir de +10 (pedido explícito) e
-## intensifica o shader de brilho/faísca -- a refinada +15 de um Divino
+## intensifica o shader de brilho/faísca -- a refinada +15 de uma Obra-Prima
 ## pulsa e faísca muito mais forte que a mesma peça recém-equipada em +0.
 
 signal opened
@@ -72,9 +72,9 @@ const PULSE_SCALE: Vector2 = Vector2(1.3, 1.3)
 const GLOW_COLOR: Color = Color(1.4, 1.25, 0.8, 1.0)
 
 const RARITY_GLOW_SHADER: Shader = preload("res://assets/shaders/item_rarity_glow.gdshader")
-## White/Green não ganham brilho -- só a partir de Raro (Blue) pra cima, como
-## é convenção em ARPG (item comum/bom não chama atenção, raro em diante sim).
-const GLOWING_RARITIES: Array[String] = ["blue", "yellow", "orange", "purple", "red"]
+## Normal/Bom não ganham brilho -- só Excelente/Obra-Prima, como é convenção
+## em ARPG (fabricação comum/boa não chama atenção, excelente em diante sim).
+const GLOWING_RARITIES: Array[String] = ["blue", "gold"]
 
 @onready var _slots_root: Control = $Slots
 @onready var _footer_root: Control = $Footer
@@ -323,15 +323,14 @@ func _refresh_one_slot(button: Button, glow: ColorRect, instance_id: String, emp
 		glow.visible = false
 
 
-## Prioridade: Relíquia/Grimório com Float ou Refino alto -> rúnico (o tipo
-## de item manda); senão Float quase Perfeito (>=0.95) -> fogo sombrio;
-## senão Refino >= +10 OU a raridade já pedia faísca (Purple/Red) ->
-## elétrico (comportamento de antes desta rodada, preservado); senão nada
-## além do pulso comum.
+## Prioridade: Relíquia/Equipamento Secundário com Float ou Refino alto ->
+## rúnico (o tipo de item manda); senão Float quase Perfeito (>=0.95) ->
+## fogo sombrio; senão Refino >= +10 OU a qualidade já pedia faísca
+## (Excelente/Obra-Prima) -> elétrico; senão nada além do pulso comum.
 func _aura_mode_for(instance_id: String, rarity: Dictionary, float_value: float, refine_level: int) -> int:
 	var item_id: String = PlayerInventory.crafted_items.get(instance_id, {}).get("item_id", "")
 	var category: String = ItemDatabase.get_item(item_id).get("category", "")
-	var is_mystic: bool = category == "relíquia_ebenruth" or category == "grimorio"
+	var is_mystic: bool = category == "relíquia_ebenruth" or category == "secundaria"
 	var default_aura: int = rarity.get("default_aura", 0)
 	if is_mystic and (float_value >= 0.90 or refine_level >= 10):
 		return 3  # AURA_RUNIC

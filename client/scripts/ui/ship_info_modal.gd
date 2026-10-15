@@ -131,7 +131,7 @@ func _build_item_row(instance_id: String, prefix: String) -> Control:
 	var label := Label.new()
 	var name_text: String = PlayerInventory.get_item_name(instance_id)
 	label.text = "%s: %s" % [prefix, name_text] if prefix != "" else name_text
-	label.add_theme_color_override("font_color", rarity["color"])
+	CraftingManager.style_item_label(label, rarity)
 	row.add_child(label)
 	return row
 

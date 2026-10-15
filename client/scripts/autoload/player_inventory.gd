@@ -48,7 +48,7 @@ const SHIP_SLOTS: Array[String] = ["vela", "casco", "leme", "proa", "relíquia_e
 ## Slots de equipamento do Capitão -- ficha do capitão, não o navio. Separado
 ## de `SHIP_SLOTS` porque um brinco não deveria mexer no casco do navio
 ## (`get_captain_bonuses()` é um total à parte de `get_total_bonuses()`).
-const CAPTAIN_SLOTS: Array[String] = ["brincos", "colar", "anel", "cinto", "trajes", "grimorio"]
+const CAPTAIN_SLOTS: Array[String] = ["brincos", "colar", "anel", "cinto", "trajes", "secundaria"]
 
 var materials: Dictionary = {}
 ## instance_id (String) -> {item_id, instance_id, rarity_id, display_name,

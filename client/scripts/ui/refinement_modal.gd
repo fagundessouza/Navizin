@@ -107,7 +107,7 @@ func _build_item_row(instance_id: String) -> Control:
 	var button := Button.new()
 	button.flat = true
 	button.text = PlayerInventory.get_item_name(instance_id)
-	button.add_theme_color_override("font_color", rarity["color"])
+	CraftingManager.style_item_label(button, rarity)
 	button.add_theme_color_override("font_hover_color", rarity["color"].lightened(0.3))
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.pressed.connect(_on_item_row_pressed.bind(instance_id))
@@ -176,7 +176,7 @@ func _update_details() -> void:
 	var level: int = PlayerInventory.get_refine_level(instance_id)
 	var rarity: Dictionary = PlayerInventory.get_item_rarity(instance_id)
 	_selected_name.text = PlayerInventory.get_item_name(instance_id)
-	_selected_name.add_theme_color_override("font_color", rarity["color"])
+	CraftingManager.style_item_label(_selected_name, rarity)
 
 	var durability: float = PlayerInventory.get_durability(instance_id)
 	var max_durability: float = PlayerInventory.get_max_durability(instance_id)

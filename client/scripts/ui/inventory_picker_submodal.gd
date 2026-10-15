@@ -72,7 +72,7 @@ func _build_row(instance_id: String) -> Control:
 	var button := Button.new()
 	button.text = "[%s] %s" % [rarity["name"], PlayerInventory.get_item_name(instance_id)]
 	button.tooltip_text = PlayerInventory.get_float_tooltip_line(instance_id)
-	button.add_theme_color_override("font_color", rarity["color"])
+	CraftingManager.style_item_label(button, rarity)
 	button.add_theme_color_override("font_hover_color", rarity["color"].lightened(0.3))
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.pressed.connect(_on_instance_pressed.bind(instance_id))

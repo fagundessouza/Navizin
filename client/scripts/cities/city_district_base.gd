@@ -24,6 +24,9 @@ const STATION_GLOW_MARGIN: float = 2.6
 @onready var _body: Label = $Body
 
 var _glow_phase_counter: int = 0
+## Button -> ColorRect do brilho dele -- precisa pra esconder/mostrar o
+## brilho JUNTO com o botão (ver bug corrigido em `_add_station_glow`).
+var _station_glows: Dictionary = {}
 
 ## Quantos modais de distrito estão abertos agora -- os botões de navegação
 ## só reaparecem quando chega a 0. Mais de um pode ficar aberto ao mesmo
@@ -93,17 +96,30 @@ func _add_station_glow(button: Button) -> void:
 	button.get_parent().add_child(glow)
 	glow.z_index = button.z_index
 	button.move_to_front()
+	_station_glows[button] = glow
 
 
+## BUG ACHADO E CORRIGIDO NESTA RODADA ("remova qualquer luz amarela
+## desposicionada poluindo as modais"): esconder `open_button` ao abrir o
+## modal NUNCA escondia o brilho dele (nó irmão separado, sem relação de
+## visibilidade) -- o brilho quente ficava aceso e visível flutuando sem
+## botão embaixo, inclusive por cima/ao redor de modais que não cobrem a
+## tela inteira. Agora o brilho segue a visibilidade do próprio botão.
 func _on_modal_opened(open_button: Button) -> void:
 	_open_modal_count += 1
 	$Buttons.visible = false
 	open_button.visible = false
+	var glow: ColorRect = _station_glows.get(open_button)
+	if glow != null:
+		glow.visible = false
 
 
 func _on_modal_closed(open_button: Button) -> void:
 	_open_modal_count = maxi(0, _open_modal_count - 1)
 	open_button.visible = true
+	var glow: ColorRect = _station_glows.get(open_button)
+	if glow != null:
+		glow.visible = true
 	if _open_modal_count == 0:
 		$Buttons.visible = true
 
