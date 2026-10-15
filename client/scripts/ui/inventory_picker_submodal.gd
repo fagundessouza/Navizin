@@ -2,15 +2,16 @@ class_name InventoryPickerSubmodal
 extends Control
 ## Submodal suspenso que abre do lado de um slot '+' (equipamento do capitão
 ## ou do navio) listando os itens de verdade, fabricados e ainda não
-## equipados em lugar nenhum (`PlayerInventory.get_unequipped_for_category()`),
-## compatíveis com aquela categoria. Selecionar emite `instance_selected` e
-## EQUIPA de fato.
+## equipados em lugar nenhum (`get_unequipped_for_category()`), compatíveis
+## com aquela categoria. Selecionar emite `instance_selected` e EQUIPA de
+## fato.
 ##
 ## Cobre tanto os slots do Galeão (vela/casco/leme/proa/relíquia_ebenruth/
 ## armamento) quanto os do Capitão (brincos/colar/anel/cinto/trajes/
-## grimorio) -- os dois têm catálogo e fabricação reais agora em
-## `item_database.gd`/`player_inventory.gd`, não sobrou nenhuma categoria
-## cosmética tipo `STUB_INVENTORY` (removido nesta rodada).
+## secundaria) -- roteado pra `ShipInventory`/`CaptainInventory` conforme a
+## categoria (`_inventory_for()`), já que os dois inventários foram
+## separados em autoloads distintos nesta rodada (antes eram um só,
+## `player_inventory.gd`).
 ##
 ## Cada linha mostra o ícone do item (`PanelContainer` com borda gótica +
 ## `TextureRect`) ao lado do nome colorido pela raridade -- "exibir a
@@ -23,6 +24,7 @@ signal instance_selected(category: String, instance_id: String)
 
 const ICON_FRAME_SIZE: float = 32.0
 const ICON_BORDER_COLOR: Color = Color(0.78, 0.65, 0.38, 0.9)
+const ITEM_SOFTENER_SHADER: Shader = preload("res://assets/shaders/ui_item_softener.gdshader")
 
 @onready var _backdrop: Control = $Backdrop
 @onready var _box: PanelContainer = $Box
@@ -41,13 +43,21 @@ func _ready() -> void:
 	_backdrop.gui_input.connect(_on_backdrop_input)
 
 
+## Roteia pra `ShipInventory` ou `CaptainInventory` conforme a categoria do
+## slot -- os dois têm a mesma API pública (`get_unequipped_for_category`/
+## `get_item_rarity`/etc.), então um picker genérico só precisa saber qual
+## dono perguntar, não reimplementar nada diferente pra cada um.
+func _inventory_for(category: String) -> Node:
+	return CaptainInventory if ItemDatabase.is_captain_category(category) else ShipInventory
+
+
 func open_at(local_pos: Vector2, category: String, label: String) -> void:
 	_category = category
 	_title.text = label
 	for child in _list.get_children():
 		child.queue_free()
 
-	var entries: Array[Dictionary] = PlayerInventory.get_unequipped_for_category(category)
+	var entries: Array[Dictionary] = _inventory_for(category).get_unequipped_for_category(category)
 	for entry in entries:
 		_list.add_child(_build_row(entry["instance_id"]))
 
@@ -63,15 +73,16 @@ func open_at(local_pos: Vector2, category: String, label: String) -> void:
 
 
 func _build_row(instance_id: String) -> Control:
-	var rarity: Dictionary = PlayerInventory.get_item_rarity(instance_id)
+	var inv: Node = _inventory_for(_category)
+	var rarity: Dictionary = inv.get_item_rarity(instance_id)
 
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 6)
-	row.add_child(_make_icon_frame(PlayerInventory.get_item_icon(instance_id)))
+	row.add_child(_make_icon_frame(inv.get_item_icon(instance_id)))
 
 	var button := Button.new()
-	button.text = "[%s] %s" % [rarity["name"], PlayerInventory.get_item_name(instance_id)]
-	button.tooltip_text = PlayerInventory.get_float_tooltip_line(instance_id)
+	button.text = "[%s] %s" % [rarity["name"], inv.get_item_name(instance_id)]
+	button.tooltip_text = inv.get_float_tooltip_line(instance_id)
 	CraftingManager.style_item_label(button, rarity)
 	button.add_theme_color_override("font_hover_color", rarity["color"].lightened(0.3))
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -108,6 +119,8 @@ func _make_icon_frame(icon: Texture2D) -> PanelContainer:
 	icon_rect.texture = icon
 	icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon_rect.material = ShaderMaterial.new()
+	icon_rect.material.shader = ITEM_SOFTENER_SHADER
 	frame.add_child(icon_rect)
 	return frame
 

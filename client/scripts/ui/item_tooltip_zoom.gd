@@ -12,7 +12,8 @@ extends Control
 ## Dois modos:
 ## - `show_for_instance(instance_id, anchor_pos)`: item de verdade já
 ##   fabricado -- raridade, Float, refino e durabilidade vêm de
-##   `PlayerInventory`.
+##   `ShipInventory`/`CaptainInventory` (resolvido pelo prefixo do próprio
+##   `instance_id`, "s_"/"c_").
 ## - `show_for_recipe(item_id, anchor_pos)`: receita ainda não fabricada (um
 ##   card do `CraftingModal`) -- sem raridade/Float/refino/durabilidade pra
 ##   mostrar ainda, só nome-base, ícone e os atributos-base do tier.
@@ -22,9 +23,16 @@ const STAT_LABELS: Dictionary = {
 	"damage_mult_bonus": "Dano", "leadership_bonus": "Liderança",
 	"boarding_crit_bonus": "Crítico de Abordagem", "node_speed_bonus": "Velocidade Nodal",
 	"armor_pen_bonus": "Penetração de Blindagem", "elemental_damage_bonus": "Dano Elemental",
+	"reload_speed_bonus": "Velocidade de Recarga", "turn_rate_bonus": "Giro",
+	"braking_bonus": "Frenagem", "wind_resistance_bonus": "Resistência ao Vento",
+	"boarding_damage_bonus": "Dano de Abordagem", "effect_resistance_bonus": "Resistência a Efeitos",
 }
-## Esses 4 são fração (0.15 = +15%); o resto é número cru (+200, +0.3x...).
-const PERCENT_STATS: Array[String] = ["damage_mult_bonus", "boarding_crit_bonus", "armor_pen_bonus", "elemental_damage_bonus"]
+## Fração (0.15 = +15%); o resto é número cru (+200, +0.3x...).
+const PERCENT_STATS: Array[String] = [
+	"damage_mult_bonus", "boarding_crit_bonus", "armor_pen_bonus", "elemental_damage_bonus",
+	"reload_speed_bonus", "turn_rate_bonus", "braking_bonus", "wind_resistance_bonus",
+	"boarding_damage_bonus", "effect_resistance_bonus",
+]
 
 const BOX_SIZE: Vector2 = Vector2(210, 260)
 const ICON_ZOOM_SIZE: float = 96.0
@@ -47,30 +55,39 @@ func _ready() -> void:
 ## espaço que `InventoryPickerSubmodal.open_at()` já usa) -- abre pro lado
 ## com mais espaço, igual ao submodal de inventário, pra nunca estourar a
 ## borda do painel-pai.
+## `instance_id` carrega o dono no próprio prefixo ("s_"=Navio, "c_"=Capitão
+## -- ver `ship_inventory.gd`/`captain_inventory.gd`), então o tooltip
+## descobre sozinho qual inventário perguntar sem precisar que quem chama
+## (`ShipStatusModal`/`CaptainProfileModal`/etc.) passe isso explícito.
+func _inventory_for_instance(instance_id: String) -> Node:
+	return CaptainInventory if instance_id.begins_with("c_") else ShipInventory
+
+
 func show_for_instance(instance_id: String, anchor_pos: Vector2, parent_size: Vector2) -> void:
-	if instance_id == "" or not PlayerInventory.crafted_items.has(instance_id):
+	var inv: Node = _inventory_for_instance(instance_id)
+	if instance_id == "" or not inv.crafted_items.has(instance_id):
 		return
-	var rarity: Dictionary = PlayerInventory.get_item_rarity(instance_id)
-	_icon_rect.texture = PlayerInventory.get_item_icon(instance_id)
-	_name_label.text = PlayerInventory.get_item_name(instance_id)
+	var rarity: Dictionary = inv.get_item_rarity(instance_id)
+	_icon_rect.texture = inv.get_item_icon(instance_id)
+	_name_label.text = inv.get_item_name(instance_id)
 	CraftingManager.style_item_label(_name_label, rarity)
 
-	var float_value: float = PlayerInventory.get_float_value(instance_id)
+	var float_value: float = inv.get_float_value(instance_id)
 	_float_label.visible = true
 	_float_label.text = "Float: %.3f (%s)" % [float_value, CraftingManager.float_label(float_value)]
 
 	_durability_bar.visible = true
 	_durability_label.visible = true
-	var durability: float = PlayerInventory.get_durability(instance_id)
-	var max_durability: float = PlayerInventory.get_max_durability(instance_id)
+	var durability: float = inv.get_durability(instance_id)
+	var max_durability: float = inv.get_max_durability(instance_id)
 	_durability_bar.max_value = max_durability
 	_durability_bar.value = durability
 	_style_durability_bar(durability / max_durability)
 	_durability_label.text = "Durabilidade: %d/%d" % [int(durability), int(max_durability)]
-	if max_durability < PlayerInventory.MAX_DURABILITY:
+	if max_durability < inv.MAX_DURABILITY:
 		_durability_label.text += " (teto reduzido)"
 
-	var entry: Dictionary = PlayerInventory.crafted_items[instance_id]
+	var entry: Dictionary = inv.crafted_items[instance_id]
 	_build_stats(entry.get("stats", {}), EnchantmentManager.stat_multiplier_for(entry.get("refine_level", 0)))
 	_position_near(anchor_pos, parent_size)
 	visible = true
@@ -95,7 +112,7 @@ func show_for_recipe(item_id: String, anchor_pos: Vector2, parent_size: Vector2)
 
 ## Material bruto (Caverna do Tesouro): não existe no catálogo de
 ## `ItemDatabase.ITEMS` (materiais não são "itens", só entradas em
-## `PlayerInventory.materials`), então não tem raridade/stats pra mostrar --
+## `ShipInventory.materials`), então não tem raridade/stats pra mostrar --
 ## só o ícone, nome e quanto tem guardado.
 func show_for_material(material_name: String, quantity: int, anchor_pos: Vector2, parent_size: Vector2) -> void:
 	_icon_rect.texture = ItemDatabase.get_material_icon(material_name)

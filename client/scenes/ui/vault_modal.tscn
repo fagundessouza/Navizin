@@ -16,9 +16,9 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -300.0
+offset_left = -340.0
 offset_top = -250.0
-offset_right = 300.0
+offset_right = 340.0
 offset_bottom = 250.0
 script = ExtResource("1_script")
 
@@ -102,10 +102,15 @@ layout_mode = 2
 size_flags_horizontal = 3
 text = "Materiais"
 
-[node name="ItemsTab" type="Button" parent="Margin/VBox/Tabs"]
+[node name="ShipItemsTab" type="Button" parent="Margin/VBox/Tabs"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Itens Fabricados"
+text = "Itens do Navio"
+
+[node name="CaptainItemsTab" type="Button" parent="Margin/VBox/Tabs"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Itens do Capitão"
 
 [node name="Pages" type="Control" parent="Margin/VBox"]
 custom_minimum_size = Vector2(0, 280)
@@ -144,7 +149,7 @@ theme_override_colors/font_color = Color(0.93, 0.9, 0.84, 1)
 layout_mode = 2
 text = "Próxima >"
 
-[node name="Items" type="VBoxContainer" parent="Margin/VBox/Pages"]
+[node name="ShipItems" type="VBoxContainer" parent="Margin/VBox/Pages"]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -152,27 +157,59 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 8
 
-[node name="Grid" type="GridContainer" parent="Margin/VBox/Pages/Items"]
+[node name="Grid" type="GridContainer" parent="Margin/VBox/Pages/ShipItems"]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/h_separation = 10
 theme_override_constants/v_separation = 10
 columns = 6
 
-[node name="Pager" type="HBoxContainer" parent="Margin/VBox/Pages/Items"]
+[node name="Pager" type="HBoxContainer" parent="Margin/VBox/Pages/ShipItems"]
 layout_mode = 2
 alignment = 1
 theme_override_constants/separation = 16
 
-[node name="Prev" type="Button" parent="Margin/VBox/Pages/Items/Pager"]
+[node name="Prev" type="Button" parent="Margin/VBox/Pages/ShipItems/Pager"]
 layout_mode = 2
 text = "< Anterior"
 
-[node name="PageLabel" type="Label" parent="Margin/VBox/Pages/Items/Pager"]
+[node name="PageLabel" type="Label" parent="Margin/VBox/Pages/ShipItems/Pager"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.93, 0.9, 0.84, 1)
 
-[node name="Next" type="Button" parent="Margin/VBox/Pages/Items/Pager"]
+[node name="Next" type="Button" parent="Margin/VBox/Pages/ShipItems/Pager"]
+layout_mode = 2
+text = "Próxima >"
+
+[node name="CaptainItems" type="VBoxContainer" parent="Margin/VBox/Pages"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 8
+
+[node name="Grid" type="GridContainer" parent="Margin/VBox/Pages/CaptainItems"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 10
+columns = 6
+
+[node name="Pager" type="HBoxContainer" parent="Margin/VBox/Pages/CaptainItems"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 16
+
+[node name="Prev" type="Button" parent="Margin/VBox/Pages/CaptainItems/Pager"]
+layout_mode = 2
+text = "< Anterior"
+
+[node name="PageLabel" type="Label" parent="Margin/VBox/Pages/CaptainItems/Pager"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.93, 0.9, 0.84, 1)
+
+[node name="Next" type="Button" parent="Margin/VBox/Pages/CaptainItems/Pager"]
 layout_mode = 2
 text = "Próxima >"
 

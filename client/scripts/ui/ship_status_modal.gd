@@ -21,9 +21,9 @@ extends Control
 ##
 ## EQUIPAR DE VERDADE: cada slot (os 5 de craft + os 20 de canhão) abre o
 ## `InventoryPickerSubmodal` em modo de equipamento -- ele já sabe ler
-## `PlayerInventory` sozinho, aqui só processamos `instance_selected` pra
-## chamar `PlayerInventory.equip_slot()`/`equip_cannon()` com o slot certo
-## e atualizar o tooltip. `PlayerInventory.changed` (equipar OU fabricar)
+## `ShipInventory` sozinho, aqui só processamos `instance_selected` pra
+## chamar `ShipInventory.equip_slot()`/`equip_cannon()` com o slot certo
+## e atualizar o tooltip. `ShipInventory.changed` (equipar OU fabricar)
 ## também recalcula os atributos reais do navio via
 ## `ship_base.gd.recalc_equipment_bonuses()`, mostrados ao vivo em `_stats_label`.
 ##
@@ -34,7 +34,7 @@ extends Control
 ## Tooltip também ganha o nome da raridade entre colchetes, já que
 ## `tooltip_text` é texto puro (sem cor) no Godot.
 ##
-## REFINO: `PlayerInventory.get_item_name()` já devolve o nome com o
+## REFINO: `ShipInventory.get_item_name()` já devolve o nome com o
 ## prefixo "[+N]" quando refinado, então nenhuma mudança extra precisou
 ## aqui pra isso aparecer no tooltip. O que SIM é calculado aqui é
 ## `_refine_boost_for()`, que só liga a partir de +10 (pedido explícito) e
@@ -110,7 +110,7 @@ func _ready() -> void:
 	_build_cannon_grid()
 	_build_footer_buttons()
 	_picker.instance_selected.connect(_on_instance_selected)
-	PlayerInventory.changed.connect(_refresh_slot_labels)
+	ShipInventory.changed.connect(_refresh_slot_labels)
 	_refresh_slot_labels()
 
 
@@ -143,7 +143,7 @@ func _build_craft_slots() -> void:
 		var button := _make_slot_button(data["cx"], data["cy"], data["size"], data["label"])
 		var category: String = data["category"]
 		button.pressed.connect(_on_slot_pressed.bind(button, category, data["label"]))
-		button.mouse_entered.connect(_on_slot_hover.bind(button, func(): return PlayerInventory.equipped.get(category, "")))
+		button.mouse_entered.connect(_on_slot_hover.bind(button, func(): return ShipInventory.equipped.get(category, "")))
 		button.mouse_exited.connect(_tooltip_zoom.hide_tooltip)
 		_slot_buttons[category] = button
 		_slot_glows[category] = _make_rarity_glow(button, _next_glow_phase())
@@ -156,7 +156,7 @@ func _build_cannon_grid() -> void:
 			var button := _make_slot_button(col_x, row_y, CANNON_SLOT_SIZE, "Armamento")
 			var cannon_index: int = index
 			button.pressed.connect(_on_cannon_pressed.bind(button, cannon_index))
-			button.mouse_entered.connect(_on_slot_hover.bind(button, func(): return PlayerInventory.equipped_cannons[cannon_index]))
+			button.mouse_entered.connect(_on_slot_hover.bind(button, func(): return ShipInventory.equipped_cannons[cannon_index]))
 			button.mouse_exited.connect(_tooltip_zoom.hide_tooltip)
 			_cannon_buttons.append(button)
 			_cannon_glows.append(_make_rarity_glow(button, _next_glow_phase()))
@@ -167,7 +167,7 @@ func _build_cannon_grid() -> void:
 ## mouse sobre qualquer ícone de item no craft ou inventário"). Slot vazio
 ## não mostra nada (sem item fabricado pra dar zoom). O getter é uma lambda
 ## porque o instance_id equipado pode mudar entre um hover e outro, sem
-## precisar reconectar o sinal toda vez que `PlayerInventory` muda.
+## precisar reconectar o sinal toda vez que `ShipInventory` muda.
 func _on_slot_hover(button: Button, get_instance_id: Callable) -> void:
 	var instance_id: String = get_instance_id.call()
 	if instance_id == "":
@@ -275,40 +275,40 @@ func _on_cannon_pressed(button: Button, index: int) -> void:
 func _on_instance_selected(category: String, instance_id: String) -> void:
 	if category == "armamento":
 		if _pending_cannon_index >= 0:
-			PlayerInventory.equip_cannon(_pending_cannon_index, instance_id)
+			ShipInventory.equip_cannon(_pending_cannon_index, instance_id)
 		_pending_cannon_index = -1
 	else:
-		PlayerInventory.equip_slot(category, instance_id)
+		ShipInventory.equip_slot(category, instance_id)
 
 
 ## Reescreve o tooltip de cada slot (nome do item + raridade entre
 ## colchetes, já que `tooltip_text` não aceita cor) e liga/desliga o brilho
-## de raridade -- chamado em `_ready()` e toda vez que `PlayerInventory.changed`
+## de raridade -- chamado em `_ready()` e toda vez que `ShipInventory.changed`
 ## dispara, pra refletir equipar/fabricar/trocar.
 func _refresh_slot_labels() -> void:
 	for data in CRAFT_SLOTS:
 		var category: String = data["category"]
-		var instance_id: String = PlayerInventory.equipped.get(category, "")
+		var instance_id: String = ShipInventory.equipped.get(category, "")
 		_refresh_one_slot(_slot_buttons[category], _slot_glows[category], instance_id, data["label"])
 
 	for i in _cannon_buttons.size():
-		var instance_id: String = PlayerInventory.equipped_cannons[i]
+		var instance_id: String = ShipInventory.equipped_cannons[i]
 		_refresh_one_slot(_cannon_buttons[i], _cannon_glows[i], instance_id, "Armamento (slot %d)" % (i + 1))
 
 
 func _refresh_one_slot(button: Button, glow: ColorRect, instance_id: String, empty_label: String) -> void:
-	var item_name: String = PlayerInventory.get_item_name(instance_id)
+	var item_name: String = ShipInventory.get_item_name(instance_id)
 	if item_name == "":
 		button.tooltip_text = empty_label
 		glow.visible = false
 		return
 
-	var rarity: Dictionary = PlayerInventory.get_item_rarity(instance_id)
-	var float_line: String = PlayerInventory.get_float_tooltip_line(instance_id)
+	var rarity: Dictionary = ShipInventory.get_item_rarity(instance_id)
+	var float_line: String = ShipInventory.get_float_tooltip_line(instance_id)
 	button.tooltip_text = "%s\n[%s] %s\n%s" % [empty_label, rarity["name"], item_name, float_line]
 
-	var refine_level: int = PlayerInventory.get_refine_level(instance_id)
-	var float_value: float = PlayerInventory.get_float_value(instance_id)
+	var refine_level: int = ShipInventory.get_refine_level(instance_id)
+	var float_value: float = ShipInventory.get_float_value(instance_id)
 	var aura_mode: int = _aura_mode_for(instance_id, rarity, float_value, refine_level)
 	# Brilho aparece se a RARIDADE já pedia (Blue+) OU se o Float/Refino
 	# sozinho já rendeu uma aura -- um item White com Float 0.99 não devia
@@ -328,7 +328,7 @@ func _refresh_one_slot(button: Button, glow: ColorRect, instance_id: String, emp
 ## fogo sombrio; senão Refino >= +10 OU a qualidade já pedia faísca
 ## (Excelente/Obra-Prima) -> elétrico; senão nada além do pulso comum.
 func _aura_mode_for(instance_id: String, rarity: Dictionary, float_value: float, refine_level: int) -> int:
-	var item_id: String = PlayerInventory.crafted_items.get(instance_id, {}).get("item_id", "")
+	var item_id: String = ShipInventory.crafted_items.get(instance_id, {}).get("item_id", "")
 	var category: String = ItemDatabase.get_item(item_id).get("category", "")
 	var is_mystic: bool = category == "relíquia_ebenruth" or category == "secundaria"
 	var default_aura: int = rarity.get("default_aura", 0)

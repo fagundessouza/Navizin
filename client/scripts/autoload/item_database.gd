@@ -384,10 +384,21 @@ func _ready() -> void:
 	_register_flat_catalog(_HELM, "leme", "estaleiro", _HELM_ICON)
 
 
+## Categorias do Capitão -- "roteamento" entre `ShipInventory`/
+## `CaptainInventory` (separação explícita pedida: equipamento do capitão é
+## PERMANENTE/não perde ao afundar, equipamento do navio é DESTRUÍVEL). Toda
+## categoria que não está aqui é do navio.
+const CAPTAIN_CATEGORIES: Array[String] = ["brincos", "colar", "anel", "cinto", "trajes", "secundaria"]
+
+
+func is_captain_category(category: String) -> bool:
+	return CAPTAIN_CATEGORIES.has(category)
+
+
 func _station_for(category: String) -> String:
 	if category == "armamento":
 		return "forja"
-	if ["brincos", "colar", "anel", "cinto", "trajes", "secundaria"].has(category):
+	if CAPTAIN_CATEGORIES.has(category):
 		return "feira"
 	return "estaleiro"
 

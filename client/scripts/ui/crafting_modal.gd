@@ -28,6 +28,7 @@ const OK_COLOR: Color = Color(0.6, 0.82, 0.5, 1.0)
 const MISSING_COLOR: Color = Color(0.85, 0.4, 0.35, 1.0)
 const ICON_FRAME_SIZE: float = 40.0
 const ICON_BORDER_COLOR: Color = Color(0.78, 0.65, 0.38, 0.9)
+const ITEM_SOFTENER_SHADER: Shader = preload("res://assets/shaders/ui_item_softener.gdshader")
 
 ## Itens por página -- "6 a 8 itens por página" pedido explicitamente; 6
 ## cobre a lista sem precisar de `ScrollContainer` pra nenhuma categoria
@@ -54,7 +55,11 @@ func _ready() -> void:
 	_build_tabs()
 	if categories.size() > 0:
 		_select_tab(0)
-	PlayerInventory.changed.connect(_on_inventory_changed)
+	# Escuta os dois -- uma instância de CraftingModal só mostra categorias de
+	# UM lado (Forja/Estaleiro = navio, Feira = capitão), mas ouvir os dois é
+	# barato e evita ter que decidir qual delas importa aqui.
+	ShipInventory.changed.connect(_on_inventory_changed)
+	CaptainInventory.changed.connect(_on_inventory_changed)
 
 
 func open() -> void:
@@ -221,7 +226,10 @@ func _build_recipe_row(item_id: String) -> Control:
 	name_label.add_theme_font_size_override("font_size", 15)
 	header.add_child(name_label)
 
-	var can_craft: bool = PlayerInventory.has_materials_for(item_id)
+	# Materiais brutos vivem só em `ShipInventory` mesmo pra receita do
+	# Capitão (ver nota em `captain_inventory.gd` -- o porão é físico, é um
+	# só, não tem um estoque separado "do Capitão").
+	var can_craft: bool = ShipInventory.has_materials_for(item_id)
 
 	var craft_button := Button.new()
 	craft_button.text = "Fabricar"
@@ -237,7 +245,7 @@ func _build_recipe_row(item_id: String) -> Control:
 	var materials: Dictionary = recipe["materials"]
 	for material_name in materials:
 		var needed: int = materials[material_name]
-		var have: int = PlayerInventory.materials.get(material_name, 0)
+		var have: int = ShipInventory.materials.get(material_name, 0)
 		var mat_label := Label.new()
 		mat_label.text = "%s %d/%d" % [material_name, have, needed]
 		mat_label.add_theme_font_size_override("font_size", 12)
@@ -282,12 +290,18 @@ func _make_icon_frame(icon: Texture2D) -> PanelContainer:
 	icon_rect.texture = icon
 	icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon_rect.material = ShaderMaterial.new()
+	icon_rect.material.shader = ITEM_SOFTENER_SHADER
 	frame.add_child(icon_rect)
 	return frame
 
 
 func _on_craft_pressed(item_id: String) -> void:
-	PlayerInventory.craft(item_id)
+	var category: String = ItemDatabase.get_item(item_id).get("category", "")
+	if ItemDatabase.is_captain_category(category):
+		CaptainInventory.craft(item_id)
+	else:
+		ShipInventory.craft(item_id)
 
 
 ## Hover zoom na miniatura da receita -- pedido explícito ("ao passar o

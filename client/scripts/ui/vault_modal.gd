@@ -1,19 +1,20 @@
 class_name VaultModal
 extends Control
 ## Cofre/Banco da Caverna do Tesouro: ficha de leitura dos recursos do
-## jogador -- 2 abas, Materiais (tudo em `PlayerInventory.materials`,
-## incluindo Pedra de Refino/Pergaminho de Proteção) e Itens Fabricados
-## (tudo em `PlayerInventory.crafted_items`, com ícone, nome colorido pela
-## raridade e o prefixo de refino). Só mostra, não transfere nem gasta nada
-## ainda -- é um extrato, não um banco funcional de depósito/saque.
+## jogador -- 3 abas, Materiais (`ShipInventory.materials`, incluindo Pedra
+## de Refino/Pergaminho de Proteção/Kit de Reparo), Itens do Navio
+## (`ShipInventory.crafted_items` -- destruível, some se o navio afundar) e
+## Itens do Capitão (`CaptainInventory.crafted_items` -- permanente). 3
+## abas em vez de 2 porque os dois inventários viraram autoloads separados
+## nesta rodada (antes eram um só, `player_inventory.gd`, com "Itens
+## Fabricados" mostrando os dois juntos sem distinção). Só mostra, não
+## transfere nem gasta nada ainda -- é um extrato, não um banco funcional
+## de depósito/saque.
 ##
-## GRADE DE ÍCONES + ZOOM: a aba Materiais era uma lista de texto puro (nome
-## + quantidade, nenhum ícone) -- pedido explícito pra virar `GridContainer`
-## com ícone recortado (`ItemDatabase.get_material_icon()`, desenhado do
-## zero já que não existe arte de material bruto em nenhuma prancha),
-## quantidade, e zoom ao passar o mouse igual ao resto do jogo
-## (`ItemTooltipZoom`). Itens Fabricados virou grade também, por consistência
-## -- já tinha ícone, só não tinha grade/paginação/zoom.
+## GRADE DE ÍCONES + ZOOM: ícone recortado (`ItemDatabase.get_material_icon()`
+## pra material bruto, desenhado do zero já que não existe arte de material
+## em nenhuma prancha), quantidade/nome, e zoom ao passar o mouse
+## (`ItemTooltipZoom`).
 ##
 ## PAGINAÇÃO: mesma técnica de `crafting_modal.gd` (6-8 por página, aqui
 ## generoso em colunas então cabe mais por ser `GridContainer`).
@@ -26,27 +27,31 @@ const HOVER_COLOR: Color = Color(1.0, 0.92, 0.65, 1.0)
 const NORMAL_FONT_COLOR: Color = Color(0.93, 0.9, 0.84, 1.0)
 const ICON_FRAME_SIZE: float = 40.0
 const ICON_BORDER_COLOR: Color = Color(0.78, 0.65, 0.38, 0.9)
+const ITEM_SOFTENER_SHADER: Shader = preload("res://assets/shaders/ui_item_softener.gdshader")
 const GRID_COLUMNS: int = 6
 const PAGE_SIZE: int = 18
 
 @onready var _tabs_box: HBoxContainer = $Margin/VBox/Tabs
 @onready var _materials_grid: GridContainer = $Margin/VBox/Pages/Materials/Grid
-@onready var _items_grid: GridContainer = $Margin/VBox/Pages/Items/Grid
+@onready var _ship_items_grid: GridContainer = $Margin/VBox/Pages/ShipItems/Grid
+@onready var _captain_items_grid: GridContainer = $Margin/VBox/Pages/CaptainItems/Grid
 @onready var _tooltip_zoom: ItemTooltipZoom = $ItemTooltipZoom
 
 var _tab_buttons: Array[Button] = []
 var _pages: Array[Control] = []
-var _page_index: Array[int] = [0, 0]
+var _grids: Array[GridContainer] = []
+var _page_index: Array[int] = [0, 0, 0]
 
 
 func _ready() -> void:
 	visible = false
 	_style_button($Margin/VBox/Header/CloseButton)
 	$Margin/VBox/Header/CloseButton.pressed.connect(close)
-	_tab_buttons = [$Margin/VBox/Tabs/MaterialsTab, $Margin/VBox/Tabs/ItemsTab]
-	_pages = [$Margin/VBox/Pages/Materials, $Margin/VBox/Pages/Items]
-	_materials_grid.columns = GRID_COLUMNS
-	_items_grid.columns = GRID_COLUMNS
+	_tab_buttons = [$Margin/VBox/Tabs/MaterialsTab, $Margin/VBox/Tabs/ShipItemsTab, $Margin/VBox/Tabs/CaptainItemsTab]
+	_pages = [$Margin/VBox/Pages/Materials, $Margin/VBox/Pages/ShipItems, $Margin/VBox/Pages/CaptainItems]
+	_grids = [_materials_grid, _ship_items_grid, _captain_items_grid]
+	for grid in _grids:
+		grid.columns = GRID_COLUMNS
 	for i in _tab_buttons.size():
 		_style_button(_tab_buttons[i])
 		_tab_buttons[i].pressed.connect(_select_tab.bind(i))
@@ -58,7 +63,8 @@ func _ready() -> void:
 		prev.pressed.connect(_on_page_nav.bind(i, -1))
 		next.pressed.connect(_on_page_nav.bind(i, 1))
 	_select_tab(0)
-	PlayerInventory.changed.connect(_on_inventory_changed)
+	ShipInventory.changed.connect(_on_inventory_changed)
+	CaptainInventory.changed.connect(_on_inventory_changed)
 
 
 func open() -> void:
@@ -83,9 +89,20 @@ func _select_tab(index: int) -> void:
 		_tab_buttons[i].disabled = i == index
 
 
+func _entries_for_tab(tab_index: int) -> Array:
+	match tab_index:
+		0:
+			var names: Array = ShipInventory.materials.keys()
+			names.sort()
+			return names
+		1:
+			return ShipInventory.crafted_items.keys()
+		_:
+			return CaptainInventory.crafted_items.keys()
+
+
 func _on_page_nav(tab_index: int, delta: int) -> void:
-	var total: int = PlayerInventory.materials.size() if tab_index == 0 else PlayerInventory.crafted_items.size()
-	var page_count: int = _page_count(total)
+	var page_count: int = _page_count(_entries_for_tab(tab_index).size())
 	_page_index[tab_index] = clampi(_page_index[tab_index] + delta, 0, page_count - 1)
 	_rebuild()
 
@@ -95,15 +112,12 @@ func _page_count(total_items: int) -> int:
 
 
 func _rebuild() -> void:
-	var names: Array = PlayerInventory.materials.keys()
-	names.sort()
-	_rebuild_grid_page(0, _materials_grid, names, func(name: String) -> Control: return _build_material_cell(name))
-
-	var instance_ids: Array = PlayerInventory.crafted_items.keys()
-	_rebuild_grid_page(1, _items_grid, instance_ids, func(iid: String) -> Control: return _build_item_cell(iid))
+	_rebuild_grid_page(0, _materials_grid, _entries_for_tab(0), func(name: String) -> Control: return _build_material_cell(name))
+	_rebuild_grid_page(1, _ship_items_grid, _entries_for_tab(1), func(iid: String) -> Control: return _build_item_cell(iid, ShipInventory))
+	_rebuild_grid_page(2, _captain_items_grid, _entries_for_tab(2), func(iid: String) -> Control: return _build_item_cell(iid, CaptainInventory))
 
 
-## Fatiador de página genérico pras 2 abas -- cada uma só difere no builder
+## Fatiador de página genérico pras 3 abas -- cada uma só difere no builder
 ## de célula (`cell_builder`), tudo o resto (clamping de página, slice,
 ## texto/estado do pager) é idêntico.
 func _rebuild_grid_page(tab_index: int, grid: GridContainer, entries: Array, cell_builder: Callable) -> void:
@@ -148,7 +162,7 @@ func _build_material_cell(material_name: String) -> Control:
 	cell.add_child(frame)
 
 	var qty_label := Label.new()
-	qty_label.text = str(PlayerInventory.materials[material_name])
+	qty_label.text = str(ShipInventory.materials[material_name])
 	qty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	qty_label.add_theme_color_override("font_color", Color(0.85, 0.75, 0.4))
 	qty_label.add_theme_font_size_override("font_size", 13)
@@ -158,22 +172,22 @@ func _build_material_cell(material_name: String) -> Control:
 
 func _on_material_hover(frame: Control, material_name: String) -> void:
 	var local_pos: Vector2 = frame.global_position - global_position + Vector2(frame.size.x, 0)
-	_tooltip_zoom.show_for_material(material_name, PlayerInventory.materials[material_name], local_pos, size)
+	_tooltip_zoom.show_for_material(material_name, ShipInventory.materials[material_name], local_pos, size)
 
 
-func _build_item_cell(instance_id: String) -> Control:
-	var rarity: Dictionary = PlayerInventory.get_item_rarity(instance_id)
+func _build_item_cell(instance_id: String, inv: Node) -> Control:
+	var rarity: Dictionary = inv.get_item_rarity(instance_id)
 	var cell := VBoxContainer.new()
 	cell.add_theme_constant_override("separation", 2)
 	cell.custom_minimum_size = Vector2(ICON_FRAME_SIZE + 8, 0)
 
-	var frame := _make_icon_frame(PlayerInventory.get_item_icon(instance_id))
+	var frame := _make_icon_frame(inv.get_item_icon(instance_id))
 	frame.mouse_entered.connect(_on_item_hover.bind(frame, instance_id))
 	frame.mouse_exited.connect(_tooltip_zoom.hide_tooltip)
 	cell.add_child(frame)
 
 	var name_label := Label.new()
-	name_label.text = PlayerInventory.get_item_name(instance_id)
+	name_label.text = inv.get_item_name(instance_id)
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	CraftingManager.style_item_label(name_label, rarity)
@@ -211,6 +225,8 @@ func _make_icon_frame(icon: Texture2D) -> PanelContainer:
 	icon_rect.texture = icon
 	icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon_rect.material = ShaderMaterial.new()
+	icon_rect.material.shader = ITEM_SOFTENER_SHADER
 	frame.add_child(icon_rect)
 	return frame
 

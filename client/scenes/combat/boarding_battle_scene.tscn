@@ -1,0 +1,148 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/boarding_battle_scene.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/sprites/environment/districts/interiors/dark_port.png" id="2_bg"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_attacker_fill"]
+bg_color = Color(0.5, 0.78, 0.42, 0.95)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_left = 3
+corner_radius_bottom_right = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_defender_fill"]
+bg_color = Color(0.82, 0.32, 0.26, 0.95)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_left = 3
+corner_radius_bottom_right = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bar_bg"]
+bg_color = Color(0.1, 0.08, 0.07, 0.9)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_left = 3
+corner_radius_bottom_right = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+bg_color = Color(0.06, 0.05, 0.04, 0.92)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.72, 0.3, 0.22, 0.9)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_left = 8
+corner_radius_bottom_right = 8
+content_margin_left = 24
+content_margin_top = 20
+content_margin_right = 24
+content_margin_bottom = 20
+
+[node name="BoardingBattleScene" type="Control"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="Background" type="TextureRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_bg")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Vignette" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.05, 0.02, 0.02, 0.45)
+
+[node name="Panel" type="PanelContainer" parent="."]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -260.0
+offset_top = -170.0
+offset_right = 260.0
+offset_bottom = 170.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="Margin" type="MarginContainer" parent="Panel"]
+layout_mode = 2
+
+[node name="VBox" type="VBoxContainer" parent="Panel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Title" type="Label" parent="Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.75, 0.55, 1)
+theme_override_font_sizes/font_size = 24
+text = "Abordagem!"
+horizontal_alignment = 1
+
+[node name="Stats" type="VBoxContainer" parent="Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="AttackerLabel" type="Label" parent="Panel/Margin/VBox/Stats"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.82, 0.5, 1)
+theme_override_font_sizes/font_size = 13
+text = "Sua tripulação"
+
+[node name="AttackerBar" type="ProgressBar" parent="Panel/Margin/VBox/Stats"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 16)
+theme_override_styles/fill = SubResource("StyleBoxFlat_attacker_fill")
+theme_override_styles/background = SubResource("StyleBoxFlat_bar_bg")
+show_percentage = false
+
+[node name="DefenderLabel" type="Label" parent="Panel/Margin/VBox/Stats"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.4, 0.35, 1)
+theme_override_font_sizes/font_size = 13
+text = "Navio alvo"
+
+[node name="DefenderBar" type="ProgressBar" parent="Panel/Margin/VBox/Stats"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 16)
+theme_override_styles/fill = SubResource("StyleBoxFlat_defender_fill")
+theme_override_styles/background = SubResource("StyleBoxFlat_bar_bg")
+show_percentage = false
+
+[node name="ReversalLabel" type="Label" parent="Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.75, 0.25, 1)
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 3
+
+[node name="ResultLabel" type="Label" parent="Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+autowrap_mode = 3
+horizontal_alignment = 1
+
+[node name="Buttons" type="HBoxContainer" parent="Panel/Margin/VBox"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 16
+
+[node name="AttackButton" type="Button" parent="Panel/Margin/VBox/Buttons"]
+layout_mode = 2
+text = "Atacar!"
+
+[node name="ReturnButton" type="Button" parent="Panel/Margin/VBox/Buttons"]
+layout_mode = 2
+text = "Retornar ao Mar"

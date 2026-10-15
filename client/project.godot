@@ -31,8 +31,10 @@ ItemDatabase="*res://scripts/autoload/item_database.gd"
 CraftingManager="*res://scripts/managers/crafting_manager.gd"
 EnchantmentManager="*res://scripts/managers/enchantment_manager.gd"
 UIManager="*res://scripts/ui/ui_manager.gd"
-PlayerInventory="*res://scripts/autoload/player_inventory.gd"
-
+ShipInventory="*res://scripts/autoload/ship_inventory.gd"
+CaptainInventory="*res://scripts/autoload/captain_inventory.gd"
+OfficerRoster="*res://scripts/autoload/officer_roster.gd"
+BoardingManager="*res://scripts/autoload/boarding_manager.gd"
 [display]
 
 window/size/viewport_width=1280

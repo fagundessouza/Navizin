@@ -22,6 +22,7 @@ signal closed
 
 const ICON_FRAME_SIZE: float = 28.0
 const ICON_BORDER_COLOR: Color = Color(0.78, 0.65, 0.38, 0.9)
+const ITEM_SOFTENER_SHADER: Shader = preload("res://assets/shaders/ui_item_softener.gdshader")
 
 var _ship: Node2D = null
 
@@ -37,7 +38,7 @@ func _ready() -> void:
 			_title.text = "Munição e Arpões"
 		"log":
 			_title.text = "Diário de Navegação"
-	PlayerInventory.changed.connect(_on_inventory_changed)
+	ShipInventory.changed.connect(_on_inventory_changed)
 
 
 func _process(_delta: float) -> void:
@@ -85,24 +86,24 @@ func _refresh() -> void:
 ## onde vem o bônus.
 func _refresh_cargo() -> void:
 	var total_label := Label.new()
-	var bonuses: Dictionary = PlayerInventory.get_total_bonuses()
+	var bonuses: Dictionary = ShipInventory.get_total_bonuses()
 	total_label.text = "Bônus de carga equipado: +%.0f" % bonuses["cargo_bonus"]
 	total_label.add_theme_color_override("font_color", Color(0.85, 0.82, 0.76))
 	_content.add_child(total_label)
 
-	for slot in PlayerInventory.SHIP_SLOTS:
-		var instance_id: String = PlayerInventory.equipped[slot]
+	for slot in ShipInventory.SHIP_SLOTS:
+		var instance_id: String = ShipInventory.equipped[slot]
 		if instance_id == "":
 			continue
-		var entry: Dictionary = PlayerInventory.crafted_items.get(instance_id, {})
+		var entry: Dictionary = ShipInventory.crafted_items.get(instance_id, {})
 		if entry.get("stats", {}).has("cargo_bonus"):
 			_content.add_child(_build_item_row(instance_id, slot.capitalize()))
 
 
 func _refresh_ammo() -> void:
 	var found: bool = false
-	for instance_id in PlayerInventory.crafted_items:
-		var item_id: String = PlayerInventory.crafted_items[instance_id]["item_id"]
+	for instance_id in ShipInventory.crafted_items:
+		var item_id: String = ShipInventory.crafted_items[instance_id]["item_id"]
 		var category: String = ItemDatabase.get_item(item_id).get("category", "")
 		if category == "municao" or category == "arpao":
 			found = true
@@ -123,13 +124,13 @@ func _refresh_log() -> void:
 
 
 func _build_item_row(instance_id: String, prefix: String) -> Control:
-	var rarity: Dictionary = PlayerInventory.get_item_rarity(instance_id)
+	var rarity: Dictionary = ShipInventory.get_item_rarity(instance_id)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 6)
-	row.add_child(_make_icon_frame(PlayerInventory.get_item_icon(instance_id)))
+	row.add_child(_make_icon_frame(ShipInventory.get_item_icon(instance_id)))
 
 	var label := Label.new()
-	var name_text: String = PlayerInventory.get_item_name(instance_id)
+	var name_text: String = ShipInventory.get_item_name(instance_id)
 	label.text = "%s: %s" % [prefix, name_text] if prefix != "" else name_text
 	CraftingManager.style_item_label(label, rarity)
 	row.add_child(label)
@@ -156,5 +157,7 @@ func _make_icon_frame(icon: Texture2D) -> PanelContainer:
 	icon_rect.texture = icon
 	icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon_rect.material = ShaderMaterial.new()
+	icon_rect.material.shader = ITEM_SOFTENER_SHADER
 	frame.add_child(icon_rect)
 	return frame

@@ -14,7 +14,7 @@ extends Control
 ## EQUIPAR DE VERDADE: os 6 slots agora abrem o `InventoryPickerSubmodal`
 ## igual ao `ship_status_modal.gd` -- itens de verdade fabricados na Feira
 ## Comerciante, raridade colorida, brilho de raridade/refino no slot, tooltip
-## com Float Value. `PlayerInventory.get_captain_bonuses()` alimenta
+## com Float Value. `CaptainInventory.get_captain_bonuses()` alimenta
 ## `_stats_label`, mostrando Liderança/Dano Crítico de Abordagem/Velocidade
 ## Nodal/Penetração de Blindagem/Dano Elemental ao vivo -- sem sistema de
 ## combate ou navegação pra CONSUMIR esses números ainda (mesma situação do
@@ -67,7 +67,7 @@ func _ready() -> void:
 	$CloseButton.pressed.connect(close)
 	_picker.instance_selected.connect(_on_instance_selected)
 	CaptainAttributes.changed.connect(_refresh_attributes)
-	PlayerInventory.changed.connect(_refresh_slots)
+	CaptainInventory.changed.connect(_refresh_slots)
 	_build_equip_slots()
 	_build_attribute_buttons()
 	_refresh_attributes()
@@ -107,7 +107,7 @@ func _build_equip_slots() -> void:
 ## `ship_status_modal.gd` ("no craft ou inventário"). Slot vazio não mostra
 ## nada.
 func _on_slot_hover(button: Button, category: String) -> void:
-	var instance_id: String = PlayerInventory.equipped_captain.get(category, "")
+	var instance_id: String = CaptainInventory.equipped_captain.get(category, "")
 	if instance_id == "":
 		return
 	_tooltip_zoom.show_for_instance(instance_id, button.position + Vector2(button.size.x, 0), PANEL_SIZE)
@@ -172,34 +172,34 @@ func _on_attribute_pressed(button: Button, attr: String) -> void:
 
 
 func _on_instance_selected(category: String, instance_id: String) -> void:
-	PlayerInventory.equip_captain_slot(category, instance_id)
+	CaptainInventory.equip_captain_slot(category, instance_id)
 
 
 ## Reescreve o tooltip de cada slot (nome + raridade + Float) e liga/desliga
 ## o brilho de raridade/refino -- chamado em `_ready()` e toda vez que
-## `PlayerInventory.changed` dispara. Também atualiza `_stats_label` com os
+## `CaptainInventory.changed` dispara. Também atualiza `_stats_label` com os
 ## 5 atributos reais do capitão.
 func _refresh_slots() -> void:
 	for data in PAPERDOLL_SLOTS:
 		var category: String = data["category"]
-		var instance_id: String = PlayerInventory.equipped_captain.get(category, "")
+		var instance_id: String = CaptainInventory.equipped_captain.get(category, "")
 		_refresh_one_slot(_slot_buttons[category], _slot_glows[category], instance_id, data["label"])
 	_update_stats_label()
 
 
 func _refresh_one_slot(button: Button, glow: ColorRect, instance_id: String, empty_label: String) -> void:
-	var item_name: String = PlayerInventory.get_item_name(instance_id)
+	var item_name: String = CaptainInventory.get_item_name(instance_id)
 	if item_name == "":
 		button.tooltip_text = empty_label
 		glow.visible = false
 		return
 
-	var rarity: Dictionary = PlayerInventory.get_item_rarity(instance_id)
-	var float_line: String = PlayerInventory.get_float_tooltip_line(instance_id)
+	var rarity: Dictionary = CaptainInventory.get_item_rarity(instance_id)
+	var float_line: String = CaptainInventory.get_float_tooltip_line(instance_id)
 	button.tooltip_text = "%s\n[%s] %s\n%s" % [empty_label, rarity["name"], item_name, float_line]
 
-	var refine_level: int = PlayerInventory.get_refine_level(instance_id)
-	var float_value: float = PlayerInventory.get_float_value(instance_id)
+	var refine_level: int = CaptainInventory.get_refine_level(instance_id)
+	var float_value: float = CaptainInventory.get_float_value(instance_id)
 	var aura_mode: int = _aura_mode_for(instance_id, rarity, float_value, refine_level)
 	# Brilho aparece se a RARIDADE já pedia (Blue+) OU se o Float/Refino
 	# sozinho já rendeu uma aura -- um item White com Float 0.99 não devia
@@ -220,7 +220,7 @@ func _refresh_one_slot(button: Button, glow: ColorRect, instance_id: String, emp
 ## "místico" o bastante pra entrar na checagem rúnica; os outros 5 nunca
 ## disparam esse modo).
 func _aura_mode_for(instance_id: String, rarity: Dictionary, float_value: float, refine_level: int) -> int:
-	var item_id: String = PlayerInventory.crafted_items.get(instance_id, {}).get("item_id", "")
+	var item_id: String = CaptainInventory.crafted_items.get(instance_id, {}).get("item_id", "")
 	var category: String = ItemDatabase.get_item(item_id).get("category", "")
 	var default_aura: int = rarity.get("default_aura", 0)
 	if category == "secundaria" and (float_value >= 0.90 or refine_level >= 10):
@@ -235,7 +235,7 @@ func _aura_mode_for(instance_id: String, rarity: Dictionary, float_value: float,
 
 
 func _update_stats_label() -> void:
-	var bonuses: Dictionary = PlayerInventory.get_captain_bonuses()
+	var bonuses: Dictionary = CaptainInventory.get_captain_bonuses()
 	_stats_label.text = "Liderança: +%.0f   Crítico de Abordagem: +%.0f%%   Veloc. Nodal: +%.0f   Penetração: +%.0f%%   Dano Elemental: +%.0f%%" % [
 		bonuses["leadership_bonus"],
 		bonuses["boarding_crit_bonus"] * 100.0,

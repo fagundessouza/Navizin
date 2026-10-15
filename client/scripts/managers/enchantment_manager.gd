@@ -1,8 +1,8 @@
 extends Node
 ## Autoload: refino de equipamento (+0 a +15), estilo Lineage 2/Ragnarok/
-## Grand Chase. `PlayerInventory.refine_instance()` chama `refine_item()`
-## aqui pra decidir o resultado -- quem cobra/consome Pedra de
-## Refino/Pergaminho de Proteção é o `PlayerInventory`, este arquivo só
+## Grand Chase. `ShipInventory.refine_instance()`/`CaptainInventory.refine_instance()`
+## chamam `refine_item()` aqui pra decidir o resultado -- quem cobra/consome
+## Pedra de Refino/Pergaminho de Proteção é quem chamou, este arquivo só
 ## sabe de chance e risco, não de inventário.
 
 ## +1 a +3: zona segura, nunca falha. +4 a +7: falha regride 1 nível, nunca

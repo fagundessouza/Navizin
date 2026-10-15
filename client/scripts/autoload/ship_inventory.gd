@@ -1,71 +1,52 @@
 extends Node
-## Autoload: materiais do jogador, itens fabricados (Porão do Navio / Mochila
-## do Capitão) e o que está equipado no Galeão. Sem Sea Hunt (coleta no mar)
-## de verdade ainda -- `_seed_materials()` dá um estoque inicial generoso de
-## cada material citado nas receitas de `item_database.gd`, só pra dar o que
-## fabricar e testar o fluxo inteiro (igual ao padrão já usado em
-## `CaptainAttributes.available_points`).
+## Autoload: inventário DESTRUÍVEL do Galeão -- Casco/Proa/Velas/Canhões/
+## Munição/Arpão/Relíquia/Leme, mais os MATERIAIS BRUTOS (o porão de carga
+## físico, de onde sai tanto o que o navio usa quanto o que o Capitão gasta
+## pra fabricar o próprio equipamento -- ver `CaptainInventory.craft()`).
+##
+## SEPARAÇÃO EXPLÍCITA PEDIDA: isto aqui é tudo que SOME quando o navio
+## afunda (sem sistema de afundamento de verdade ainda -- só a separação de
+## dados, pronta pra quando existir). `CaptainInventory` é o espelho
+## permanente (Capitão/joias/trajes), nunca tocado por esse processo.
+##
+## Antes desta rodada, isto e `CaptainInventory` eram um autoload só
+## (`PlayerInventory`) com dois conjuntos de slot dentro -- 2 arquivos com
+## `craft()`/refino/durabilidade praticamente duplicados é mais simples de
+## acompanhar do que um `if captain_or_ship` espalhado por toda função,
+## consistente com o resto do projeto (duplicar em vez de generalizar cedo
+## demais).
 
 signal changed
 
 const STARTER_QTY: int = 15
 const CANNON_SLOT_COUNT: int = 20
 
-## Materiais de refino -- não vêm de nenhuma receita de craft, então não
-## entram no `_seed_materials()` genérico; seedados à parte, com um estoque
-## menor que `STARTER_QTY` pra "pedra de refino acaba rápido" ser visível.
 const REFINE_STONE: String = "Pedra de Refino"
 const PROTECTION_SCROLL: String = "Pergaminho de Proteção"
 const REFINE_STARTER_QTY: int = 30
 const PROTECTION_STARTER_QTY: int = 5
 
-## Durabilidade estilo BDO: todo item nasce no máximo, refinar gasta um
-## pouco mesmo quando dá certo (o metal/tecido sofre no processo), e gasta
-## MUITO mais numa falha (o jato de pólvora/martelada que não deu certo
-## estressa o material). Isso aqui é a durabilidade ATUAL -- some igual a
-## uma barra de vida comum.
 const MAX_DURABILITY: float = 100.0
 const DURABILITY_COST_SUCCESS: float = 3.0
 const DURABILITY_COST_FAILURE: float = 10.0
-
-## Durabilidade MÁXIMA estilo BDO: diferente da atual acima, essa é o TETO
-## da barra, e só uma FALHA de refino reduz ela (sucesso não mexe aqui --
-## só o "estresse" de uma tentativa que deu errado desgasta a estrutura do
-## item de um jeito que nem recuperar a durabilidade atual conserta). Nasce
-## em `MAX_DURABILITY` (100) igual à atual, cai `MAX_DURABILITY_LOSS_ON_FAIL`
-## por falha, com piso em `MAX_DURABILITY_FLOOR` (nunca chega a 0 -- um item
-## "capenga" ainda deve dar pra equipar, só com uma barra bem mais curta).
-## A Oficina de Manutenção (`RefinementModal`, botão "Reparar") devolve ao
-## teto cheio por um custo em material.
 const MAX_DURABILITY_LOSS_ON_FAIL: float = 5.0
 const MAX_DURABILITY_FLOOR: float = 20.0
 const REPAIR_KIT: String = "Kit de Reparo"
 const REPAIR_KIT_STARTER_QTY: int = 5
 const REPAIR_KIT_COST: int = 2
 
-## Slots de peça única do Galeão (fora a grade de canhão, que é `equipped_cannons`).
 const SHIP_SLOTS: Array[String] = ["vela", "casco", "leme", "proa", "relíquia_ebenruth"]
-## Slots de equipamento do Capitão -- ficha do capitão, não o navio. Separado
-## de `SHIP_SLOTS` porque um brinco não deveria mexer no casco do navio
-## (`get_captain_bonuses()` é um total à parte de `get_total_bonuses()`).
-const CAPTAIN_SLOTS: Array[String] = ["brincos", "colar", "anel", "cinto", "trajes", "secundaria"]
 
+## Materiais brutos -- compartilhados com `CaptainInventory.craft()` (o
+## Capitão também gasta madeira/prata/etc daqui, só o RESULTADO fabricado é
+## que vai pro inventário permanente dele).
 var materials: Dictionary = {}
-## instance_id (String) -> {item_id, instance_id, rarity_id, display_name,
-## stats, refine_level, float_value}. `instance_id` existe porque dois
-## Canhões Tier I fabricados separados são objetos diferentes -- com
-## `CraftingManager`, também podem ter raridade, Float e nome diferentes, e
-## com `EnchantmentManager`, refino diferente. `stats` aqui já tem a
-## raridade E o Float multiplicados (os dois são fixados no craft, não mudam
-## depois); o bônus de REFINO é aplicado por cima dinamicamente em
-## `get_total_bonuses()`/`get_captain_bonuses()`, não gravado aqui, porque
-## `refine_level` muda ao longo da vida do item.
+## instance_id ("s_%d") -> {item_id, instance_id, rarity_id, display_name,
+## stats, durability, max_durability, float_value, refine_level}. Só itens
+## de categoria do NAVIO (armamento/vela/casco/proa/relíquia_ebenruth/leme/
+## municao/arpao) -- itens do Capitão vivem em `CaptainInventory.crafted_items`.
 var crafted_items: Dictionary = {}
-## slot (de `SHIP_SLOTS`) -> instance_id equipado ali, ou "" se vazio.
 var equipped: Dictionary = {}
-## slot (de `CAPTAIN_SLOTS`) -> instance_id equipado ali, ou "" se vazio.
-var equipped_captain: Dictionary = {}
-## índice 0..19 -> instance_id equipado naquele canhão, ou "" se vazio.
 var equipped_cannons: Array[String] = []
 
 var _next_instance_id: int = 1
@@ -75,15 +56,10 @@ func _ready() -> void:
 	_seed_materials()
 	for slot in SHIP_SLOTS:
 		equipped[slot] = ""
-	for slot in CAPTAIN_SLOTS:
-		equipped_captain[slot] = ""
 	equipped_cannons.resize(CANNON_SLOT_COUNT)
 	equipped_cannons.fill("")
 
 
-## Soma todo material citado em qualquer receita e dá `STARTER_QTY` de cada
-## -- lê de `ItemDatabase.RECIPES` em vez de listar os ~26 materiais aqui de
-## novo, pra nunca ficar fora de sincronia com as receitas de verdade.
 func _seed_materials() -> void:
 	for item_id in ItemDatabase.RECIPES:
 		var recipe: Dictionary = ItemDatabase.RECIPES[item_id]
@@ -106,19 +82,20 @@ func has_materials_for(item_id: String) -> bool:
 	return true
 
 
-## Consome os materiais, sorteia raridade E Float Value
-## (`CraftingManager.roll_rarity()`/`roll_float_value()`) e acrescenta uma
-## instância nova do item fabricado no Porão do Navio / Mochila do Capitão --
-## nome e stats já vêm com os dois bônus aplicados (multiplicam em cadeia,
-## raridade primeiro, Float depois). Retorna "" se faltou material.
+## Só fabrica item de categoria do NAVIO -- `CraftingModal` já só mostra
+## receitas da estação/categoria certa em cada aba, então isto nunca é
+## chamado com um `item_id` do Capitão na prática, mas o `assert` deixa o
+## erro óbvio se algum dia acontecer, em vez de criar um item fantasma.
 func craft(item_id: String) -> String:
+	var item: Dictionary = ItemDatabase.get_item(item_id)
+	if item.is_empty() or ItemDatabase.is_captain_category(item.get("category", "")):
+		return ""
 	if not has_materials_for(item_id):
 		return ""
 	var recipe: Dictionary = ItemDatabase.get_recipe(item_id)
 	for material_name in recipe["materials"]:
 		materials[material_name] -= recipe["materials"][material_name]
 
-	var item: Dictionary = ItemDatabase.get_item(item_id)
 	var rarity: Dictionary = CraftingManager.roll_rarity()
 	var float_value: float = CraftingManager.roll_float_value()
 	var display_name: String = CraftingManager.generate_name(item.get("name", item_id), rarity)
@@ -128,7 +105,7 @@ func craft(item_id: String) -> String:
 	for key in rarity_stats:
 		stats[key] = rarity_stats[key] * float_mult
 
-	var instance_id: String = "item_%d" % _next_instance_id
+	var instance_id: String = "s_%d" % _next_instance_id
 	_next_instance_id += 1
 	crafted_items[instance_id] = {
 		"item_id": item_id,
@@ -144,16 +121,11 @@ func craft(item_id: String) -> String:
 	return instance_id
 
 
-## Itens fabricados e NÃO equipados em lugar nenhum, da categoria pedida --
-## é o que o `InventoryPickerSubmodal` lista pra um slot do Galeão/Capitão.
 func get_unequipped_for_category(category: String) -> Array[Dictionary]:
 	var equipped_ids: Dictionary = {}
 	for slot in SHIP_SLOTS:
 		if equipped[slot] != "":
 			equipped_ids[equipped[slot]] = true
-	for slot in CAPTAIN_SLOTS:
-		if equipped_captain[slot] != "":
-			equipped_ids[equipped_captain[slot]] = true
 	for cannon_id in equipped_cannons:
 		if cannon_id != "":
 			equipped_ids[cannon_id] = true
@@ -176,13 +148,6 @@ func equip_slot(slot: String, instance_id: String) -> void:
 	changed.emit()
 
 
-func equip_captain_slot(slot: String, instance_id: String) -> void:
-	if not CAPTAIN_SLOTS.has(slot):
-		return
-	equipped_captain[slot] = instance_id
-	changed.emit()
-
-
 func equip_cannon(index: int, instance_id: String) -> void:
 	if index < 0 or index >= CANNON_SLOT_COUNT:
 		return
@@ -190,10 +155,6 @@ func equip_cannon(index: int, instance_id: String) -> void:
 	changed.emit()
 
 
-## Custo em Pedra de Refino por tentativa -- cresce com a zona de risco do
-## nível-alvo, não é um número fixo (refinar além de +12 custa mais que
-## refinar de +1 a +3). Público porque `RefinementModal` mostra esse custo
-## antes de tentar, não só no momento de gastar.
 func refine_stone_cost(target_level: int) -> int:
 	if target_level <= 7:
 		return 1
@@ -202,9 +163,6 @@ func refine_stone_cost(target_level: int) -> int:
 	return 3
 
 
-## Se dá pra tentar refinar: tem o item, não está no +15, e tem material
-## suficiente pro custo (e pro pergaminho, se for usar um). A UI de refino
-## chama isso pra desabilitar o botão "Tentar Refino" antes mesmo de tentar.
 func can_refine(instance_id: String, use_protection: bool) -> bool:
 	if not crafted_items.has(instance_id):
 		return false
@@ -218,11 +176,6 @@ func can_refine(instance_id: String, use_protection: bool) -> bool:
 	return true
 
 
-## Consome Pedra de Refino (e Pergaminho de Proteção, se pedido) e chama
-## `EnchantmentManager.refine_item()` -- se o resultado destrói o item,
-## também desequipa (de onde quer que estivesse) e apaga de `crafted_items`.
-## Retorna o mesmo dicionário de `refine_item()`, ou `{"outcome": "cannot"}`
-## se `can_refine()` já tivesse recusado.
 func refine_instance(instance_id: String, use_protection: bool) -> Dictionary:
 	if not can_refine(instance_id, use_protection):
 		return {"outcome": "cannot", "new_level": 0, "destroyed": false}
@@ -242,10 +195,6 @@ func refine_instance(instance_id: String, use_protection: bool) -> Dictionary:
 		var cost: float = DURABILITY_COST_SUCCESS if is_success else DURABILITY_COST_FAILURE
 		var max_dur: float = entry.get("max_durability", MAX_DURABILITY)
 		if not is_success:
-			# BDO style: só FALHA desgasta o TETO -- sucesso só gasta da barra
-			# atual (já tratado acima, igual sempre foi). Nunca passa do piso
-			# (`MAX_DURABILITY_FLOOR`), pra um item muito refinado não virar
-			# inutilizável de vez só de apanhar tentando subir de novo.
 			max_dur = maxf(MAX_DURABILITY_FLOOR, max_dur - MAX_DURABILITY_LOSS_ON_FAIL)
 			entry["max_durability"] = max_dur
 		entry["durability"] = clampf(entry.get("durability", MAX_DURABILITY) - cost, 0.0, max_dur)
@@ -265,10 +214,6 @@ func get_max_durability(instance_id: String) -> float:
 	return crafted_items[instance_id].get("max_durability", MAX_DURABILITY)
 
 
-## Oficina de Manutenção (`RefinementModal`): repõe o TETO de volta a
-## `MAX_DURABILITY` (não só a barra atual -- `repair_instance` já faria isso
-## de um jeito mais barato se fosse só a atual; aqui é especificamente o
-## reparo estrutural pedido, "recuperar a durabilidade máxima").
 func can_repair(instance_id: String) -> bool:
 	if not crafted_items.has(instance_id):
 		return false
@@ -292,17 +237,11 @@ func _unequip_everywhere(instance_id: String) -> void:
 	for slot in SHIP_SLOTS:
 		if equipped[slot] == instance_id:
 			equipped[slot] = ""
-	for slot in CAPTAIN_SLOTS:
-		if equipped_captain[slot] == instance_id:
-			equipped_captain[slot] = ""
 	for i in equipped_cannons.size():
 		if equipped_cannons[i] == instance_id:
 			equipped_cannons[i] = ""
 
 
-## Nome com prefixo de raridade embutido (ex: "Canhão Abissal Tier I da
-## Devastação") e, se refinado, o prefixo de nível na frente (ex: "[+12]
-## Canhão de Ouro") -- o que a UI deveria mostrar em vez do `item_id`/nome-base.
 func get_item_name(instance_id: String) -> String:
 	if instance_id == "" or not crafted_items.has(instance_id):
 		return ""
@@ -326,9 +265,6 @@ func get_float_value(instance_id: String) -> float:
 	return crafted_items[instance_id].get("float_value", 0.0)
 
 
-## "Float: 0.990 (Perfeito)" -- linha pronta pra colar num tooltip, pedida
-## explicitamente ("exiba o valor do Float e a classificação... no
-## Tooltip").
 func get_float_tooltip_line(instance_id: String) -> String:
 	if instance_id == "" or not crafted_items.has(instance_id):
 		return ""
@@ -343,21 +279,20 @@ func get_item_icon(instance_id: String) -> Texture2D:
 	return item.get("icon", null)
 
 
-## Dicionário de `CraftingManager.RARITIES` (tem `id`/`name`/`color`/
-## `lightning`) -- "" devolve White, pra quem for colorir um slot vazio não
-## precisar checar nulo.
 func get_item_rarity(instance_id: String) -> Dictionary:
 	if instance_id == "" or not crafted_items.has(instance_id):
 		return CraftingManager.get_rarity("white")
 	return CraftingManager.get_rarity(crafted_items[instance_id].get("rarity_id", "white"))
 
 
-## Soma os bônus (`hull_bonus`/`cargo_bonus`/`speed_bonus`/`damage_mult_bonus`)
-## de tudo que está equipado -- `ship_base.gd.recalc_equipment_bonuses()`
-## chama isso direto, sem duplicar a lógica de percorrer slots lá. Lê
-## `entry["stats"]` (já multiplicado pela raridade daquela instância) e
-## multiplica de novo pelo bônus de REFINO atual daquela instância --
-## `ItemDatabase` só tem o bônus-base de referência, sem raridade nem refino.
+## Soma os bônus de tudo equipado no navio (peça única + canhões) --
+## `ship_base.gd.recalc_equipment_bonuses()` chama isso direto. As 4 chaves
+## de sempre (`hull_bonus`/`cargo_bonus`/`speed_bonus`/`damage_mult_bonus`)
+## continuam fixas no total pra não quebrar quem já lê essas 4; as novas do
+## dicionário de status avançado (`reload_speed_bonus`/`turn_rate_bonus`/
+## `braking_bonus`/`wind_resistance_bonus`/`armor_pen_bonus`) entram
+## dinamicamente, só aparecendo no total se algum item equipado tiver essa
+## chave -- não precisam de uma entrada "0.0" fixa pra existir.
 func get_total_bonuses() -> Dictionary:
 	var totals: Dictionary = {"hull_bonus": 0.0, "cargo_bonus": 0.0, "speed_bonus": 0.0, "damage_mult_bonus": 0.0}
 	var instance_ids: Array = []
@@ -375,31 +310,5 @@ func get_total_bonuses() -> Dictionary:
 		var stats: Dictionary = entry.get("stats", {})
 		var refine_mult: float = EnchantmentManager.stat_multiplier_for(entry.get("refine_level", 0))
 		for key in stats:
-			if totals.has(key):
-				totals[key] += stats[key] * refine_mult
-	return totals
-
-
-## Mesma lógica de `get_total_bonuses()`, mas pros 6 slots do CAPITÃO
-## (`CAPTAIN_SLOTS`), somando `leadership_bonus`/`boarding_crit_bonus`/
-## `node_speed_bonus`/`armor_pen_bonus`/`elemental_damage_bonus` -- um brinco
-## ou colar nunca deveria entrar no total do navio, por isso é uma função
-## (e um total) à parte, não um `if` a mais dentro de `get_total_bonuses()`.
-func get_captain_bonuses() -> Dictionary:
-	var totals: Dictionary = {
-		"leadership_bonus": 0.0, "boarding_crit_bonus": 0.0, "node_speed_bonus": 0.0,
-		"armor_pen_bonus": 0.0, "elemental_damage_bonus": 0.0,
-	}
-	for slot in CAPTAIN_SLOTS:
-		var instance_id: String = equipped_captain[slot]
-		if instance_id == "":
-			continue
-		var entry: Dictionary = crafted_items.get(instance_id, {})
-		if entry.is_empty():
-			continue
-		var stats: Dictionary = entry.get("stats", {})
-		var refine_mult: float = EnchantmentManager.stat_multiplier_for(entry.get("refine_level", 0))
-		for key in stats:
-			if totals.has(key):
-				totals[key] += stats[key] * refine_mult
+			totals[key] = totals.get(key, 0.0) + stats[key] * refine_mult
 	return totals

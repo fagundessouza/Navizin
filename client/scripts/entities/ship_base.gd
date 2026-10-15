@@ -201,6 +201,14 @@ var cannon_damage_mult: float = 1.0
 
 ## Casco mudou: valor atual e máximo, para a interface do capitão.
 signal hull_changed(hull_value: float, max_value: float)
+## Casco cruzou o limiar de vulnerabilidade (`BoardingManager.VULNERABLE_THRESHOLD`,
+## 25%) pra cima ou pra baixo -- usado pra mostrar/esconder o marcador de
+## abordagem ("Espadas Cruzadas em Chamas", pedido explícito) sem precisar
+## que `ocean_map.gd`/quem mais fique checando o casco todo frame.
+signal vulnerability_changed(vulnerable: bool)
+var _was_vulnerable: bool = false
+const BOARDING_MARKER_SCENE: PackedScene = preload("res://scenes/entities/boarding_marker.tscn")
+var _boarding_marker: Node2D = null
 
 ## Vento global (autoload `WindManager`), obtido no _ready.
 var _wind: Node = null
@@ -246,7 +254,8 @@ func _ready() -> void:
 	_base_max_cargo = data.max_cargo
 	_base_max_speed = data.max_speed
 	if player_controlled:
-		PlayerInventory.changed.connect(recalc_equipment_bonuses)
+		ShipInventory.changed.connect(recalc_equipment_bonuses)
+		OfficerRoster.changed.connect(recalc_equipment_bonuses)
 		recalc_equipment_bonuses()
 	for node in [_sprite, _shadow]:
 		node.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
@@ -940,6 +949,31 @@ func apply_damage(amount: float) -> void:
 	hull_changed.emit(hull, max_hull)
 	if amount > 0.0:
 		_spawn_smoke_burst(global_position, SMOKE_SOFT_TEXTURE, 0.3 * SIZE_FACTOR, 0.8)
+	_update_vulnerability()
+
+
+## "Ao ativar a abordagem em um navio vulnerável (<25% HP)... substitua os
+## dois navios travados por um nó indicador" -- em vez de travar o navio
+## (ele continua navegando normal), só liga/desliga um marcador flutuante
+## acima dele quando cruza o limiar. Qualquer navio (jogador ou NPC, já que
+## `ship_base.gd` é a base dos dois) pode ficar vulnerável e ganhar o
+## marcador -- não é exclusivo de inimigo.
+func _update_vulnerability() -> void:
+	var vulnerable: bool = BoardingManager.is_vulnerable(self)
+	if vulnerable == _was_vulnerable:
+		return
+	_was_vulnerable = vulnerable
+	vulnerability_changed.emit(vulnerable)
+	if vulnerable:
+		if _boarding_marker == null:
+			_boarding_marker = BOARDING_MARKER_SCENE.instantiate()
+			add_child(_boarding_marker)
+			_boarding_marker.position = Vector2(0, -70.0 * SIZE_FACTOR)
+			if _boarding_marker.has_method("set_target_ship"):
+				_boarding_marker.set_target_ship(self)
+	elif _boarding_marker != null:
+		_boarding_marker.queue_free()
+		_boarding_marker = null
 
 
 ## Fração de recarga da bordada mais lenta (0 = pronto, 1 = recém disparado).
@@ -953,16 +987,23 @@ func regen_supply(amount: float) -> void:
 
 
 ## Recalcula casco máximo, carga máxima, velocidade máxima e o multiplicador
-## de dano por disparo a partir do que está equipado em `PlayerInventory`
-## (Vela/Casco/Leme/Proa/Relíquia + os 20 canhões) -- chamado toda vez que
-## `PlayerInventory.changed` dispara (equipar/desequipar/fabricar), não só
-## uma vez no `_ready()`.
+## de dano por disparo a partir do que está equipado em `ShipInventory`
+## (Vela/Casco/Leme/Proa/Relíquia + os 20 canhões) MAIS os Oficiais de Bordo
+## contratados (`OfficerRoster`) -- chamado toda vez que `ShipInventory.changed`
+## ou `OfficerRoster.changed` dispara (equipar/desequipar/fabricar/contratar/
+## dispensar), não só uma vez no `_ready()`. Equipamento do CAPITÃO
+## (`CaptainInventory`) nunca entra aqui -- um anel não deveria mexer no
+## casco do navio (mesma separação de sempre, só que agora em autoloads
+## distintos em vez de dois dicionários dentro do mesmo).
 ##
 ## Sempre soma em cima de `_base_*` (o valor ANTES de qualquer bônus), nunca
 ## em cima do `max_hull`/`data.max_speed` já bonificado -- senão reequipar o
 ## mesmo item duas vezes ia empilhar o bônus de novo a cada chamada.
 func recalc_equipment_bonuses() -> void:
-	var bonuses: Dictionary = PlayerInventory.get_total_bonuses()
+	var bonuses: Dictionary = ShipInventory.get_total_bonuses()
+	var officer_bonuses: Dictionary = OfficerRoster.get_officer_bonuses()
+	for key in officer_bonuses:
+		bonuses[key] = bonuses.get(key, 0.0) + officer_bonuses[key]
 
 	var old_max_hull: float = max_hull
 	max_hull = _base_max_hull + bonuses["hull_bonus"]

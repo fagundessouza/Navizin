@@ -1,6 +1,10 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/item_tooltip_zoom.gd" id="1_script"]
+[ext_resource type="Shader" path="res://assets/shaders/ui_item_softener.gdshader" id="2_softener"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_softener"]
+shader = ExtResource("2_softener")
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_durability_bg"]
 bg_color = Color(0.1, 0.09, 0.08, 1)
@@ -60,6 +64,7 @@ mouse_filter = 2
 [node name="Icon" type="TextureRect" parent="Box/Margin/VBox/IconFrame"]
 layout_mode = 2
 mouse_filter = 2
+material = SubResource("ShaderMaterial_softener")
 expand_mode = 1
 stretch_mode = 5
 
