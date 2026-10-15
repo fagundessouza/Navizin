@@ -2,7 +2,6 @@
 
 [ext_resource type="Script" path="res://scripts/cities/city_district_base.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/sprites/environment/districts/interiors/dark_port.png" id="2_bg"]
-[ext_resource type="PackedScene" path="res://scenes/ui/trade_modal.tscn" id="3_modal"]
 [ext_resource type="PackedScene" path="res://scenes/ui/crafting_modal.tscn" id="4_crafting"]
 
 [node name="SupplyMarketDistrict" type="Control"]
@@ -86,30 +85,17 @@ text = "Mapa da Ilha"
 layout_mode = 2
 text = "Voltar ao Mar"
 
-[node name="OpenShopButton" type="Button" parent="."]
+[node name="OpenCraftingButton" type="Button" parent="."]
 offset_left = 24.0
 offset_top = 148.0
 offset_right = 168.0
 offset_bottom = 180.0
 text = "Abrir Feira"
 
-[node name="TradeModal" parent="." instance=ExtResource("3_modal")]
-visible = false
-shop_title = "Feira Comerciante"
-tabs = PackedStringArray("Alimentos e Bebidas", "Suprimentos de Bordo")
-action_buttons = PackedStringArray()
-resource_hint = "Use o botão \"Fabricar Equipamentos do Capitão\" abaixo pra abrir a estação de verdade."
-
-[node name="OpenCraftingButton" type="Button" parent="."]
-offset_left = 24.0
-offset_top = 188.0
-offset_right = 240.0
-offset_bottom = 220.0
-text = "Fabricar Equip. do Capitão"
-
 [node name="CraftingModal" parent="." instance=ExtResource("4_crafting")]
 visible = false
-panel_title = "Feira Comerciante -- Equipamentos do Capitão"
+panel_title = "Feira Comerciante"
 station = "feira"
-categories = PackedStringArray("anel", "brincos", "colar", "cinto", "trajes", "secundaria")
-category_labels = PackedStringArray("Anéis", "Brincos", "Colares", "Cintos", "Trajes", "Secundária")
+categories = PackedStringArray("anel,brincos,colar,cinto,trajes,secundaria", "municao,arpao")
+category_labels = PackedStringArray("Equipamentos do Capitão", "Suprimentos de Bordo")
+category_stations = PackedStringArray("", "forja")

@@ -1,12 +1,10 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Texture2D" path="res://assets/ui/frames/portrait_frame.png" id="1_frame"]
 [ext_resource type="Texture2D" path="res://assets/ui/bars/mini_skull.png" id="2_skull"]
 [ext_resource type="Texture2D" path="res://assets/ui/bars/mini_barrel.png" id="3_barrel"]
-[ext_resource type="Texture2D" path="res://assets/ui/bars/mini_compass.png" id="4_compass"]
 [ext_resource type="Texture2D" path="res://assets/ui/bars/fill_petrol.png" id="5_petrol"]
 [ext_resource type="Texture2D" path="res://assets/ui/bars/fill_gold_supply.png" id="6_gold"]
-[ext_resource type="Texture2D" path="res://assets/ui/bars/fill_wind.png" id="7_wind"]
 
 [ext_resource type="Shader" path="res://assets/shaders/mystic_bar.gdshader" id="8_shader"]
 [ext_resource type="FontFile" path="res://assets/fonts/Cinzel-Variable.ttf" id="9_font"]
@@ -28,26 +26,34 @@ shader_parameter/top_color = Color(1, 0.85, 0.4, 1)
 shader_parameter/bottom_color = Color(0.7, 0.38, 0.08, 1)
 shader_parameter/glow_color = Color(1, 0.9, 0.6, 1)
 
-[sub_resource type="ShaderMaterial" id="Mat_wind"]
-shader = ExtResource("8_shader")
-shader_parameter/top_color = Color(0.8, 0.95, 1, 1)
-shader_parameter/bottom_color = Color(0.25, 0.55, 0.9, 1)
-shader_parameter/glow_color = Color(0.85, 0.97, 1, 1)
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_shot_fill"]
+bg_color = Color(0.55, 0.78, 0.35, 0.95)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_left = 3
+corner_radius_bottom_right = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_shot_bg"]
+bg_color = Color(0.1, 0.08, 0.06, 0.85)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_left = 3
+corner_radius_bottom_right = 3
 
 [node name="CaptainStatus" type="Control"]
-custom_minimum_size = Vector2(380, 200)
-scale = Vector2(0.8, 0.8)
-pivot_offset = Vector2(0, 200)
+custom_minimum_size = Vector2(380, 170)
+scale = Vector2(0.65, 0.65)
+pivot_offset = Vector2(0, 170)
 layout_mode = 3
 offset_right = 380.0
-offset_bottom = 200.0
+offset_bottom = 170.0
 mouse_filter = 2
 
 [node name="Portrait" type="TextureRect" parent="."]
 layout_mode = 0
 offset_top = 9.0
 offset_right = 142.0
-offset_bottom = 184.0
+offset_bottom = 160.0
 texture = ExtResource("1_frame")
 expand_mode = 1
 stretch_mode = 5
@@ -67,9 +73,9 @@ mouse_filter = 2
 [node name="HullFill" type="TextureProgressBar" parent="."]
 layout_mode = 0
 offset_left = 218.0
-offset_top = 10
+offset_top = 18
 offset_right = 374.0
-offset_bottom = 42
+offset_bottom = 34
 min_value = 0.0
 max_value = 1.0
 value = 1.0
@@ -80,14 +86,14 @@ mouse_filter = 2
 [node name="HullLabel" type="Label" parent="."]
 layout_mode = 0
 offset_left = 218.0
-offset_top = 8
+offset_top = 16
 offset_right = 374.0
-offset_bottom = 44
+offset_bottom = 36
 theme_override_colors/font_color = Color(0.953, 0.898, 0.671, 1)
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
 theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 2
-theme_override_font_sizes/font_size = 15
+theme_override_font_sizes/font_size = 13
 theme_override_fonts/font = SubResource("Font_label")
 text = "CASCO 1000 / 1000"
 horizontal_alignment = 1
@@ -100,7 +106,7 @@ layout_mode = 0
 offset_left = 150.0
 offset_top = 56
 offset_right = 404.0
-offset_bottom = 124
+offset_bottom = 109
 texture = ExtResource("3_barrel")
 expand_mode = 0
 stretch_mode = 0
@@ -109,9 +115,9 @@ mouse_filter = 2
 [node name="SupplyFill" type="TextureProgressBar" parent="."]
 layout_mode = 0
 offset_left = 218.0
-offset_top = 72
+offset_top = 74
 offset_right = 374.0
-offset_bottom = 106
+offset_bottom = 90
 min_value = 0.0
 max_value = 1.0
 value = 1.0
@@ -122,59 +128,52 @@ mouse_filter = 2
 [node name="SupplyLabel" type="Label" parent="."]
 layout_mode = 0
 offset_left = 218.0
-offset_top = 70
+offset_top = 72
 offset_right = 374.0
-offset_bottom = 108
+offset_bottom = 92
 theme_override_colors/font_color = Color(0.953, 0.898, 0.671, 1)
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
 theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 2
-theme_override_font_sizes/font_size = 15
+theme_override_font_sizes/font_size = 13
 theme_override_fonts/font = SubResource("Font_label")
 text = "SUPRIM. 1000/1000"
 horizontal_alignment = 1
 vertical_alignment = 1
 mouse_filter = 2
 
-
-[node name="WindArt" type="TextureRect" parent="."]
+[node name="ShotLabel" type="Label" parent="."]
 layout_mode = 0
 offset_left = 150.0
-offset_top = 127
+offset_top = 116
 offset_right = 404.0
-offset_bottom = 193
-texture = ExtResource("4_compass")
-expand_mode = 0
-stretch_mode = 0
+offset_bottom = 132
+theme_override_colors/font_color = Color(0.8, 0.88, 0.72, 1)
+theme_override_font_sizes/font_size = 12
+theme_override_fonts/font = SubResource("Font_label")
+text = "DISPARO PREPARADO"
+horizontal_alignment = 1
 mouse_filter = 2
 
-[node name="WindFill" type="TextureProgressBar" parent="."]
+[node name="ShotFill" type="ProgressBar" parent="."]
 layout_mode = 0
-offset_left = 218.0
-offset_top = 137
-offset_right = 374.0
-offset_bottom = 169
+offset_left = 150.0
+offset_top = 134
+offset_right = 404.0
+offset_bottom = 148
 min_value = 0.0
 max_value = 1.0
 value = 1.0
-texture_progress = ExtResource("7_wind")
-material = SubResource("Mat_wind")
+show_percentage = false
+theme_override_styles/fill = SubResource("StyleBoxFlat_shot_fill")
+theme_override_styles/background = SubResource("StyleBoxFlat_shot_bg")
 mouse_filter = 2
 
-[node name="WindLabel" type="Label" parent="."]
+[node name="BuffRow" type="HBoxContainer" parent="."]
 layout_mode = 0
-offset_left = 218.0
-offset_top = 135
-offset_right = 374.0
-offset_bottom = 171
-theme_override_colors/font_color = Color(0.953, 0.898, 0.671, 1)
-theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
-theme_override_constants/shadow_offset_x = 1
-theme_override_constants/shadow_offset_y = 2
-theme_override_font_sizes/font_size = 15
-theme_override_fonts/font = SubResource("Font_label")
-text = "VENTO"
-horizontal_alignment = 1
-vertical_alignment = 1
+offset_left = 150.0
+offset_top = 152
+offset_right = 404.0
+offset_bottom = 170
+theme_override_constants/separation = 4
 mouse_filter = 2
-

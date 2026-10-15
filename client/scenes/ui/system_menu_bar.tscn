@@ -1,10 +1,12 @@
 [gd_scene load_steps=11 format=3]
 
-[ext_resource type="Texture2D" path="res://assets/ui/processed/pins/icon_shipyard.png" id="i1"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/chest.png" id="i1"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/chest_hover.png" id="h1"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/chest_pressed.png" id="p1"]
 [ext_resource type="Texture2D" path="res://assets/ui/processed/hud/icon_scroll_missions.png" id="i2"]
-[ext_resource type="Texture2D" path="res://assets/ui/icons/chest.png" id="i3"]
-[ext_resource type="Texture2D" path="res://assets/ui/icons/chest_hover.png" id="h3"]
-[ext_resource type="Texture2D" path="res://assets/ui/icons/chest_pressed.png" id="p3"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/skull_crossbones.png" id="i3"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/skull_crossbones_hover.png" id="h3"]
+[ext_resource type="Texture2D" path="res://assets/ui/icons/skull_crossbones_pressed.png" id="p3"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/compass_rose.png" id="i4"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/compass_rose_hover.png" id="h4"]
 [ext_resource type="Texture2D" path="res://assets/ui/icons/compass_rose_pressed.png" id="p4"]
@@ -66,6 +68,8 @@ custom_minimum_size = Vector2(42, 42)
 layout_mode = 2
 tooltip_text = "Navio"
 texture_normal = ExtResource("i1")
+texture_hover = ExtResource("h1")
+texture_pressed = ExtResource("p1")
 ignore_texture_size = true
 stretch_mode = 5
 

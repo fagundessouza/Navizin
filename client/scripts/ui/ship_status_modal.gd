@@ -15,9 +15,12 @@ extends Control
 ## a arte entregue só tem 20 (5x4) -- usado o que está desenhado, não o que
 ## foi descrito, pra não inventar uma 6ª coluna que não existe na imagem.
 ##
-## Os 2 círculos grandes "+" nas pontas do rodapé (visíveis na arte) não
-## entraram na lista do pedido (5 slots + grade + barra + 4 botões) e ficaram
-## de fora por ora -- decorativos, sem função atribuída.
+## Os 2 círculos grandes "+" nas pontas do rodapé e a bússola decorativa no
+## topo do pergaminho (visíveis na arte) nunca tiveram botão nenhum por trás
+## -- decorativos, sem função atribuída. Esta rodada veio o pedido explícito
+## de escondê-los até que tenham dados de verdade (ver `DECORATIVE_MASKS`/
+## `_build_decorative_masks()`): um véu escuro por cima, já que não dá pra
+## apagar só aquele pedaço de um PNG já composto sem redesenhar a arte.
 ##
 ## EQUIPAR DE VERDADE: cada slot (os 5 de craft + os 20 de canhão) abre o
 ## `InventoryPickerSubmodal` em modo de equipamento -- ele já sabe ler
@@ -103,15 +106,51 @@ var _cannon_glows: Array[ColorRect] = []
 var _pending_cannon_index: int = -1
 
 
+## Círculos grandes com "+" nas pontas do rodapé e a bússola decorativa no
+## topo do pergaminho -- pintados na própria arte de fundo
+## (`galleon_warship_status_panel.png`), sem botão nenhum por trás (nunca
+## tiveram, ver nota de classe). Pedido explícito desta rodada: "oculte até
+## que tenham dados associados" -- como não dá pra apagar só um pedaço de um
+## PNG já composto sem redesenhar a arte inteira, a correção é visual: um
+## véu escuro semi-transparente por cima de cada um, pra parar de ler como
+## botão clicável que não faz nada. Coordenadas medidas na arte de origem
+## (1536x864) com o mesmo método de grade dos slots, convertidas pro mesmo
+## fator de exibição (0.625).
+const DECORATIVE_MASKS: Array[Dictionary] = [
+	{"cx": 190.6, "cy": 450.0, "radius": 53.1},  # círculo grande esquerdo
+	{"cx": 778.1, "cy": 450.0, "radius": 53.1},  # círculo grande direito
+	{"cx": 478.1, "cy": 93.75, "radius": 25.0},  # bússola decorativa no topo
+]
+const DECORATIVE_MASK_COLOR: Color = Color(0.03, 0.02, 0.02, 0.55)
+
+
 func _ready() -> void:
 	visible = false
 	$CloseButton.pressed.connect(close)
 	_build_craft_slots()
 	_build_cannon_grid()
 	_build_footer_buttons()
+	_build_decorative_masks()
 	_picker.instance_selected.connect(_on_instance_selected)
 	ShipInventory.changed.connect(_refresh_slot_labels)
 	_refresh_slot_labels()
+
+
+func _build_decorative_masks() -> void:
+	for data in DECORATIVE_MASKS:
+		var radius: float = data["radius"]
+		var mask := Panel.new()
+		mask.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		mask.position = Vector2(data["cx"] - radius, data["cy"] - radius)
+		mask.size = Vector2(radius * 2.0, radius * 2.0)
+		var style := StyleBoxFlat.new()
+		style.bg_color = DECORATIVE_MASK_COLOR
+		style.corner_radius_top_left = int(radius)
+		style.corner_radius_top_right = int(radius)
+		style.corner_radius_bottom_left = int(radius)
+		style.corner_radius_bottom_right = int(radius)
+		mask.add_theme_stylebox_override("panel", style)
+		_slots_root.add_child(mask)
 
 
 func _process(_delta: float) -> void:

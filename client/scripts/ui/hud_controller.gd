@@ -1,7 +1,13 @@
 class_name HudController
 extends Control
 ## Controlador do HUD do capitão. Liga o navio do jogador à interface:
-## - barras de casco e de suprimentos, lidas do navio a cada quadro;
+## - painel compacto (`CaptainStatus`): Casco e Suprimentos, lidos do navio a
+##   cada quadro, mais "Disparo Preparado" (mesmo dado do cooldown da
+##   bordada, só invertido) e uma fileira reservada pra ícones de Buffs/
+##   Debuffs (vazia por ora, sem sistema de status ainda). Vento SAIU desta
+##   lista principal nesta rodada (pedido explícito) -- a mecânica de vento
+##   em si continua rodando normal em `WindManager`, só não tem mais barra
+##   própria aqui.
 ## - bússola: a fita desliza pelo rumo do navio;
 ## - hotbar: 8 slots vazios por padrão (sem item/equip de verdade ainda),
 ##   recarga da bordada no slot 1, teclas 1 a 8;
@@ -39,7 +45,6 @@ const DEDICATED_KEYS: Dictionary = {
 var _ship: Node2D = null
 var _hull_connected: bool = false
 var _open_menu: String = ""
-var _wind: Node = null
 var _dedicated_panels: Dictionary = {}
 
 @onready var _compass: CompassTape = $CompassHUD
@@ -47,8 +52,7 @@ var _dedicated_panels: Dictionary = {}
 @onready var _hull_label: Label = $CaptainStatus/HullLabel
 @onready var _supply_fill: TextureProgressBar = $CaptainStatus/SupplyFill
 @onready var _supply_label: Label = $CaptainStatus/SupplyLabel
-@onready var _wind_fill: TextureProgressBar = $CaptainStatus/WindFill
-@onready var _wind_label: Label = $CaptainStatus/WindLabel
+@onready var _shot_fill: ProgressBar = $CaptainStatus/ShotFill
 @onready var _cooldown_1: TextureProgressBar = $Hotbar/Slot1/Cooldown1
 @onready var _dialog: NinePatchRect = $DialogPanel
 @onready var _click: AudioStreamPlayer = $SystemMenuBar/ClickSound
@@ -56,7 +60,6 @@ var _dedicated_panels: Dictionary = {}
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_wind = get_node("/root/WindManager")
 	_dedicated_panels = {
 		"MenuShip": $ShipPanel,
 		"MenuMissions": $MissionsPanel,
@@ -77,8 +80,8 @@ func _process(_delta: float) -> void:
 		_connect_ship()
 	_update_compass()
 	_update_status()
-	_update_wind()
 	_update_cooldown()
+	_update_shot_fill()
 
 
 ## Procura o navio do jogador e liga o sinal de casco uma única vez.
@@ -121,13 +124,16 @@ func _update_compass() -> void:
 	_compass.heading = fmod(rad_to_deg(_ship.rotation) + 90.0 + 360.0, 360.0)
 
 
-## Barra de vento: força atual do WindManager (0.3 a 1.5), com a direção em graus.
-func _update_wind() -> void:
-	var strength: float = _wind.wind_strength
-	_wind_fill.value = clampf(strength / 1.5, 0.0, 1.0)
-	var wdir: Vector2 = _wind.wind_direction
-	var degrees: int = int(fmod(rad_to_deg(wdir.angle()) + 90.0 + 360.0, 360.0))
-	_wind_label.text = "VENTO %d°  %.1f" % [degrees, strength]
+## "Disparo Preparado" do painel compacto: mesmo dado de `_update_cooldown()`
+## (`broadside_ratio()`, 0 = pronto, 1 = recém disparado), só que invertido
+## pra a barra ENCHER conforme fica pronta, em vez de esvaziar -- é mais
+## legível como "carga pronta" assim do que como "tempo de recarga restante".
+## Não é um número novo inventado só pra essa barra, é o mesmo cooldown que
+## já media o slot 1 da hotbar.
+func _update_shot_fill() -> void:
+	if _ship == null:
+		return
+	_shot_fill.value = 1.0 - float(_ship.call("broadside_ratio"))
 
 
 func _unhandled_input(event: InputEvent) -> void:

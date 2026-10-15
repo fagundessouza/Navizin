@@ -17,10 +17,11 @@ void fragment() {
 	vec4 tex = texture(TEXTURE, UV);
 	float g = UV.y;
 	vec3 base = mix(top_color.rgb, bottom_color.rgb, g);
-	// Brilho no topo, que respira com o tempo.
-	float pulse = 0.5 + 0.5 * sin(TIME * pulse_speed);
-	float top_glow = pow(max(1.0 - abs(g - 0.18) * 2.6, 0.0), 2.0);
-	base += glow_color.rgb * top_glow * pulse_strength * (0.6 + 0.4 * pulse);
+	// Brilho no topo REMOVIDO (pedido explícito -- lia como "luz amarela
+	// borrada" nas barras de Casco/Suprimentos, já que `glow_color` nas duas
+	// é um dourado quente por cima de um `pow()` bem largo, pulsando). A
+	// varredura de luz horizontal abaixo já dá vida ao preenchimento sem
+	// empastar a cor base com um halo.
 	// Varredura de luz horizontal.
 	float band = fract(UV.x - TIME * shimmer_speed);
 	float sweep = smoothstep(0.0, shimmer_width, band) * (1.0 - smoothstep(shimmer_width, shimmer_width * 2.0, band));

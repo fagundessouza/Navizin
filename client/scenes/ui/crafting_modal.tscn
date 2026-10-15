@@ -6,6 +6,7 @@
 [ext_resource type="Texture2D" path="res://assets/ui/processed/nine_patch_skull_banner.png" id="4_skullbanner"]
 [ext_resource type="Texture2D" path="res://assets/ui/processed/nine_patch_anchor_seal.png" id="5_anchorseal"]
 [ext_resource type="PackedScene" path="res://scenes/ui/item_tooltip_zoom.tscn" id="6_tooltipzoom"]
+[ext_resource type="PackedScene" path="res://scenes/ui/refinement_modal.tscn" id="7_refinement"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_gothic"]
 shader = ExtResource("3_gothic")
@@ -89,6 +90,10 @@ theme_override_colors/font_color = Color(0.95, 0.85, 0.55, 1)
 theme_override_font_sizes/font_size = 22
 text = "Fabricação"
 
+[node name="RefineButton" type="Button" parent="Margin/VBox/Header"]
+layout_mode = 2
+text = "Refinar Equipamento"
+
 [node name="CloseButton" type="Button" parent="Margin/VBox/Header"]
 layout_mode = 2
 text = "X"
@@ -103,4 +108,7 @@ layout_mode = 2
 size_flags_vertical = 3
 
 [node name="ItemTooltipZoom" parent="." instance=ExtResource("6_tooltipzoom")]
+layout_mode = 1
+
+[node name="RefinementModal" parent="." instance=ExtResource("7_refinement")]
 layout_mode = 1

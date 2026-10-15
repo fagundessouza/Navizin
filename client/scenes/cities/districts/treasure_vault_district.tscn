@@ -2,7 +2,6 @@
 
 [ext_resource type="Script" path="res://scripts/cities/city_district_base.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/sprites/environment/districts/interiors/market_cavern.png" id="2_bg"]
-[ext_resource type="PackedScene" path="res://scenes/ui/trade_modal.tscn" id="3_modal"]
 [ext_resource type="PackedScene" path="res://scenes/ui/vault_modal.tscn" id="4_vault"]
 
 [node name="TreasureVaultDistrict" type="Control"]
@@ -86,25 +85,11 @@ text = "Mapa da Ilha"
 layout_mode = 2
 text = "Voltar ao Mar"
 
-[node name="OpenShopButton" type="Button" parent="."]
+[node name="OpenVaultButton" type="Button" parent="."]
 offset_left = 24.0
 offset_top = 148.0
 offset_right = 168.0
 offset_bottom = 180.0
-text = "Abrir Caverna"
-
-[node name="TradeModal" parent="." instance=ExtResource("3_modal")]
-visible = false
-shop_title = "Caverna do Tesouro e Contrabando"
-tabs = PackedStringArray("Itens Recuperados", "Contrabando")
-action_buttons = PackedStringArray()
-resource_hint = "Use o botão \"Abrir Cofre\" abaixo pra ver seus materiais e itens fabricados."
-
-[node name="OpenVaultButton" type="Button" parent="."]
-offset_left = 24.0
-offset_top = 188.0
-offset_right = 168.0
-offset_bottom = 220.0
 text = "Abrir Cofre"
 
 [node name="VaultModal" parent="." instance=ExtResource("4_vault")]

@@ -2,7 +2,6 @@
 
 [ext_resource type="Script" path="res://scripts/cities/city_district_base.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/sprites/environment/districts/interiors/apothecary_lab_v2.png" id="2_bg"]
-[ext_resource type="PackedScene" path="res://scenes/ui/trade_modal.tscn" id="3_modal"]
 [ext_resource type="PackedScene" path="res://scenes/ui/crafting_modal.tscn" id="4_crafting"]
 
 [node name="ApothecaryDistrict" type="Control"]
@@ -86,26 +85,12 @@ text = "Mapa da Ilha"
 layout_mode = 2
 text = "Voltar ao Mar"
 
-[node name="OpenShopButton" type="Button" parent="."]
-offset_left = 24.0
-offset_top = 148.0
-offset_right = 168.0
-offset_bottom = 180.0
-text = "Abrir Boticário"
-
-[node name="TradeModal" parent="." instance=ExtResource("3_modal")]
-visible = false
-shop_title = "Boticário"
-tabs = PackedStringArray("Poções e Elixires", "Remédios da Tripulação")
-action_buttons = PackedStringArray()
-resource_hint = "Use o botão \"Fabricar Relíquias\" abaixo pra abrir a estação de verdade."
-
 [node name="OpenCraftingButton" type="Button" parent="."]
 offset_left = 24.0
-offset_top = 188.0
+offset_top = 148.0
 offset_right = 232.0
-offset_bottom = 220.0
-text = "Fabricar Relíquias"
+offset_bottom = 180.0
+text = "Abrir Boticário"
 
 [node name="CraftingModal" parent="." instance=ExtResource("4_crafting")]
 visible = false

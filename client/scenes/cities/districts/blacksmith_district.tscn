@@ -1,10 +1,8 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/cities/city_district_base.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/sprites/environment/districts/interiors/blacksmith_forge.png" id="2_bg"]
-[ext_resource type="PackedScene" path="res://scenes/ui/trade_modal.tscn" id="3_modal"]
 [ext_resource type="PackedScene" path="res://scenes/ui/crafting_modal.tscn" id="4_crafting"]
-[ext_resource type="PackedScene" path="res://scenes/ui/refinement_modal.tscn" id="5_refinement"]
 
 [node name="BlacksmithDistrict" type="Control"]
 anchors_preset = 15
@@ -87,26 +85,12 @@ text = "Mapa da Ilha"
 layout_mode = 2
 text = "Voltar ao Mar"
 
-[node name="OpenShopButton" type="Button" parent="."]
+[node name="OpenCraftingButton" type="Button" parent="."]
 offset_left = 24.0
 offset_top = 148.0
 offset_right = 168.0
 offset_bottom = 180.0
 text = "Abrir Forja"
-
-[node name="TradeModal" parent="." instance=ExtResource("3_modal")]
-visible = false
-shop_title = "Forja Naval"
-tabs = PackedStringArray("Canhões", "Munições", "Refino")
-action_buttons = PackedStringArray()
-resource_hint = "Use os botões \"Fabricar Peças Navais\" e \"Refinar Equipamento\" abaixo pra abrir as estações de verdade."
-
-[node name="OpenCraftingButton" type="Button" parent="."]
-offset_left = 24.0
-offset_top = 188.0
-offset_right = 232.0
-offset_bottom = 220.0
-text = "Fabricar Peças Navais"
 
 [node name="CraftingModal" parent="." instance=ExtResource("4_crafting")]
 visible = false
@@ -114,13 +98,3 @@ panel_title = "Forja Naval -- Peças do Galeão"
 station = "forja"
 categories = PackedStringArray("armamento", "municao", "arpao")
 category_labels = PackedStringArray("Canhões", "Munições", "Arpões de Caça")
-
-[node name="OpenRefinementButton" type="Button" parent="."]
-offset_left = 24.0
-offset_top = 228.0
-offset_right = 232.0
-offset_bottom = 260.0
-text = "Refinar Equipamento"
-
-[node name="RefinementModal" parent="." instance=ExtResource("5_refinement")]
-visible = false

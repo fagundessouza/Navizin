@@ -9,9 +9,24 @@ extends Control
 ## sempre fabricado aqui, igual ao pedido original.
 ##
 ## `categories`/`category_labels` definem as abas, paralelas índice a
-## índice -- a mesma cena serve pra Forja (`["armamento","municao"]`) e pro
-## Estaleiro (`["vela","casco","proa","relíquia_ebenruth","leme"]`), só
-## muda o que é passado na instância.
+## índice -- a mesma cena serve pra Forja/Estaleiro/Feira, só muda o que é
+## passado na instância.
+##
+## JANELA ÚNICA POR ESTAÇÃO (pedido explícito -- "elimine os botões
+## redundantes, uma única janela com abas"): cada entrada de `categories`
+## pode juntar MAIS DE UMA categoria numa aba só, separadas por vírgula (ex:
+## `"casco,proa"` vira a aba "Cascos e Proas" do Estaleiro) -- ver
+## `_categories_for_tab()`. `category_stations` é opcional e paralela a
+## `categories`: se uma entrada vier vazia, a aba usa `station` (o padrão de
+## sempre); se vier preenchida, essa aba busca receita de OUTRA estação (ex:
+## a aba "Suprimentos de Bordo" da Feira mostra Munição/Arpão, que são
+## receitas de "forja", mesmo a Feira sendo `station = "feira"` pras outras
+## abas) -- uma janela só pode juntar conteúdo que hoje vive em estações
+## diferentes sem fingir que ele virou tudo uma coisa só.
+##
+## Botão "Refinar Equipamento" no cabeçalho (`$Margin/VBox/Header/RefineButton`)
+## abre `$RefinementModal` (filho desta cena) -- refino deixou de ter botão
+## próprio no distrito, mora dentro da mesma janela da estação agora.
 
 signal opened
 signal closed
@@ -20,6 +35,13 @@ signal closed
 @export var station: String = "forja"
 @export var categories: PackedStringArray = []
 @export var category_labels: PackedStringArray = []
+@export var category_stations: PackedStringArray = []
+## Esconde o botão "Refinar Equipamento" do cabeçalho pra estações que não
+## fabricam nada refinável por enquanto (nenhuma até agora, mas a opção
+## existe pra não forçar o botão em toda instância).
+@export var show_refine_button: bool = true
+
+@onready var _refinement_modal: RefinementModal = $RefinementModal
 
 const OUTLINE_COLOR: Color = Color(0.03, 0.03, 0.04, 1.0)
 const HOVER_COLOR: Color = Color(1.0, 0.92, 0.65, 1.0)
@@ -52,6 +74,11 @@ func _ready() -> void:
 	$Margin/VBox/Header/Title.text = panel_title
 	_style_button($Margin/VBox/Header/CloseButton)
 	$Margin/VBox/Header/CloseButton.pressed.connect(close)
+	var refine_button: Button = $Margin/VBox/Header/RefineButton
+	refine_button.visible = show_refine_button
+	if show_refine_button:
+		_style_button(refine_button)
+		refine_button.pressed.connect(_refinement_modal.open)
 	_build_tabs()
 	if categories.size() > 0:
 		_select_tab(0)
@@ -69,8 +96,37 @@ func open() -> void:
 
 
 func close() -> void:
+	_refinement_modal.close()
 	visible = false
 	closed.emit()
+
+
+## "casco,proa" -> ["casco", "proa"] -- junta MAIS DE UMA categoria numa
+## aba só (ver nota de classe).
+func _categories_for_tab(index: int) -> Array[String]:
+	var raw: String = categories[index]
+	var result: Array[String] = []
+	for part in raw.split(","):
+		result.append(part.strip_edges())
+	return result
+
+
+func _station_for_tab(index: int) -> String:
+	if index < category_stations.size() and category_stations[index] != "":
+		return category_stations[index]
+	return station
+
+
+## Recipe ids de TODAS as categorias daquela aba, de TODAS as estações
+## envolvidas, ordenados -- uma aba pode juntar categorias que vêm de
+## estações diferentes (`_station_for_tab()`), mas aqui dentro quem chama só
+## vê uma lista única.
+func _recipe_ids_for_tab(index: int) -> Array[String]:
+	var result: Array[String] = []
+	for category in _categories_for_tab(index):
+		result.append_array(ItemDatabase.get_recipes_for(_station_for_tab(index), category))
+	result.sort()
+	return result
 
 
 func _on_inventory_changed() -> void:
@@ -137,7 +193,7 @@ func _build_pager(category_index: int) -> HBoxContainer:
 
 
 func _on_page_nav(category_index: int, delta: int) -> void:
-	var recipe_ids: Array[String] = ItemDatabase.get_recipes_for(station, categories[category_index])
+	var recipe_ids: Array[String] = _recipe_ids_for_tab(category_index)
 	var page_count: int = _page_count(recipe_ids.size())
 	_page_index[category_index] = clampi(_page_index[category_index] + delta, 0, page_count - 1)
 	_rebuild_pages()
@@ -161,7 +217,7 @@ func _rebuild_pages() -> void:
 		var list: VBoxContainer = _pages[i].get_node("List")
 		for child in list.get_children():
 			child.queue_free()
-		var recipe_ids: Array[String] = ItemDatabase.get_recipes_for(station, categories[i])
+		var recipe_ids: Array[String] = _recipe_ids_for_tab(i)
 		var pager: HBoxContainer = _pages[i].get_node("Pager")
 		if recipe_ids.is_empty():
 			var empty := Label.new()
