@@ -115,8 +115,21 @@ const FOOD_TICK_INTERVAL: float = 30.0
 const FOOD_PER_SAILOR_PER_TICK: float = 1.0
 const DEFAULT_MAX_SAILORS: int = 12
 
+## Estado de saúde (pedido explícito do Painel de Admin -- "Crew Debug"):
+## separado de `active` (que só reflete RAÇÃO em dia). Só "ready" concede
+## bônus -- "wounded"/"sick" são ganchos reais prontos pra quando existir
+## dano de tropa/doença de verdade (abordagem, por exemplo); por ora só o
+## Painel de Admin escreve neles, pra testar o efeito sem esperar aquele
+## sistema existir.
+const STATUS_READY: String = "ready"
+const STATUS_WOUNDED: String = "wounded"
+const STATUS_SICK: String = "sick"
+const STATUS_NAMES: Dictionary = {
+	STATUS_READY: "Pronto", STATUS_WOUNDED: "Ferido", STATUS_SICK: "Doente",
+}
+
 var energy: int = MAX_ENERGY
-## Cada entrada: {id, race, quality_index, name, active}.
+## Cada entrada: {id, race, quality_index, name, active, status}.
 var hired: Array[Dictionary] = []
 
 var _next_id: int = 1
@@ -170,17 +183,47 @@ func roll_sailor() -> Dictionary:
 
 	var race: Race = _weighted_pick_race()
 	var quality_index: int = _weighted_pick_quality()
+	var entry: Dictionary = _make_entry(race, quality_index)
+	hired.append(entry)
+	changed.emit()
+	return entry
+
+
+func _make_entry(race: Race, quality_index: int) -> Dictionary:
 	var entry: Dictionary = {
 		"id": "sailor_%d" % _next_id,
 		"race": race,
 		"quality_index": quality_index,
 		"name": _generate_name(race),
 		"active": true,
+		"status": STATUS_READY,
 	}
 	_next_id += 1
+	return entry
+
+
+## Adiciona um marinheiro direto, sem custo de Energia/Ouro e ignorando o
+## teto de `max_sailors()` -- só pro Painel de Admin (aba Tripulação & Tropas,
+## "adicionar Goblin Puro/Humano/Gigante"). `roll_sailor()` continua sendo o
+## único caminho que o jogo de verdade usa.
+func force_add(race: Race, quality_index: int) -> Dictionary:
+	var entry: Dictionary = _make_entry(race, quality_index)
 	hired.append(entry)
 	changed.emit()
 	return entry
+
+
+## Muda o estado de saúde de UM marinheiro, ou de TODOS se `id` for "" --
+## o Painel de Admin usa a versão "todos" (botão só, sem precisar listar
+## marinheiro por marinheiro pra testar o efeito rápido).
+func set_status(id: String, status: String) -> void:
+	var touched: bool = false
+	for entry in hired:
+		if id == "" or entry["id"] == id:
+			entry["status"] = status
+			touched = true
+	if touched:
+		changed.emit()
 
 
 func dismiss(id: String) -> void:
@@ -200,13 +243,17 @@ func bonus_for(entry: Dictionary) -> Dictionary:
 	return result
 
 
-## Soma os bônus de todo marinheiro ATIVO (com ração em dia) -- mesmo
-## formato de `OfficerRoster.get_officer_bonuses()`, pra `ship_base.gd`
-## somar os dois junto com `ShipInventory.get_total_bonuses()`.
+func is_contributing(entry: Dictionary) -> bool:
+	return entry.get("active", true) and entry.get("status", STATUS_READY) == STATUS_READY
+
+
+## Soma os bônus de todo marinheiro ATIVO (com ração em dia) E "Pronto" (sem
+## ferimento/doença) -- mesmo formato de `OfficerRoster.get_officer_bonuses()`,
+## pra `ship_base.gd` somar os dois junto com `ShipInventory.get_total_bonuses()`.
 func get_total_bonuses() -> Dictionary:
 	var totals: Dictionary = {}
 	for entry in hired:
-		if not entry.get("active", true):
+		if not is_contributing(entry):
 			continue
 		var bonus: Dictionary = bonus_for(entry)
 		for key in bonus:

@@ -265,7 +265,7 @@ func _build_recipe_row(item_id: String) -> Control:
 	var icon_frame := _make_icon_frame(item.get("icon"))
 	icon_frame.mouse_entered.connect(_on_icon_hover.bind(icon_frame, item_id))
 	icon_frame.mouse_exited.connect(_tooltip_zoom.hide_tooltip)
-	UIManager.add_hover_pop(icon_frame)
+	UIManager.add_hover_pop(icon_frame, item_id)
 	outer.add_child(icon_frame)
 
 	var vbox := VBoxContainer.new()

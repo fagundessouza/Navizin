@@ -233,7 +233,7 @@ func _make_slot_button(cx: float, cy: float, size: float, label: String) -> Butt
 	button.size = Vector2(size, size)
 	button.tooltip_text = label
 	_slots_root.add_child(button)
-	UIManager.add_hover_pop(button)
+	UIManager.add_hover_pop(button, label)
 	return button
 
 

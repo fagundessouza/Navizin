@@ -138,7 +138,7 @@ func _play_roulette() -> void:
 
 func _build_card(entry: Dictionary) -> Control:
 	var quality: Dictionary = TavernHireSystem.QUALITIES[entry["quality_index"]]
-	var active: bool = entry.get("active", true)
+	var active: bool = TavernHireSystem.is_contributing(entry)
 
 	var card := PanelContainer.new()
 	card.custom_minimum_size = CARD_SIZE
@@ -158,7 +158,7 @@ func _build_card(entry: Dictionary) -> Control:
 	style.content_margin_top = 8
 	style.content_margin_bottom = 8
 	card.add_theme_stylebox_override("panel", style)
-	UIManager.add_hover_pop(card)
+	UIManager.add_hover_pop(card, entry["id"])
 
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 4)
@@ -206,7 +206,7 @@ func _build_card(entry: Dictionary) -> Control:
 	vbox.add_child(race_label)
 
 	var status_label := Label.new()
-	status_label.text = "Em atividade" if active else "Sem ração -- inativo"
+	status_label.text = _status_text(entry, active)
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	status_label.add_theme_font_size_override("font_size", 9)
@@ -228,6 +228,18 @@ func _build_card(entry: Dictionary) -> Control:
 	vbox.add_child(dismiss_button)
 
 	return card
+
+
+## Dois motivos distintos pra não contribuir -- "Sem ração" (comida,
+## `active`) e "Ferido"/"Doente" (`status`, Painel de Admin) são causas
+## diferentes, mostrar o mesmo texto genérico pra ambas esconderia qual
+## delas resolver.
+func _status_text(entry: Dictionary, contributing: bool) -> String:
+	if contributing:
+		return "Em atividade"
+	if not entry.get("active", true):
+		return "Sem ração -- inativo"
+	return "%s -- sem bônus" % TavernHireSystem.STATUS_NAMES.get(entry.get("status", ""), "Indisponível")
 
 
 func _bonus_summary(entry: Dictionary) -> String:

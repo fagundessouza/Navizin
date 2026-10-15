@@ -56,9 +56,15 @@ func animate_modal_open(control: Control) -> void:
 ## Efeito hover orgânico pra slot de item/card de personagem: "pop" elástico
 ## leve (1.0 -> 1.08x) ao entrar o mouse, volta ao sair, com um tique de som
 ## tátil. Uma chamada só na criação do Control resolve os dois sinais.
-func add_hover_pop(control: Control) -> void:
+## `debug_id` opcional: grava num meta próprio (`AdminManager.DEBUG_ID_META`)
+## que o overlay de IDs do Painel de Admin (F3) lê pra desenhar a etiqueta
+## flutuante -- mesma chamada que já liga o hover em todo slot/card do jogo,
+## só com um id a mais, em vez de marcar os Controls em dois lugares.
+func add_hover_pop(control: Control, debug_id: String = "") -> void:
 	control.mouse_entered.connect(_on_hover_enter.bind(control))
 	control.mouse_exited.connect(_on_hover_exit.bind(control))
+	if debug_id != "":
+		control.set_meta(AdminManager.DEBUG_ID_META, debug_id)
 
 
 func _on_hover_enter(control: Control) -> void:

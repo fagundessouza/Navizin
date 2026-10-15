@@ -99,7 +99,7 @@ func _build_equip_slots() -> void:
 		button.pressed.connect(_on_slot_pressed.bind(button, category, data["label"]))
 		button.mouse_entered.connect(_on_slot_hover.bind(button, category))
 		button.mouse_exited.connect(_tooltip_zoom.hide_tooltip)
-		UIManager.add_hover_pop(button)
+		UIManager.add_hover_pop(button, category)
 		_equip_slots.add_child(button)
 		_slot_buttons[category] = button
 		_slot_glows[category] = _make_rarity_glow(button, _next_glow_phase())

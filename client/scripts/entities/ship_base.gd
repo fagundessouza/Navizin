@@ -953,6 +953,17 @@ func apply_damage(amount: float) -> void:
 	_update_vulnerability()
 
 
+## Repara o casco por completo na hora -- usado pelo Painel de Admin
+## ("Reparo Instantâneo do Casco"). Reaproveita o mesmo aviso de interface
+## e checagem de vulnerabilidade que `apply_damage()` já faz, em vez de só
+## escrever `hull` direto por fora e deixar o marcador de abordagem
+## desatualizado.
+func repair_full() -> void:
+	hull = max_hull
+	hull_changed.emit(hull, max_hull)
+	_update_vulnerability()
+
+
 ## "Ao ativar a abordagem em um navio vulnerável (<25% HP)... substitua os
 ## dois navios travados por um nó indicador" -- em vez de travar o navio
 ## (ele continua navegando normal), só liga/desliga um marcador flutuante

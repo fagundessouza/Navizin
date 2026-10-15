@@ -160,6 +160,7 @@ func _build_material_cell(material_name: String) -> Control:
 	var frame := _make_icon_frame(ItemDatabase.get_material_icon(material_name))
 	frame.mouse_entered.connect(_on_material_hover.bind(frame, material_name))
 	frame.mouse_exited.connect(_tooltip_zoom.hide_tooltip)
+	UIManager.add_hover_pop(frame, material_name)
 	cell.add_child(frame)
 
 	var qty_label := Label.new()
@@ -185,6 +186,7 @@ func _build_item_cell(instance_id: String, inv: Node) -> Control:
 	var frame := _make_icon_frame(inv.get_item_icon(instance_id))
 	frame.mouse_entered.connect(_on_item_hover.bind(frame, instance_id))
 	frame.mouse_exited.connect(_tooltip_zoom.hide_tooltip)
+	UIManager.add_hover_pop(frame, instance_id)
 	cell.add_child(frame)
 
 	var name_label := Label.new()
@@ -229,7 +231,6 @@ func _make_icon_frame(icon: Texture2D) -> PanelContainer:
 	icon_rect.material = ShaderMaterial.new()
 	icon_rect.material.shader = ITEM_SOFTENER_SHADER
 	frame.add_child(icon_rect)
-	UIManager.add_hover_pop(frame)
 	return frame
 
 
