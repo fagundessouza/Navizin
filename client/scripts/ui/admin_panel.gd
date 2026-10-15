@@ -229,9 +229,11 @@ func _build_crew_tab() -> void:
 	var add_row := HBoxContainer.new()
 	add_row.add_theme_constant_override("separation", 8)
 	root.add_child(add_row)
-	_add_crew_button(add_row, "Goblin Puro", TavernHireSystem.Race.GOBLIN_PURE)
 	_add_crew_button(add_row, "Humano", TavernHireSystem.Race.HUMAN)
-	_add_crew_button(add_row, "Gigante", TavernHireSystem.Race.GIANT)
+	_add_crew_button(add_row, "Goblin", TavernHireSystem.Race.GOBLIN)
+	_add_crew_button(add_row, "Goblin Puro", TavernHireSystem.Race.GOBLIN_PURE)
+	_add_crew_button(add_row, "Anão", TavernHireSystem.Race.DWARF)
+	_add_crew_button(add_row, "Morto-Vivo", TavernHireSystem.Race.UNDEAD)
 
 	var status_label := Label.new()
 	status_label.text = "Definir estado de saúde de TODOS os marinheiros contratados:"

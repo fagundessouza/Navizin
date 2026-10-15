@@ -32,61 +32,63 @@ extends Node
 
 signal changed
 
-enum Race { HUMAN, GOBLIN, GOBLIN_PURE, GIANT }
+## As 4 Raças Oficiais do projeto (pedido explícito -- removida "Gigante",
+## que nunca teve arte de verdade e só mostrava o placeholder desenhado via
+## PIL, incluindo o nome "Borrim" que o usuário viu na Taverna). Goblin Puro
+## continua um TÍTULO/variante rara dentro de Goblin (pedido explícito: "1
+## título/variante Goblin Puro"), não uma 5ª raça -- por isso ainda é um
+## valor de enum à parte aqui (precisa de peso/bônus próprios), mas sempre
+## tratado como "é um Goblin" pra fins de retrato/raça exibida.
+enum Race { HUMAN, GOBLIN, GOBLIN_PURE, DWARF, UNDEAD }
 
 const RACE_NAMES: Dictionary = {
-	Race.HUMAN: "Humano", Race.GOBLIN: "Goblin", Race.GOBLIN_PURE: "Goblin Puro", Race.GIANT: "Gigante",
+	Race.HUMAN: "Humano", Race.GOBLIN: "Goblin", Race.GOBLIN_PURE: "Goblin Puro",
+	Race.DWARF: "Anão", Race.UNDEAD: "Morto-Vivo",
 }
 
-## Trocado nesta rodada pela arte Dark Fantasy AAA de verdade (32 retratos
-## processados de `~/Downloads/Tortuga/Tripulação/`, 4 lotes x 2 profissões
-## x 4 raças) -- MAS aquela arte só cobre Humano/Goblin/Anão/Morto-Vivo,
-## enquanto as raças de Marinheiro aqui são Humano/Goblin/Goblin Puro/
-## Gigante. "Anão" e "Morto-Vivo" não têm raça correspondente neste sistema
-## (ficaram só nos 8 cargos de Oficial, ver `OfficerRoster`); "Gigante" não
-## tem arte correspondente na entrega (Anão é baixo, Gigante é alto -- usar
-## a arte de Anão aqui seria trocar uma raça pela outra, não só reaproveitar
-## uma pose) -- PERMANECE no retrato placeholder desenhado via PIL até
-## chegar arte de verdade pra Gigante. Goblin Puro reaproveita uma pose de
-## Goblin DIFERENTE da do Goblin comum (mesma raça, retrato distinto) --
-## ele é descrito como uma variante rara do Goblin, não uma raça própria à
-## parte, então não tem (nem devia ter) um retrato "Goblin Puro" inventado
-## do zero.
-const RACE_PORTRAITS: Dictionary = {
-	Race.HUMAN: "res://assets/ui/crew/portraits/helmsman_human.png",
-	Race.GOBLIN: "res://assets/ui/crew/portraits/helmsman_goblin.png",
-	Race.GOBLIN_PURE: "res://assets/ui/crew/portraits/cannoneer_goblin.png",
-	Race.GIANT: "res://assets/ui/crew/portrait_giant.png",
+## Chave de raça que `OfficerRoster.PORTRAITS`/`portrait_path_for()` espera
+## (as mesmas 4 raças oficiais) -- Goblin Puro usa a arte de Goblin (mesma
+## raça, só o TÍTULO muda, não existe retrato "Goblin Puro" separado).
+const RACE_PORTRAIT_KEY: Dictionary = {
+	Race.HUMAN: "human", Race.GOBLIN: "goblin", Race.GOBLIN_PURE: "goblin",
+	Race.DWARF: "dwarf", Race.UNDEAD: "undead",
 }
 
 ## Bônus-BASE por raça (antes do multiplicador de Graduação) -- mesmas
 ## chaves de `OfficerRoster.ROLE_BONUS`, pra tudo somar no mesmo total
 ## (`get_total_bonuses()` abaixo, consumido por `ship_base.gd` igual a
-## oficiais e equipamento).
+## oficiais e equipamento). Anão reaproveita o tema de resistência/reparo
+## que "Gigante" tinha (povo robusto, sem o penalizador de velocidade que só
+## fazia sentido pelo tamanho gigante); Morto-Vivo ganha resistência a
+## efeito/vento (não sente medo, dor ou intempérie -- já está morto).
 const RACE_BASE_BONUS: Dictionary = {
 	Race.HUMAN: {"wind_resistance_bonus": 0.04, "node_speed_bonus": 1.5},
 	Race.GOBLIN: {"turn_rate_bonus": 0.09},
 	Race.GOBLIN_PURE: {"turn_rate_bonus": 0.17, "reload_speed_bonus": 0.05, "wind_resistance_bonus": 0.05},
-	Race.GIANT: {"hull_bonus": 15.0, "cargo_bonus": 6.0, "hull_repair_bonus": 0.03, "speed_bonus": -2.0},
+	Race.DWARF: {"hull_bonus": 18.0, "cargo_bonus": 8.0, "hull_repair_bonus": 0.04},
+	Race.UNDEAD: {"effect_resistance_bonus": 0.14, "wind_resistance_bonus": 0.06},
 }
 
 ## Multiplica o consumo de `FOOD_MATERIAL` daquele marinheiro -- pedido
-## explícito: "Goblin consome mais Alimentos/Comida de Bordo".
+## explícito: "Goblin consome mais Alimentos/Comida de Bordo". Morto-Vivo
+## praticamente não come (tema óbvio -- já está morto), Anão come um pouco
+## mais (povo robusto de apetite forte).
 const RACE_FOOD_UPKEEP_MULT: Dictionary = {
-	Race.HUMAN: 1.0, Race.GOBLIN: 1.6, Race.GOBLIN_PURE: 1.8, Race.GIANT: 1.3,
+	Race.HUMAN: 1.0, Race.GOBLIN: 1.6, Race.GOBLIN_PURE: 1.8, Race.DWARF: 1.2, Race.UNDEAD: 0.1,
 }
 
 const RACE_DESCRIPTIONS: Dictionary = {
 	Race.HUMAN: "Atributos equilibrados -- navegação e trânsito entre nós mais rápidos.",
 	Race.GOBLIN: "Giro de leme altíssimo, mas consome mais ração.",
 	Race.GOBLIN_PURE: "Variante rara do Goblin -- status no máximo.",
-	Race.GIANT: "Casco, carga e reparo reforçados, mas mais devagar.",
+	Race.DWARF: "Casco, carga e reparo reforçados.",
+	Race.UNDEAD: "Resiste a efeitos e intempérie -- quase não consome ração.",
 }
 
 ## Peso de sorteio por raça -- Goblin Puro é a variante rara dentro do pool
-## de Goblin (pedido explícito), por isso um peso bem menor que as outras 3.
+## de Goblin (pedido explícito), por isso um peso bem menor que as outras.
 const RACE_WEIGHTS: Dictionary = {
-	Race.HUMAN: 45.0, Race.GOBLIN: 35.0, Race.GOBLIN_PURE: 4.0, Race.GIANT: 16.0,
+	Race.HUMAN: 40.0, Race.GOBLIN: 30.0, Race.GOBLIN_PURE: 4.0, Race.DWARF: 14.0, Race.UNDEAD: 12.0,
 }
 
 ## As 5 Graduações pedidas, nesta ordem exata. `mult` escala o bônus-base da
@@ -109,13 +111,15 @@ const FIRST_NAMES: Dictionary = {
 	Race.HUMAN: ["Joaquim", "Bento", "Tomé", "Vicente", "Rosário", "Isadora", "Belmiro", "Catarina"],
 	Race.GOBLIN: ["Grix", "Snagg", "Korr", "Mizzik", "Ruddle", "Ferrik", "Globb", "Yark"],
 	Race.GOBLIN_PURE: ["Grix", "Snagg", "Korr", "Mizzik", "Ruddle", "Ferrik", "Globb", "Yark"],
-	Race.GIANT: ["Thrak", "Gorn", "Borrim", "Haldor", "Ossian", "Kratz", "Dunmar", "Vrogar"],
+	Race.DWARF: ["Thrak", "Gorn", "Borrim", "Haldor", "Ossian", "Kratz", "Dunmar", "Vrogar"],
+	Race.UNDEAD: ["Malachor", "Veskar", "Oldrin", "Caelum", "Theris", "Grimwald", "Soren", "Nyx"],
 }
 const TITLES: Dictionary = {
 	Race.HUMAN: ["das Marés", "do Cais", "Sortudo", "da Bússola"],
 	Race.GOBLIN: ["Dentuço", "Rápido", "das Cordas", "Fuinha"],
 	Race.GOBLIN_PURE: ["o Puro", "Áureo", "sem Mácula"],
-	Race.GIANT: ["Punho de Ferro", "o Rochedo", "Costas-Largas"],
+	Race.DWARF: ["Punho de Ferro", "o Rochedo", "Costas-Largas"],
+	Race.UNDEAD: ["das Correntes", "o Eterno", "Alma Penada", "sem Fôlego"],
 }
 
 const FOOD_MATERIAL: String = "Ração de Bordo"
@@ -203,7 +207,17 @@ func roll_sailor() -> Dictionary:
 	return entry
 
 
+## Sorteia também uma PROFISSÃO (dentre os 8 cargos de `OfficerRoster`) só
+## pra variar o retrato exibido -- pedido explícito ("sorteie uma combinação
+## de Profissão dentre as 8 e Raça dentre as 4, e atribua imediatamente o
+## caminho correto do retrato"). A profissão aqui é PURAMENTE VISUAL: o
+## Marinheiro/Operário não vira um Oficial, não ocupa a vaga fixa de cargo
+## nenhuma, só usa a mesma prancha de 32 retratos de `OfficerRoster` pra não
+## repetir sempre o mesmo rosto por raça. `portrait_path` é gravado na hora
+## (não recalculado toda vez) -- "atribua imediatamente" no pedido.
 func _make_entry(race: Race, quality_index: int) -> Dictionary:
+	var profession: String = OfficerRoster.ROLES[_rng.randi() % OfficerRoster.ROLES.size()]
+	var race_key: String = RACE_PORTRAIT_KEY[race]
 	var entry: Dictionary = {
 		"id": "sailor_%d" % _next_id,
 		"race": race,
@@ -211,6 +225,8 @@ func _make_entry(race: Race, quality_index: int) -> Dictionary:
 		"name": _generate_name(race),
 		"active": true,
 		"status": STATUS_READY,
+		"profession": profession,
+		"portrait_path": OfficerRoster.portrait_path_for(profession, race_key),
 	}
 	_next_id += 1
 	return entry
@@ -218,8 +234,8 @@ func _make_entry(race: Race, quality_index: int) -> Dictionary:
 
 ## Adiciona um marinheiro direto, sem custo de Energia/Ouro e ignorando o
 ## teto de `max_sailors()` -- só pro Painel de Admin (aba Tripulação & Tropas,
-## "adicionar Goblin Puro/Humano/Gigante"). `roll_sailor()` continua sendo o
-## único caminho que o jogo de verdade usa.
+## "adicionar Goblin Puro/Humano/Anão/Morto-Vivo"). `roll_sailor()` continua
+## sendo o único caminho que o jogo de verdade usa.
 func force_add(race: Race, quality_index: int) -> Dictionary:
 	var entry: Dictionary = _make_entry(race, quality_index)
 	hired.append(entry)

@@ -15,11 +15,11 @@ extends Control
 ## escuta `TavernHireSystem.changed` e atualiza sozinho, então funciona nos
 ## dois contextos sem precisar saber qual é.
 ##
-## RETRATOS: `TavernHireSystem.RACE_PORTRAITS` aponta pra 4 PNGs desenhados
-## do zero (PIL, silhuetas estilizadas -- Humano/Goblin/Goblin Puro/Gigante)
-## já que nenhuma arte de retrato de tripulante chegou em
-## `~/Downloads/Tortuga/` até agora. Documentado aqui pra trocar sem mexer
-## na lógica quando a arte de verdade chegar.
+## RETRATOS: cada marinheiro sorteia Raça E Profissão (`TavernHireSystem.
+## _make_entry()`, profissão só pra variar o visual -- não vira Oficial de
+## verdade) e grava o caminho de retrato na própria entrada
+## (`entry["portrait_path"]`, mesma prancha de 32 arquivos que
+## `OfficerRoster` usa pros 8 cargos), já resolvido na hora da rolagem.
 
 signal opened
 signal closed
@@ -169,7 +169,7 @@ func _build_card(entry: Dictionary) -> Control:
 	vbox.add_child(portrait_wrap)
 
 	var portrait := TextureRect.new()
-	portrait.texture = load(TavernHireSystem.RACE_PORTRAITS[entry["race"]])
+	portrait.texture = load(entry["portrait_path"])
 	portrait.set_anchors_preset(Control.PRESET_FULL_RECT)
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
@@ -199,7 +199,7 @@ func _build_card(entry: Dictionary) -> Control:
 	vbox.add_child(name_label)
 
 	var race_label := Label.new()
-	race_label.text = "%s -- %s" % [TavernHireSystem.RACE_NAMES[entry["race"]], quality["name"]]
+	race_label.text = "%s, %s -- %s" % [TavernHireSystem.RACE_NAMES[entry["race"]], OfficerRoster.ROLE_NAMES[entry["profession"]], quality["name"]]
 	race_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	race_label.add_theme_font_size_override("font_size", 10)
 	race_label.add_theme_color_override("font_color", Color(0.72, 0.68, 0.6))

@@ -44,20 +44,57 @@ const ROLE_NAMES: Dictionary = {
 	"imediato": "Imediato do Capitão", "musico": "Músico",
 }
 
-## Nome do arquivo de retrato (`res://assets/ui/crew/portraits/<profissão>_<raça>.png`)
-## por cargo -- a pasta usa o nome em inglês de cada profissão (pedido
-## explícito na convenção de arquivo), o resto do jogo usa o cargo em
-## português (`ROLES`), esta ponte faz a tradução só nesse um lugar.
-const ROLE_PORTRAIT_PREFIX: Dictionary = {
-	"timoneiro": "helmsman", "canhoneiro": "cannoneer", "carpinteiro": "carpenter",
-	"navegador": "navigator", "cozinheiro": "cook", "medico": "doctor",
-	"imediato": "first_mate", "musico": "musician",
-}
-
 const PORTRAIT_DIR: String = "res://assets/ui/crew/portraits/"
+## As 4 Raças Oficiais do projeto (pedido explícito desta rodada -- Humano/
+## Goblin/Anão/Morto-Vivo; "Goblin Puro" é um TÍTULO dentro de Goblin, não
+## uma 5ª raça própria, por isso não entra nesta lista).
 const PORTRAIT_RACES: Array[String] = ["human", "goblin", "dwarf", "undead"]
 const RACE_LABELS: Dictionary = {
 	"human": "Humano", "goblin": "Goblin", "dwarf": "Anão", "undead": "Morto-Vivo",
+}
+
+## Mapeamento EXPLÍCITO dos 32 retratos (pedido explícito -- "mapeie
+## explicitamente... usando os 32 arquivos fatiados"), em vez de montar o
+## caminho por concatenação de string (`"%s_%s.png" % [prefixo, raça]`): um
+## nome de arquivo errado digitado aqui dá erro na hora de ler o dicionário,
+## não um `load()` silenciosamente apontando pra um arquivo que não existe.
+## Os 32 arquivos (4 lotes x 2 profissões x 4 raças, processados de
+## `~/Downloads/Tortuga/Tripulação/`) foram conferidos um a um antes desta
+## lista -- `ls res://assets/ui/crew/portraits/` bate exatamente com os 32
+## caminhos abaixo.
+const PORTRAITS: Dictionary = {
+	"timoneiro": {
+		"human": "helmsman_human.png", "goblin": "helmsman_goblin.png",
+		"dwarf": "helmsman_dwarf.png", "undead": "helmsman_undead.png",
+	},
+	"navegador": {
+		"human": "navigator_human.png", "goblin": "navigator_goblin.png",
+		"dwarf": "navigator_dwarf.png", "undead": "navigator_undead.png",
+	},
+	"canhoneiro": {
+		"human": "cannoneer_human.png", "goblin": "cannoneer_goblin.png",
+		"dwarf": "cannoneer_dwarf.png", "undead": "cannoneer_undead.png",
+	},
+	"carpinteiro": {
+		"human": "carpenter_human.png", "goblin": "carpenter_goblin.png",
+		"dwarf": "carpenter_dwarf.png", "undead": "carpenter_undead.png",
+	},
+	"cozinheiro": {
+		"human": "cook_human.png", "goblin": "cook_goblin.png",
+		"dwarf": "cook_dwarf.png", "undead": "cook_undead.png",
+	},
+	"medico": {
+		"human": "doctor_human.png", "goblin": "doctor_goblin.png",
+		"dwarf": "doctor_dwarf.png", "undead": "doctor_undead.png",
+	},
+	"imediato": {
+		"human": "first_mate_human.png", "goblin": "first_mate_goblin.png",
+		"dwarf": "first_mate_dwarf.png", "undead": "first_mate_undead.png",
+	},
+	"musico": {
+		"human": "musician_human.png", "goblin": "musician_goblin.png",
+		"dwarf": "musician_dwarf.png", "undead": "musician_undead.png",
+	},
 }
 
 ## O que cada cargo concede ao navio/tropa quando contratado -- usa as
@@ -143,11 +180,19 @@ func dismiss(role: String) -> void:
 ## vazia; `ShipStatusModal`/`CrewCardModal` decidem se mostram isso ou um
 ## ícone de vaga vazia).
 func portrait_path(role: String) -> String:
-	var prefix: String = ROLE_PORTRAIT_PREFIX.get(role, "")
-	if prefix == "":
+	return portrait_path_for(role, hired_race.get(role, "human"))
+
+
+## Versão explícita (cargo + raça), sem depender do que está contratado --
+## `TavernHireSystem` chama isto direto pra montar o retrato de um
+## Marinheiro/Operário (que não é um CARGO de `OfficerRoster`, mas usa a
+## MESMA prancha de 32 retratos, sorteando a profissão só pra variar o
+## visual).
+func portrait_path_for(role: String, race: String) -> String:
+	var filename: String = PORTRAITS.get(role, {}).get(race, "")
+	if filename == "":
 		return ""
-	var race: String = hired_race.get(role, "human")
-	return "%s%s_%s.png" % [PORTRAIT_DIR, prefix, race]
+	return PORTRAIT_DIR + filename
 
 
 func race_label(role: String) -> String:
