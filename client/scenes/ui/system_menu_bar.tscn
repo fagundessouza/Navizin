@@ -112,6 +112,8 @@ stretch_mode = 5
 [node name="MenuSettings" type="TextureButton" parent="Grid"]
 custom_minimum_size = Vector2(42, 42)
 layout_mode = 2
+pivot_offset = Vector2(21, 21)
+scale = Vector2(1.18, 1.18)
 tooltip_text = "Configurações"
 texture_normal = ExtResource("i6")
 ignore_texture_size = true
