@@ -5,8 +5,6 @@
 [ext_resource type="Texture2D" uid="uid://5hxc8sfy6rhg" path="res://assets/ui/ship_status/galleon_blueprint.png" id="3_blueprint"]
 [ext_resource type="Shader" uid="uid://b12xwydrbqogk" path="res://assets/shaders/chroma_key.gdshader" id="4_chroma"]
 [ext_resource type="PackedScene" path="res://scenes/ui/inventory_picker_submodal.tscn" id="5_picker"]
-[ext_resource type="PackedScene" path="res://scenes/ui/crew_management_submodal.tscn" id="6_crew"]
-[ext_resource type="PackedScene" path="res://scenes/ui/ship_info_modal.tscn" id="7_info"]
 [ext_resource type="PackedScene" path="res://scenes/ui/item_tooltip_zoom.tscn" id="8_tooltipzoom"]
 [ext_resource type="Texture2D" uid="uid://c3fsnwtscdbaj" path="res://assets/ui/processed/modal_frame_iron.png" id="9_frame"]
 [ext_resource type="Shader" uid="uid://b7qg6in3rvcl4" path="res://assets/shaders/gothic_panel.gdshader" id="10_gothic"]
@@ -104,11 +102,10 @@ offset_bottom = 38.0
 text = "X"
 
 [node name="Slots" type="Control" parent="." unique_id=572807940]
-anchors_preset = 0
+layout_mode = 1
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
 mouse_filter = 2
 
 [node name="WeightBar" type="ProgressBar" parent="." unique_id=543877265]
@@ -243,17 +240,17 @@ layout_mode = 2
 
 [node name="Picker" parent="." unique_id=568502549 instance=ExtResource("5_picker")]
 layout_mode = 1
+metadata/_edit_lock_ = true
 
-[node name="CrewManagementSubmodal" parent="." unique_id=1291400561 instance=ExtResource("6_crew")]
+[node name="ModalOverlay" type="Control" parent="."]
 layout_mode = 1
-read_only = true
-
-[node name="CargoModal" parent="." unique_id=889879362 instance=ExtResource("7_info")]
-layout_mode = 1
-
-[node name="AmmoModal" parent="." unique_id=2034563576 instance=ExtResource("7_info")]
-layout_mode = 1
-info_mode = "ammo"
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
 
 [node name="ItemTooltipZoom" parent="." unique_id=372170646 instance=ExtResource("8_tooltipzoom")]
 layout_mode = 1
+metadata/_edit_lock_ = true

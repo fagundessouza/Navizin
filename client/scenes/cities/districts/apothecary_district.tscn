@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/cities/city_district_base.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/sprites/environment/districts/interiors/apothecary_lab_v2.png" id="2_bg"]
-[ext_resource type="PackedScene" path="res://scenes/ui/crafting_modal.tscn" id="4_crafting"]
+[ext_resource type="PackedScene" path="res://scenes/ui/modals/crafting_modal.tscn" id="4_crafting"]
 
 [node name="ApothecaryDistrict" type="Control"]
 anchors_preset = 15

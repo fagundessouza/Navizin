@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/cities/city_district_base.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/sprites/environment/districts/interiors/coastal_bonfire.png" id="2_bg"]
-[ext_resource type="PackedScene" path="res://scenes/ui/trade_modal.tscn" id="3_modal"]
+[ext_resource type="PackedScene" path="res://scenes/ui/modals/trade_modal.tscn" id="3_modal"]
 
 [node name="MarketplaceDistrict" type="Control"]
 anchors_preset = 15

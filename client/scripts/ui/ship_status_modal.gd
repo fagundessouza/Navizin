@@ -141,9 +141,18 @@ const GLOWING_RARITIES: Array[String] = ["blue", "gold"]
 @onready var _slots_root: Control = $Slots
 @onready var _picker: InventoryPickerSubmodal = $Picker
 @onready var _tooltip_zoom: ItemTooltipZoom = $ItemTooltipZoom
-@onready var _crew_submodal: CrewManagementSubmodal = $CrewManagementSubmodal
-@onready var _cargo_modal: ShipInfoModal = $CargoModal
-@onready var _ammo_modal: ShipInfoModal = $AmmoModal
+## MIGRAÇÃO PRA INSTANCIAÇÃO EM RUNTIME (pedido explícito, reverte a decisão
+## anterior desta mesma sessão de manter tudo no editor -- ver `.clauderules`
+## e `UIManager._register_modal_scenes()`). `CrewManagementSubmodal`/
+## `CargoModal`/`AmmoModal` não são mais filhos fixos do `.tscn`: saem do
+## `ModalOverlay` (Control vazio, só reserva o espaço) na primeira vez que
+## `_ready()` pede pelo `UIManager`, que cria, guarda e devolve a MESMA
+## instância em pedidos seguintes -- o resto do arquivo (`_close_all_submodals()`,
+## `.open()`/`.close()`) não muda nada, só QUEM cria o nó mudou.
+@onready var _modal_overlay: Control = $ModalOverlay
+var _crew_submodal: CrewManagementSubmodal
+var _cargo_modal: ShipInfoModal
+var _ammo_modal: ShipInfoModal
 @onready var _weight_bar: ProgressBar = $WeightBar
 @onready var _weight_label: Label = $WeightLabel
 @onready var _morale_bar: ProgressBar = $MoraleBar
@@ -177,6 +186,9 @@ var _glow_phase_counter: int = 0
 
 func _ready() -> void:
 	visible = false
+	_crew_submodal = UIManager.get_modal("crew_management", _modal_overlay, func(m): m.read_only = true) as CrewManagementSubmodal
+	_cargo_modal = UIManager.get_modal("cargo", _modal_overlay) as ShipInfoModal
+	_ammo_modal = UIManager.get_modal("ammo", _modal_overlay, func(m): m.info_mode = "ammo") as ShipInfoModal
 	$CloseButton.pressed.connect(close)
 	$CannonManagePanel/Panel/Margin/VBox/Header/CloseButton.pressed.connect(_close_cannon_panel)
 	_build_craft_slots()
@@ -346,7 +358,7 @@ func _build_officer_slots() -> void:
 		var row_data: Dictionary = OFFICER_ROW[row]
 		var role: String = OfficerRoster.ROLES[i]
 		var button := _make_slot_button(cx, row_data["cy"], OFFICER_SLOT_W, row_data["h"], OfficerRoster.ROLE_NAMES[role])
-		button.pressed.connect(func(): _close_all_submodals(); _crew_submodal.move_to_front(); _crew_submodal.open())
+		button.pressed.connect(func(): _close_all_submodals(); UIManager.open_modal(_crew_submodal))
 		UIManager.add_hover_pop(button, "officer_%s" % role)
 		var portrait := TextureRect.new()
 		portrait.name = "Portrait"
@@ -464,20 +476,19 @@ func _on_inventory_cell_hover(cell: Button) -> void:
 ## fingido.
 func _on_ammo_button_pressed() -> void:
 	_close_all_submodals()
-	_ammo_modal.open()
+	UIManager.open_modal(_ammo_modal)
 
 
 func _on_trade_button_pressed() -> void:
 	_close_all_submodals()
-	_cargo_modal.open()
+	UIManager.open_modal(_cargo_modal)
 
 
 func _on_talents_button_pressed() -> void:
 	_close_all_submodals()
-	var captain_modal: Node = get_tree().get_first_node_in_group("captain_profile_modal")
+	var captain_modal: Control = get_tree().get_first_node_in_group("captain_profile_modal")
 	if captain_modal != null:
-		captain_modal.move_to_front()
-		captain_modal.open()
+		UIManager.open_modal(captain_modal)
 
 
 func _supply_slot_action(key: String) -> Callable:
@@ -496,13 +507,13 @@ func _supply_slot_action(key: String) -> Callable:
 ## cada handler de abertura (ver nota acima), pra nunca ter 2 empilhados ao
 ## mesmo tempo.
 func _close_all_submodals() -> void:
-	_cargo_modal.close()
-	_ammo_modal.close()
-	_crew_submodal.close()
+	UIManager.close_modal(_cargo_modal)
+	UIManager.close_modal(_ammo_modal)
+	UIManager.close_modal(_crew_submodal)
 	_close_cannon_panel()
-	var captain_modal: Node = get_tree().get_first_node_in_group("captain_profile_modal")
+	var captain_modal: Control = get_tree().get_first_node_in_group("captain_profile_modal")
 	if captain_modal != null:
-		captain_modal.close()
+		UIManager.close_modal(captain_modal)
 
 
 ## Encolhe a hitbox de um slot de Suprimentos se o vizinho estiver perto

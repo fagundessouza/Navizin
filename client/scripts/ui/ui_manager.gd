@@ -42,6 +42,27 @@ var _readable_font: FontVariation = null
 var _current_modal: Control = null
 var _hover_sfx: AudioStreamPlayer = null
 
+## REGISTRO/PILHA DE MODAIS EM RUNTIME (pedido explícito -- migração completa
+## do projeto pra instanciação dinâmica, revertendo a decisão anterior de
+## manter tudo instanciado no editor -- ver `.clauderules` e o checkpoint
+## desta rodada no STATE.md). Cada modal continua dono do próprio
+## `open()`/`close()` (regra do `.clauderules` nunca mudou) -- isto só decide
+## QUANDO instanciar e ONDE guardar a instância, reaproveitando a mesma
+## lógica de exclusão mútua de `open_modal()`/`close_modal()` acima em vez de
+## duplicá-la.
+##
+## Instância por (overlay, modal_id), não só por modal_id: o mesmo modal
+## (ex. `crew_management_submodal`) é aberto por MAIS de um host com
+## configuração diferente (`read_only`, `show_sailors_section`) -- Ficha do
+## Navio é só consulta, Taverna contrata de verdade. Cada overlay guarda sua
+## própria instância configurada, sem reaproveitar a de outro host por
+## engano.
+var _modal_scenes: Dictionary = {}
+## "<overlay_instance_id>::<modal_id>" -> Control já instanciado (reaproveitado
+## entre aberturas, só show/hide -- igual era quando ficavam no .tscn, não
+## recria o nó toda vez que abre).
+var _modal_instances: Dictionary = {}
+
 
 func _ready() -> void:
 	_hover_sfx = AudioStreamPlayer.new()
@@ -52,6 +73,70 @@ func _ready() -> void:
 	_readable_font = FontVariation.new()
 	_readable_font.base_font = base_font
 	_readable_font.variation_opentype = {2003265652: 700}  # 'wght' = 700 (negrito)
+	_register_modal_scenes()
+
+
+## Único lugar com a lista modal_id -> cena -- adicionar um modal novo ao
+## sistema é uma linha aqui, não uma instância nova espalhada em algum
+## `.tscn`.
+func _register_modal_scenes() -> void:
+	_modal_scenes["cargo"] = preload("res://scenes/ui/modals/ship_info_modal.tscn")
+	_modal_scenes["ammo"] = preload("res://scenes/ui/modals/ship_info_modal.tscn")
+	_modal_scenes["crew_management"] = preload("res://scenes/ui/modals/crew_management_submodal.tscn")
+	_modal_scenes["crew_card"] = preload("res://scenes/ui/modals/crew_card_modal.tscn")
+	_modal_scenes["vault"] = preload("res://scenes/ui/modals/vault_modal.tscn")
+	_modal_scenes["crafting"] = preload("res://scenes/ui/modals/crafting_modal.tscn")
+	_modal_scenes["refinement"] = preload("res://scenes/ui/modals/refinement_modal.tscn")
+	_modal_scenes["trade"] = preload("res://scenes/ui/modals/trade_modal.tscn")
+	_modal_scenes["captain_profile"] = preload("res://scenes/ui/modals/captain_profile_modal.tscn")
+	_modal_scenes["life_skills"] = preload("res://scenes/ui/modals/life_skills_panel.tscn")
+	_modal_scenes["captain_panel"] = preload("res://scenes/ui/modals/captain_panel.tscn")
+
+
+## Retorna a instância do modal `modal_id` dentro de `overlay`, criando na
+## primeira chamada (e só então). Chamadas seguintes devolvem a mesma
+## instância já configurada. `configure` (opcional) roda ANTES de
+## `overlay.add_child()` -- IMPORTANTE rodar antes, não depois: `_ready()`
+## do modal dispara na hora que entra na árvore, e lê `@export var` como
+## `info_mode`/`read_only` pra decidir título/seções visíveis logo ali;
+## configurar DEPOIS de `add_child()` deixaria `_ready()` ler o valor padrão
+## errado (achado rodando a migração de verdade -- `AmmoModal` nascia com
+## título "Porão de Carga" até essa ordem ser corrigida):
+##   UIManager.get_modal("ammo", overlay, func(m): m.info_mode = "ammo")
+func get_modal(modal_id: String, overlay: Node, configure: Callable = Callable()) -> Control:
+	var key: String = "%d::%s" % [overlay.get_instance_id(), modal_id]
+	if _modal_instances.has(key) and is_instance_valid(_modal_instances[key]):
+		return _modal_instances[key]
+	var scene: PackedScene = _modal_scenes.get(modal_id)
+	if scene == null:
+		push_error("UIManager.get_modal: modal_id desconhecido: %s" % modal_id)
+		return null
+	var instance: Control = scene.instantiate()
+	if configure.is_valid():
+		configure.call(instance)
+	overlay.add_child(instance)
+	_modal_instances[key] = instance
+	return instance
+
+
+## Atalho pro par comum "pega (cria se precisar) + abre", já passando pela
+## exclusão mútua de `open_modal()`.
+func open_modal_id(modal_id: String, overlay: Node, configure: Callable = Callable()) -> Control:
+	var instance: Control = get_modal(modal_id, overlay, configure)
+	if instance != null:
+		open_modal(instance)
+	return instance
+
+
+## ESC fecha o modal no topo da pilha (pedido explícito -- "fechamento via
+## tecla ESC"). `_current_modal` já rastreia qual é (a mesma variável que
+## `open_modal()`/`close_modal()` usam pra exclusão mútua), então não precisa
+## de uma pilha separada -- só um modal de cada vez é "o atual" por design
+## (ver nota de `open_modal()`).
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel") and _current_modal != null and is_instance_valid(_current_modal):
+		close_modal(_current_modal)
+		get_viewport().set_input_as_handled()
 
 
 ## Aplica a fonte gótica legível + contorno escuro num Label/Button

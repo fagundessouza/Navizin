@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/cities/city_district_base.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/sprites/environment/districts/interiors/market_cavern.png" id="2_bg"]
-[ext_resource type="PackedScene" path="res://scenes/ui/vault_modal.tscn" id="4_vault"]
+[ext_resource type="PackedScene" path="res://scenes/ui/modals/vault_modal.tscn" id="4_vault"]
 
 [node name="TreasureVaultDistrict" type="Control"]
 anchors_preset = 15

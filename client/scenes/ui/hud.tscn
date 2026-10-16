@@ -7,10 +7,10 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/hotbar.tscn" id="6_hotbar"]
 [ext_resource type="PackedScene" path="res://scenes/ui/system_menu_bar.tscn" id="7_menu"]
 [ext_resource type="PackedScene" path="res://scenes/ui/dialog_panel.tscn" id="8_dialog"]
-[ext_resource type="PackedScene" path="res://scenes/ui/captain_panel.tscn" id="9_captainpanel"]
-[ext_resource type="PackedScene" path="res://scenes/ui/life_skills_panel.tscn" id="10_lifeskills"]
+[ext_resource type="PackedScene" path="res://scenes/ui/modals/captain_panel.tscn" id="9_captainpanel"]
+[ext_resource type="PackedScene" path="res://scenes/ui/modals/life_skills_panel.tscn" id="10_lifeskills"]
 [ext_resource type="PackedScene" path="res://scenes/ui/ship_status_modal.tscn" id="11_shipstatus"]
-[ext_resource type="PackedScene" path="res://scenes/ui/captain_profile_modal.tscn" id="12_captainprofile"]
+[ext_resource type="PackedScene" path="res://scenes/ui/modals/captain_profile_modal.tscn" id="12_captainprofile"]
 
 [node name="HUD" type="Control"]
 layout_mode = 3

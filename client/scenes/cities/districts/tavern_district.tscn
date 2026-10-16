@@ -2,8 +2,8 @@
 
 [ext_resource type="Script" path="res://scripts/cities/city_district_base.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/sprites/environment/districts/interiors/tavern_interior.png" id="2_bg"]
-[ext_resource type="PackedScene" path="res://scenes/ui/crew_card_modal.tscn" id="3_crewcards"]
-[ext_resource type="PackedScene" path="res://scenes/ui/crew_management_submodal.tscn" id="4_officers"]
+[ext_resource type="PackedScene" path="res://scenes/ui/modals/crew_card_modal.tscn" id="3_crewcards"]
+[ext_resource type="PackedScene" path="res://scenes/ui/modals/crew_management_submodal.tscn" id="4_officers"]
 
 [node name="TavernDistrict" type="Control"]
 anchors_preset = 15
