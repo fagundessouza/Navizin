@@ -37,6 +37,7 @@ OfficerRoster="*res://scripts/autoload/officer_roster.gd"
 BoardingManager="*res://scripts/autoload/boarding_manager.gd"
 TavernHireSystem="*res://scripts/autoload/tavern_hire_system.gd"
 AdminManager="*res://scripts/autoload/admin_manager.gd"
+BarterSystem="*res://scripts/autoload/barter_system.gd"
 
 [display]
 

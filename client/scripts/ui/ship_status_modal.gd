@@ -139,7 +139,7 @@ const OFFICER_SLOT_W: float = 73.2
 const SUPPLY_SLOTS: Array[Dictionary] = [
 	{"key": "bolas", "cx": 646.5, "cy": 378.7, "material": "", "label": "Munições de Canhão"},
 	{"key": "racao", "cx": 708.0, "cy": 378.7, "material": "Ração de Bordo", "label": "Suprimentos da Tripulação"},
-	{"key": "escambo", "cx": 768.0, "cy": 378.7, "material": "Ouro", "label": "Mercadorias de Escambo"},
+	{"key": "escambo", "cx": 768.0, "cy": 378.7, "material": "Ouro", "label": "Comércio e Escambo"},
 	{"key": "talentos", "cx": 825.9, "cy": 378.7, "material": "", "label": "Árvore de Talentos"},
 ]
 ## Largura/altura "ideal" medida na arte (recalibrado junto com os `cx`
@@ -174,6 +174,7 @@ var _crew_submodal: CrewManagementSubmodal
 var _cargo_modal: ShipInfoModal
 var _ammo_modal: ShipInfoModal
 var _supplies_modal: ShipInfoModal
+var _barter_modal: BarterModal
 @onready var _weight_bar: ProgressBar = $WeightBar
 @onready var _weight_label: Label = $WeightLabel
 @onready var _morale_bar: ProgressBar = $MoraleBar
@@ -211,6 +212,7 @@ func _ready() -> void:
 	_cargo_modal = UIManager.get_modal("cargo", _modal_overlay) as ShipInfoModal
 	_ammo_modal = UIManager.get_modal("ammo", _modal_overlay, func(m): m.info_mode = "ammo") as ShipInfoModal
 	_supplies_modal = UIManager.get_modal("supplies", _modal_overlay, func(m): m.info_mode = "supplies") as ShipInfoModal
+	_barter_modal = UIManager.get_modal("barter", _modal_overlay) as BarterModal
 	$CloseButton.pressed.connect(close)
 	$CannonManagePanel/Panel/Margin/VBox/Header/CloseButton.pressed.connect(_close_cannon_panel)
 	_build_craft_slots()
@@ -503,12 +505,13 @@ func _on_inventory_cell_hover(cell: Button) -> void:
 ## nota de classe em `ship_info_modal.gd`) -- não é mais um atalho pra tela
 ## de Munição.
 ##
-## Escambo e Talentos CONTINUAM nas telas reais mais próximas (Porão de
-## Carga, Ficha do Capitão): nenhum sistema de Árvore de Talentos existe
-## ainda, e Escambo está no meio de virar um sistema de Permuta de verdade
-## (rodada em andamento, ver `TradeManager`/`.project/STATE.md`) -- fica
-## apontando pro Porão de Carga só até essa tela ficar pronta, não um stub
-## fingido no lugar.
+## Escambo -> `_barter_modal` (rodada "Comércio e Escambo", ver
+## `BarterSystem`): cadeia real de Permuta em 5 níveis, não mais um atalho
+## pro Porão de Carga.
+##
+## Talentos CONTINUA na tela real mais próxima (Ficha do Capitão): nenhum
+## sistema de Árvore de Talentos existe ainda, documentado aqui em vez de
+## fingido.
 func _on_ammo_button_pressed() -> void:
 	_close_all_submodals()
 	UIManager.open_modal(_ammo_modal)
@@ -521,7 +524,7 @@ func _on_supplies_button_pressed() -> void:
 
 func _on_trade_button_pressed() -> void:
 	_close_all_submodals()
-	UIManager.open_modal(_cargo_modal)
+	UIManager.open_modal(_barter_modal)
 
 
 func _on_talents_button_pressed() -> void:
@@ -552,6 +555,7 @@ func _close_all_submodals() -> void:
 	UIManager.close_modal(_cargo_modal)
 	UIManager.close_modal(_ammo_modal)
 	UIManager.close_modal(_supplies_modal)
+	UIManager.close_modal(_barter_modal)
 	UIManager.close_modal(_crew_submodal)
 	_close_cannon_panel()
 	var captain_modal: Control = get_tree().get_first_node_in_group("captain_profile_modal")
