@@ -2,7 +2,6 @@
 
 [ext_resource type="Script" path="res://scripts/cities/city_district_base.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/sprites/environment/districts/interiors/market_cavern.png" id="2_bg"]
-[ext_resource type="PackedScene" path="res://scenes/ui/modals/vault_modal.tscn" id="4_vault"]
 
 [node name="TreasureVaultDistrict" type="Control"]
 anchors_preset = 15
@@ -92,5 +91,10 @@ offset_right = 168.0
 offset_bottom = 180.0
 text = "Abrir Cofre"
 
-[node name="VaultModal" parent="." instance=ExtResource("4_vault")]
-visible = false
+[node name="ModalOverlay" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2

@@ -2,7 +2,6 @@
 
 [ext_resource type="Script" path="res://scripts/cities/city_district_base.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/sprites/environment/districts/interiors/blacksmith_forge.png" id="2_bg"]
-[ext_resource type="PackedScene" path="res://scenes/ui/modals/crafting_modal.tscn" id="4_crafting"]
 
 [node name="BlacksmithDistrict" type="Control"]
 anchors_preset = 15
@@ -14,6 +13,10 @@ mouse_filter = 2
 script = ExtResource("1_script")
 district_title = "Forja Naval"
 district_body = "Estação de fabrico de armas do capitão, armaduras, pólvora e munição -- madeira a diamante, conforme o material. Em construção."
+crafting_panel_title = "Forja Naval -- Peças do Galeão"
+crafting_station = "forja"
+crafting_categories = PackedStringArray("armamento", "municao", "arpao")
+crafting_category_labels = PackedStringArray("Canhões", "Munições", "Arpões de Caça")
 
 [node name="Background" type="TextureRect" parent="."]
 anchors_preset = 15
@@ -92,9 +95,10 @@ offset_right = 168.0
 offset_bottom = 180.0
 text = "Abrir Forja"
 
-[node name="CraftingModal" parent="." instance=ExtResource("4_crafting")]
-visible = false
-panel_title = "Forja Naval -- Peças do Galeão"
-station = "forja"
-categories = PackedStringArray("armamento", "municao", "arpao")
-category_labels = PackedStringArray("Canhões", "Munições", "Arpões de Caça")
+[node name="ModalOverlay" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2

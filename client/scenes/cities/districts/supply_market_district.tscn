@@ -2,7 +2,6 @@
 
 [ext_resource type="Script" path="res://scripts/cities/city_district_base.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/sprites/environment/districts/interiors/dark_port.png" id="2_bg"]
-[ext_resource type="PackedScene" path="res://scenes/ui/modals/crafting_modal.tscn" id="4_crafting"]
 
 [node name="SupplyMarketDistrict" type="Control"]
 anchors_preset = 15
@@ -14,6 +13,11 @@ mouse_filter = 2
 script = ExtResource("1_script")
 district_title = "Feira Comerciante"
 district_body = "Peixe seco, barris e fogueiras sob as tendas do cais -- comida, bebida e suprimentos de bordo, e agora também o bazar de equipamentos do capitão (anéis, brincos, colares, cintos, trajes, equipamento secundário). Em construção."
+crafting_panel_title = "Feira Comerciante"
+crafting_station = "feira"
+crafting_categories = PackedStringArray("anel,brincos,colar,cinto,trajes,secundaria", "municao,arpao")
+crafting_category_labels = PackedStringArray("Equipamentos do Capitão", "Suprimentos de Bordo")
+crafting_category_stations = PackedStringArray("", "forja")
 
 [node name="Background" type="TextureRect" parent="."]
 anchors_preset = 15
@@ -92,10 +96,10 @@ offset_right = 168.0
 offset_bottom = 180.0
 text = "Abrir Feira"
 
-[node name="CraftingModal" parent="." instance=ExtResource("4_crafting")]
-visible = false
-panel_title = "Feira Comerciante"
-station = "feira"
-categories = PackedStringArray("anel,brincos,colar,cinto,trajes,secundaria", "municao,arpao")
-category_labels = PackedStringArray("Equipamentos do Capitão", "Suprimentos de Bordo")
-category_stations = PackedStringArray("", "forja")
+[node name="ModalOverlay" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2

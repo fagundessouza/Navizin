@@ -2,8 +2,6 @@
 
 [ext_resource type="Script" path="res://scripts/cities/city_district_base.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/sprites/environment/districts/interiors/tavern_interior.png" id="2_bg"]
-[ext_resource type="PackedScene" path="res://scenes/ui/modals/crew_card_modal.tscn" id="3_crewcards"]
-[ext_resource type="PackedScene" path="res://scenes/ui/modals/crew_management_submodal.tscn" id="4_officers"]
 
 [node name="TavernDistrict" type="Control"]
 anchors_preset = 15
@@ -15,6 +13,8 @@ mouse_filter = 2
 script = ExtResource("1_script")
 district_title = "Taverna do Oculto"
 district_body = "Rum, rumores e tripulação sob a caveira pintada na parede -- é aqui que se contrata Marinheiros e Operários pra tripular o Galeão."
+officers_read_only = false
+officers_show_sailors_section = false
 
 [node name="Background" type="TextureRect" parent="."]
 anchors_preset = 15
@@ -100,10 +100,10 @@ offset_right = 168.0
 offset_bottom = 220.0
 text = "Contratar Oficiais"
 
-[node name="CrewCardModal" parent="." instance=ExtResource("3_crewcards")]
-visible = false
-
-[node name="OfficersModal" parent="." instance=ExtResource("4_officers")]
-visible = false
-read_only = false
-show_sailors_section = false
+[node name="ModalOverlay" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2

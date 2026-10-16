@@ -2,7 +2,6 @@
 
 [ext_resource type="Script" path="res://scripts/cities/city_district_base.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://assets/sprites/environment/districts/interiors/shipyard_interior.png" id="2_bg"]
-[ext_resource type="PackedScene" path="res://scenes/ui/modals/crafting_modal.tscn" id="4_crafting"]
 
 [node name="ShipyardDistrict" type="Control"]
 anchors_preset = 15
@@ -14,6 +13,10 @@ mouse_filter = 2
 script = ExtResource("1_script")
 district_title = "Estaleiro"
 district_body = "Estação de fabrico e aprimoramento de navios -- velas, cascos e proas. Em construção."
+crafting_panel_title = "Estaleiro -- Peças do Galeão"
+crafting_station = "estaleiro"
+crafting_categories = PackedStringArray("casco,proa", "vela")
+crafting_category_labels = PackedStringArray("Cascos e Proas", "Velas")
 
 [node name="Background" type="TextureRect" parent="."]
 anchors_preset = 15
@@ -92,9 +95,10 @@ offset_right = 168.0
 offset_bottom = 180.0
 text = "Abrir Estaleiro"
 
-[node name="CraftingModal" parent="." instance=ExtResource("4_crafting")]
-visible = false
-panel_title = "Estaleiro -- Peças do Galeão"
-station = "estaleiro"
-categories = PackedStringArray("casco,proa", "vela")
-category_labels = PackedStringArray("Cascos e Proas", "Velas")
+[node name="ModalOverlay" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
