@@ -1,48 +1,65 @@
 class_name ShipStatusModal
 extends Control
-## Ficha de equipamento do Galeão: 5 slots de peça de craft (Vela, Casco,
-## Leme, Proa, Relíquia de Ebenruth), uma grade de canhões, a barra de peso
-## da carga e 4 botões de rodapé -- montados sobre a arte
-## `galleon_warship_status_panel.png`, que já vem com a moldura e os '+'
-## desenhados em cada slot; os botões daqui são só a área de clique.
+## Ficha de equipamento do Galeão -- reconstruída nesta rodada em cima da
+## nova arte `inventory_background.jpeg` (1600x900, fator de exibição 0.6)
+## com Chroma Key de verdade no Viewport central (ver `BlueprintLayer`/
+## `chroma_key.gdshader`) revelando a planta `galleon_blueprint.png` por
+## trás. Coordenadas medidas na arte de origem com grade de calibração PIL
+## (mesmo método de sempre) e convertidas pro fator 0.6.
 ##
-## Coordenadas medidas na arte de origem (1536x864, grade de calibração +
-## detecção de blob dourado pros centros da grade de canhão) e convertidas
-## pra escala de exibição (960x540, fator 0.625) -- mesmo método de
-## `captain_profile_modal.gd`.
+## LEME SAIU DE VEZ (não só escondido): a nova arte não tem mais um
+## caixilho pra ele -- consistente com a decisão já tomada antes de tirá-lo
+## da Forja/Estaleiro "até ter arte" (STATE.md). `ItemDatabase` continua com
+## a categoria `leme` registrada, só não tem slot nenhum pra equipar aqui.
 ##
-## NOTA: o pedido original descrevia a grade de canhões como "24 (6x4)", mas
-## a arte entregue só tem 20 (5x4) -- usado o que está desenhado, não o que
-## foi descrito, pra não inventar uma 6ª coluna que não existe na imagem.
+## CANHÃO PRINCIPAL != grade de 20: a nova arte só tem 1 caixilho de canhão
+## nos slots laterais + 1 box "Canhão Principal" maior embaixo à direita --
+## os 2 mostram o MESMO dado (`ShipInventory.equipped_cannons[0]`), não uma
+## 6ª peça de equipamento nova. A grade de 20 canhões inteira (preservada
+## sem mudança nenhuma na lógica) virou um painel à parte
+## (`CannonManagePanel`), aberto pelo botão "Gerenciar Canhões" -- a arte
+## nova simplesmente não tem espaço pra mostrar as 20 de uma vez no painel
+## principal.
 ##
-## Os 2 círculos grandes "+" nas pontas do rodapé e a bússola decorativa no
-## topo do pergaminho (visíveis na arte) nunca tiveram botão nenhum por trás
-## -- decorativos, sem função atribuída. Esta rodada veio o pedido explícito
-## de escondê-los até que tenham dados de verdade (ver `DECORATIVE_MASKS`/
-## `_build_decorative_masks()`): um véu escuro por cima, já que não dá pra
-## apagar só aquele pedaço de um PNG já composto sem redesenhar a arte.
+## INVENTÁRIO DO NAVIO (18 slots, não 24): a arte entregue desenha uma
+## grade de 3 linhas x 6 colunas = 18 caixas de caveira, não as "24 (4x6)"
+## descritas no pedido -- contado caixa por caixa na imagem antes de
+## escrever este número (mesma disciplina de "a grade de canhões também já
+## foi descrita errado uma vez, usa o que tá desenhado"). Mostra os itens do
+## Navio NÃO equipados (mesmo dado da aba "Itens do Navio" do `VaultModal`),
+## só leitura (clicar não equipa -- equipar continua pelos 4 slots
+## dedicados + grade de canhão). SEM DRAG & DROP: nenhum sistema de
+## arrastar item existe em lugar nenhum do projeto ainda (equipar sempre
+## foi clique -> `InventoryPickerSubmodal`) -- o pedido descreve "manter o
+## Drag & Drop alinhado" como se já existisse; não foi inventado um sistema
+## novo só pra esta grade, documentado aqui em vez de fingir que tem.
 ##
-## EQUIPAR DE VERDADE: cada slot (os 5 de craft + os 20 de canhão) abre o
-## `InventoryPickerSubmodal` em modo de equipamento -- ele já sabe ler
-## `ShipInventory` sozinho, aqui só processamos `instance_selected` pra
-## chamar `ShipInventory.equip_slot()`/`equip_cannon()` com o slot certo
-## e atualizar o tooltip. `ShipInventory.changed` (equipar OU fabricar)
-## também recalcula os atributos reais do navio via
-## `ship_base.gd.recalc_equipment_bonuses()`, mostrados ao vivo em `_stats_label`.
+## MORAL DA TRIPULAÇÃO: sem sistema de moral nenhum no jogo -- em vez de
+## inventar um contador novo sem ninguém por trás, a barra usa a fração de
+## Marinheiros/Operários ATIVOS (`TavernHireSystem.is_contributing()`) sobre
+## o total contratado: 100% cheia com a tripulação toda saudável/alimentada,
+## cai de verdade se alguém ficar Ferido/Doente/sem Ração. Dado real
+## reaproveitado, não um número solto.
 ##
-## RARIDADE: cada slot ganha um `ColorRect` filho do tamanho dele com
-## `item_rarity_glow.gdshader` -- escondido pra slot vazio ou White/Green
-## (sem efeito nessas duas), aceso na cor da raridade pra Blue/Yellow/
-## Orange (pulso) e com `lightning=true` pra Purple/Red (faíscas na borda).
-## Tooltip também ganha o nome da raridade entre colchetes, já que
-## `tooltip_text` é texto puro (sem cor) no Godot.
+## OFICIAIS (8 slots inline): mostra o retrato de `OfficerRoster` direto no
+## painel principal (a arte nova desenha os 8 nichos aqui, não mais
+## escondidos atrás de um botão de rodapé). Clicar em qualquer nicho ainda
+## abre `CrewManagementSubmodal` (contratar/dispensar continua lá, junto
+## com a grade de Marinheiros/Operários da Taverna) -- os slots inline aqui
+## são iguais, só um atalho visual, não uma 2ª cópia da lógica de contratar.
 ##
-## REFINO: `ShipInventory.get_item_name()` já devolve o nome com o
-## prefixo "[+N]" quando refinado, então nenhuma mudança extra precisou
-## aqui pra isso aparecer no tooltip. O que SIM é calculado aqui é
-## `_refine_boost_for()`, que só liga a partir de +10 (pedido explícito) e
-## intensifica o shader de brilho/faísca -- a refinada +15 de uma Obra-Prima
-## pulsa e faísca muito mais forte que a mesma peça recém-equipada em +0.
+## SUPRIMENTOS (4 slots): a arte já desenha o ícone de cada um (bolas de
+## canhão/barris de pólvora/baú/cristal) -- não precisa de um ícone
+## sobreposto, só o número por cima + tooltip. Mapeados em dado REAL já
+## existente, não inventado pra essa barra: Bolas -> "Esfera de Ferro"
+## (material real), Pólvora -> "Pólvora" (material real), Escambo -> "Ouro"
+## (moeda de troca real), Talentos -> `CaptainAttributes.available_points`
+## (o único "ponto pra gastar" que já existe no jogo -- mesmo número que o
+## Painel de Admin usa pra "+5 Pontos de Atributo").
+##
+## RARIDADE: igual rodadas anteriores, `item_rarity_glow.gdshader` por cima
+## de cada slot preenchido, escondido pra White/Green, aceso por raridade/
+## Float/Refino pra Blue+.
 
 signal opened
 signal closed
@@ -51,25 +68,50 @@ const PANEL_SIZE: Vector2 = Vector2(960, 540)
 const PICKER_WIDTH_ESTIMATE: float = 226.0
 const PICKER_HEIGHT_ESTIMATE: float = 170.0
 
+## 4 slots de peça (Leme removido -- sem caixilho na arte nova).
 const CRAFT_SLOTS: Array[Dictionary] = [
-	{"category": "vela", "label": "Vela", "cx": 178.1, "cy": 115.6, "size": 50.0},
-	{"category": "casco", "label": "Casco", "cx": 378.1, "cy": 115.6, "size": 50.0},
-	{"category": "proa", "label": "Proa", "cx": 483.1, "cy": 196.9, "size": 50.0},
-	{"category": "leme", "label": "Leme", "cx": 178.1, "cy": 333.1, "size": 50.0},
-	{"category": "relíquia_ebenruth", "label": "Relíquia de Ebenruth", "cx": 460.6, "cy": 333.1, "size": 50.0},
+	{"category": "vela", "label": "Vela", "cx": 90.0, "cy": 106.2, "w": 60.0, "h": 54.0},
+	{"category": "proa", "label": "Proa", "cx": 90.0, "cy": 163.8, "w": 60.0, "h": 54.0},
+	{"category": "casco", "label": "Casco", "cx": 438.0, "cy": 126.0, "w": 60.0, "h": 62.4},
+	{"category": "relíquia_ebenruth", "label": "Relíquia de Ebenruth", "cx": 438.0, "cy": 205.2, "w": 60.0, "h": 72.0},
 ]
 
-const CANNON_COLS: Array[float] = [572.5, 630.0, 687.5, 743.8, 801.9]
-const CANNON_ROWS: Array[float] = [115.0, 195.0, 275.0, 349.4]
-const CANNON_SLOT_SIZE: float = 34.0
+## Ícone pequeno na coluna esquerda + prévia grande no painel de Canhões e
+## Suprimentos -- os 2 mostram `equipped_cannons[0]`, ver nota de classe.
+const MASTER_CANNON_SMALL: Dictionary = {"cx": 90.0, "cy": 220.5, "w": 60.0, "h": 51.0}
+const MASTER_CANNON_BIG: Dictionary = {"cx": 556.5, "cy": 372.6, "w": 130.0, "h": 82.0}
 
-const FOOTER_BUTTONS: Array[Dictionary] = [
-	{"label": "Porão de Carga", "cx": 281.3, "cy": 436.3},
-	{"label": "Munição", "cx": 346.9, "cy": 436.3},
-	{"label": "Tripulação", "cx": 415.6, "cy": 436.3},
-	{"label": "Diário de Navegação", "cx": 484.4, "cy": 436.3},
+const GERENCIAR_CANHOES_BUTTON: Dictionary = {"cx": 556.5, "cy": 441.0, "w": 130.0, "h": 32.0}
+
+## Grade de 20 (5x4) dentro do `CannonManagePanel` -- herdada sem mudança
+## de coordenada nenhuma da versão anterior (ela tinha espaço próprio
+## dedicado lá, não precisa recalibrar pra arte nova já que agora é um
+## painel à parte).
+const CANNON_COLS: Array[float] = [60.0, 155.0, 250.0, 345.0, 440.0]
+const CANNON_ROWS: Array[float] = [40.0, 115.0, 190.0, 265.0]
+const CANNON_SLOT_SIZE: float = 60.0
+
+## Inventário do Navio: 18 slots (3 linhas x 6 colunas), ver nota de classe.
+const INVENTORY_GRID_ORIGIN: Vector2 = Vector2(514.8, 90.0)
+const INVENTORY_CELL_SIZE: Vector2 = Vector2(54.2, 46.4)
+const INVENTORY_COLS: int = 6
+const INVENTORY_ROWS: int = 3
+
+## 8 nichos de Oficial (4 colunas x 2 linhas).
+const OFFICER_COL_X: Array[float] = [111.6, 200.1, 288.9, 377.1]
+const OFFICER_ROW: Array[Dictionary] = [
+	{"cy": 333.6, "h": 44.4}, {"cy": 399.6, "h": 52.8},
 ]
-const FOOTER_BUTTON_SIZE: float = 46.0
+const OFFICER_SLOT_W: float = 73.2
+
+## 4 slots de Suprimentos (Bolas/Pólvora/Escambo/Talentos).
+const SUPPLY_SLOTS: Array[Dictionary] = [
+	{"key": "bolas", "cx": 684.9, "cy": 372.9, "material": "Esfera de Ferro", "label": "Bolas de Canhão"},
+	{"key": "polvora", "cx": 768.5, "cy": 372.9, "material": "Pólvora", "label": "Pólvora"},
+	{"key": "escambo", "cx": 852.0, "cy": 372.9, "material": "Ouro", "label": "Escambo (Ouro)"},
+	{"key": "talentos", "cx": 927.5, "cy": 372.9, "material": "", "label": "Pontos de Talento"},
+]
+const SUPPLY_SLOT_SIZE: Vector2 = Vector2(78.0, 73.8)
 
 const PULSE_SCALE: Vector2 = Vector2(1.3, 1.3)
 const GLOW_COLOR: Color = Color(1.4, 1.25, 0.8, 1.0)
@@ -80,7 +122,6 @@ const RARITY_GLOW_SHADER: Shader = preload("res://assets/shaders/item_rarity_glo
 const GLOWING_RARITIES: Array[String] = ["blue", "gold"]
 
 @onready var _slots_root: Control = $Slots
-@onready var _footer_root: Control = $Footer
 @onready var _picker: InventoryPickerSubmodal = $Picker
 @onready var _tooltip_zoom: ItemTooltipZoom = $ItemTooltipZoom
 @onready var _crew_submodal: CrewManagementSubmodal = $CrewManagementSubmodal
@@ -89,68 +130,52 @@ const GLOWING_RARITIES: Array[String] = ["blue", "gold"]
 @onready var _log_modal: ShipInfoModal = $LogModal
 @onready var _weight_bar: ProgressBar = $WeightBar
 @onready var _weight_label: Label = $WeightLabel
+@onready var _morale_bar: ProgressBar = $MoraleBar
 @onready var _stats_label: Label = $StatsPanel/StatsLabel
+@onready var _cannon_panel: Control = $CannonManagePanel
+@onready var _cannon_grid_root: Control = $CannonManagePanel/Panel/Margin/VBox/GridRoot
 
 var _ship: Node2D = null
-## category -> Button, pros 5 slots de peça única.
+## category -> Button, pros 4 slots de peça única.
 var _slot_buttons: Dictionary = {}
 ## category -> ColorRect (overlay de brilho), paralelo a `_slot_buttons`.
 var _slot_glows: Dictionary = {}
-## índice 0..19 -> Button, pra grade de canhão.
+## índice 0..19 -> Button, pra grade de canhão (dentro do CannonManagePanel).
 var _cannon_buttons: Array[Button] = []
 ## índice 0..19 -> ColorRect (overlay de brilho), paralelo a `_cannon_buttons`.
 var _cannon_glows: Array[ColorRect] = []
 ## Qual canhão (índice) o picker está servindo agora -- só importa quando
 ## `_picker._category == "armamento"`, já que aí um nome de categoria sozinho
-## não diz QUAL dos 20 slots equipar.
+## não diz QUAL dos 20 slots equipar. Também usado pelos 2 atalhos de
+## "Canhão Principal" (sempre índice 0).
 var _pending_cannon_index: int = -1
-
-
-## Círculos grandes com "+" nas pontas do rodapé e a bússola decorativa no
-## topo do pergaminho -- pintados na própria arte de fundo
-## (`galleon_warship_status_panel.png`), sem botão nenhum por trás (nunca
-## tiveram, ver nota de classe). Pedido explícito desta rodada: "oculte até
-## que tenham dados associados" -- como não dá pra apagar só um pedaço de um
-## PNG já composto sem redesenhar a arte inteira, a correção é visual: um
-## véu escuro semi-transparente por cima de cada um, pra parar de ler como
-## botão clicável que não faz nada. Coordenadas medidas na arte de origem
-## (1536x864) com o mesmo método de grade dos slots, convertidas pro mesmo
-## fator de exibição (0.625).
-const DECORATIVE_MASKS: Array[Dictionary] = [
-	{"cx": 190.6, "cy": 450.0, "radius": 53.1},  # círculo grande esquerdo
-	{"cx": 778.1, "cy": 450.0, "radius": 53.1},  # círculo grande direito
-	{"cx": 478.1, "cy": 93.75, "radius": 25.0},  # bússola decorativa no topo
-]
-const DECORATIVE_MASK_COLOR: Color = Color(0.03, 0.02, 0.02, 0.55)
+var _master_cannon_small: Button
+var _master_cannon_small_glow: ColorRect
+var _master_cannon_big: Button
+var _master_cannon_big_glow: ColorRect
+var _officer_buttons: Array[Button] = []
+var _inventory_cells: Array[Control] = []
+var _supply_buttons: Array[Button] = []
+var _glow_phase_counter: int = 0
 
 
 func _ready() -> void:
 	visible = false
 	$CloseButton.pressed.connect(close)
+	$CannonManagePanel/Panel/Margin/VBox/Header/CloseButton.pressed.connect(_close_cannon_panel)
 	_build_craft_slots()
+	_build_master_cannon_shortcuts()
 	_build_cannon_grid()
-	_build_footer_buttons()
-	_build_decorative_masks()
+	_build_officer_slots()
+	_build_inventory_grid()
+	_build_supply_slots()
+	_wire_text_links()
 	_picker.instance_selected.connect(_on_instance_selected)
 	ShipInventory.changed.connect(_refresh_slot_labels)
+	TavernHireSystem.changed.connect(_update_morale_bar)
+	CaptainAttributes.changed.connect(_on_attributes_changed)
 	_refresh_slot_labels()
-
-
-func _build_decorative_masks() -> void:
-	for data in DECORATIVE_MASKS:
-		var radius: float = data["radius"]
-		var mask := Panel.new()
-		mask.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		mask.position = Vector2(data["cx"] - radius, data["cy"] - radius)
-		mask.size = Vector2(radius * 2.0, radius * 2.0)
-		var style := StyleBoxFlat.new()
-		style.bg_color = DECORATIVE_MASK_COLOR
-		style.corner_radius_top_left = int(radius)
-		style.corner_radius_top_right = int(radius)
-		style.corner_radius_bottom_left = int(radius)
-		style.corner_radius_bottom_right = int(radius)
-		mask.add_theme_stylebox_override("panel", style)
-		_slots_root.add_child(mask)
+	_update_morale_bar()
 
 
 func _process(_delta: float) -> void:
@@ -165,6 +190,8 @@ func _process(_delta: float) -> void:
 func open() -> void:
 	visible = true
 	UIManager.animate_modal_open(self)
+	_refresh_inventory_grid()
+	_refresh_supply_slots()
 	opened.emit()
 
 
@@ -174,13 +201,14 @@ func close() -> void:
 	_cargo_modal.close()
 	_ammo_modal.close()
 	_log_modal.close()
+	_close_cannon_panel()
 	visible = false
 	closed.emit()
 
 
 func _build_craft_slots() -> void:
 	for data in CRAFT_SLOTS:
-		var button := _make_slot_button(data["cx"], data["cy"], data["size"], data["label"])
+		var button := _make_slot_button(data["cx"], data["cy"], data["w"], data["h"], data["label"])
 		var category: String = data["category"]
 		button.pressed.connect(_on_slot_pressed.bind(button, category, data["label"]))
 		button.mouse_entered.connect(_on_slot_hover.bind(button, func(): return ShipInventory.equipped.get(category, "")))
@@ -189,11 +217,62 @@ func _build_craft_slots() -> void:
 		_slot_glows[category] = _make_rarity_glow(button, _next_glow_phase())
 
 
+## 2 atalhos visuais (ícone pequeno na lateral + prévia grande no painel de
+## Canhões e Suprimentos) pro MESMO slot de canhão índice 0 -- ver nota de
+## classe. Clicar em qualquer um dos 2 abre o picker pro slot 0 direto
+## (não precisa abrir a grade de 20 só pra trocar o principal).
+func _build_master_cannon_shortcuts() -> void:
+	_master_cannon_small = _make_slot_button(MASTER_CANNON_SMALL["cx"], MASTER_CANNON_SMALL["cy"], MASTER_CANNON_SMALL["w"], MASTER_CANNON_SMALL["h"], "Canhão Principal")
+	_master_cannon_small.pressed.connect(_on_master_cannon_pressed.bind(_master_cannon_small))
+	_master_cannon_small.mouse_entered.connect(_on_slot_hover.bind(_master_cannon_small, func(): return ShipInventory.equipped_cannons[0]))
+	_master_cannon_small.mouse_exited.connect(_tooltip_zoom.hide_tooltip)
+	_master_cannon_small_glow = _make_rarity_glow(_master_cannon_small, _next_glow_phase())
+
+	_master_cannon_big = _make_slot_button(MASTER_CANNON_BIG["cx"], MASTER_CANNON_BIG["cy"], MASTER_CANNON_BIG["w"], MASTER_CANNON_BIG["h"], "Canhão Principal")
+	_master_cannon_big.pressed.connect(_on_master_cannon_pressed.bind(_master_cannon_big))
+	_master_cannon_big.mouse_entered.connect(_on_slot_hover.bind(_master_cannon_big, func(): return ShipInventory.equipped_cannons[0]))
+	_master_cannon_big.mouse_exited.connect(_tooltip_zoom.hide_tooltip)
+	_master_cannon_big_glow = _make_rarity_glow(_master_cannon_big, _next_glow_phase())
+
+	var manage_button := Button.new()
+	manage_button.flat = true
+	var w: float = GERENCIAR_CANHOES_BUTTON["w"]
+	var h: float = GERENCIAR_CANHOES_BUTTON["h"]
+	manage_button.custom_minimum_size = Vector2(w, h)
+	manage_button.position = Vector2(GERENCIAR_CANHOES_BUTTON["cx"] - w / 2.0, GERENCIAR_CANHOES_BUTTON["cy"] - h / 2.0)
+	manage_button.size = Vector2(w, h)
+	manage_button.tooltip_text = "Gerenciar Canhões"
+	manage_button.pressed.connect(_open_cannon_panel)
+	UIManager.add_hover_pop(manage_button, "gerenciar_canhoes")
+	_slots_root.add_child(manage_button)
+
+
+func _on_master_cannon_pressed(button: Button) -> void:
+	_pending_cannon_index = 0
+	_pulse(button)
+	_open_picker_near(button, "armamento", "Canhão Principal (slot 1)")
+
+
+func _open_cannon_panel() -> void:
+	_cannon_panel.visible = true
+	UIManager.animate_modal_open(_cannon_panel.get_node("Panel"))
+
+
+func _close_cannon_panel() -> void:
+	_cannon_panel.visible = false
+
+
 func _build_cannon_grid() -> void:
 	var index: int = 0
 	for row_y in CANNON_ROWS:
 		for col_x in CANNON_COLS:
-			var button := _make_slot_button(col_x, row_y, CANNON_SLOT_SIZE, "Armamento")
+			var button := _make_slot_button_in(_cannon_grid_root, col_x, row_y, CANNON_SLOT_SIZE, CANNON_SLOT_SIZE, "Armamento")
+			# Diferente de todo outro slot deste painel, `CannonManagePanel` não
+			# senta sobre arte pintada com o caixilho já desenhado -- sem um
+			# fundo próprio aqui, um slot vazio é um botão `flat` invisível (só
+			# o equipado aparece, por causa do ícone+brilho). Achado rodando o
+			# jogo de verdade: só o slot 0 (equipado) aparecia na captura.
+			_apply_plain_slot_frame(button)
 			var cannon_index: int = index
 			button.pressed.connect(_on_cannon_pressed.bind(button, cannon_index))
 			button.mouse_entered.connect(_on_slot_hover.bind(button, func(): return ShipInventory.equipped_cannons[cannon_index]))
@@ -201,6 +280,185 @@ func _build_cannon_grid() -> void:
 			_cannon_buttons.append(button)
 			_cannon_glows.append(_make_rarity_glow(button, _next_glow_phase()))
 			index += 1
+
+
+## 8 nichos inline (ver nota de classe) -- cada um mostra o retrato de
+## `OfficerRoster.portrait_path(cargo)` quando contratado, ou fica vazio.
+## Clicar em qualquer um abre `CrewManagementSubmodal` (onde contratar/
+## dispensar/trocar de verdade acontece).
+func _build_officer_slots() -> void:
+	for i in OfficerRoster.ROLES.size():
+		if i >= OFFICER_COL_X.size() * OFFICER_ROW.size():
+			break
+		var col: int = i % OFFICER_COL_X.size()
+		var row: int = i / OFFICER_COL_X.size()
+		var cx: float = OFFICER_COL_X[col]
+		var row_data: Dictionary = OFFICER_ROW[row]
+		var role: String = OfficerRoster.ROLES[i]
+		var button := _make_slot_button(cx, row_data["cy"], OFFICER_SLOT_W, row_data["h"], OfficerRoster.ROLE_NAMES[role])
+		button.pressed.connect(func(): _crew_submodal.open())
+		UIManager.add_hover_pop(button, "officer_%s" % role)
+		_officer_buttons.append(button)
+
+
+## Grade de leitura do Inventário do Navio (ver nota de classe -- 18 slots,
+## sem drag & drop, clicar só mostra tooltip/zoom). Reconstruída toda vez
+## que abre (`open()` chama `_refresh_inventory_grid()`) porque o conjunto
+## de itens não-equipados muda a cada craft/equipar.
+func _build_inventory_grid() -> void:
+	for row in INVENTORY_ROWS:
+		for col in INVENTORY_COLS:
+			var x: float = INVENTORY_GRID_ORIGIN.x + col * INVENTORY_CELL_SIZE.x
+			var y: float = INVENTORY_GRID_ORIGIN.y + row * INVENTORY_CELL_SIZE.y
+			var cell := Button.new()
+			cell.flat = true
+			cell.custom_minimum_size = INVENTORY_CELL_SIZE
+			cell.position = Vector2(x, y)
+			cell.size = INVENTORY_CELL_SIZE
+			cell.mouse_filter = Control.MOUSE_FILTER_PASS
+			_slots_root.add_child(cell)
+			_inventory_cells.append(cell)
+
+
+func _refresh_inventory_grid() -> void:
+	var unequipped: Array[Dictionary] = []
+	var equipped_ids: Array = ShipInventory.equipped.values() + ShipInventory.equipped_cannons
+	for instance_id in ShipInventory.crafted_items:
+		if not equipped_ids.has(instance_id):
+			unequipped.append(ShipInventory.crafted_items[instance_id])
+
+	for i in _inventory_cells.size():
+		var cell: Button = _inventory_cells[i]
+		for child in cell.get_children():
+			child.queue_free()
+		cell.tooltip_text = ""
+		if i >= unequipped.size():
+			cell.remove_meta("instance_id")
+			continue
+		var entry: Dictionary = unequipped[i]
+		var instance_id: String = entry["instance_id"]
+		var icon_rect := TextureRect.new()
+		icon_rect.texture = ShipInventory.get_item_icon(instance_id)
+		icon_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+		icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		cell.add_child(icon_rect)
+		var rarity: Dictionary = ShipInventory.get_item_rarity(instance_id)
+		cell.tooltip_text = "[%s] %s" % [rarity["name"], ShipInventory.get_item_name(instance_id)]
+		cell.set_meta("instance_id", instance_id)
+		if not cell.pressed.is_connected(_on_inventory_cell_pressed):
+			cell.pressed.connect(_on_inventory_cell_pressed.bind(cell))
+		if not cell.mouse_entered.is_connected(_on_inventory_cell_hover):
+			cell.mouse_entered.connect(_on_inventory_cell_hover.bind(cell))
+			cell.mouse_exited.connect(_tooltip_zoom.hide_tooltip)
+			UIManager.add_hover_pop(cell, "inventory_cell_%d" % i)
+
+
+func _on_inventory_cell_pressed(cell: Button) -> void:
+	if cell.has_meta("instance_id"):
+		_pulse(cell)
+
+
+func _on_inventory_cell_hover(cell: Button) -> void:
+	if not cell.has_meta("instance_id"):
+		return
+	_tooltip_zoom.show_for_instance(cell.get_meta("instance_id"), cell.position + Vector2(cell.size.x, 0), PANEL_SIZE)
+
+
+## 4 slots de Suprimentos -- a arte já desenha o ícone de cada um, só soma
+## um Label de quantidade por cima + tooltip (ver nota de classe pro
+## mapeamento de cada um a um dado real).
+func _build_supply_slots() -> void:
+	for data in SUPPLY_SLOTS:
+		var button := Button.new()
+		button.flat = true
+		button.custom_minimum_size = SUPPLY_SLOT_SIZE
+		button.position = Vector2(data["cx"] - SUPPLY_SLOT_SIZE.x / 2.0, data["cy"] - SUPPLY_SLOT_SIZE.y / 2.0)
+		button.size = SUPPLY_SLOT_SIZE
+		button.tooltip_text = data["label"]
+		_slots_root.add_child(button)
+		UIManager.add_hover_pop(button, "supply_%s" % data["key"])
+		_supply_buttons.append(button)
+
+		var qty_label := Label.new()
+		qty_label.name = "Qty"
+		qty_label.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+		qty_label.offset_top = -18
+		qty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		qty_label.add_theme_color_override("font_color", Color(0.95, 0.88, 0.6, 1.0))
+		qty_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 1))
+		qty_label.add_theme_constant_override("shadow_offset_x", 1)
+		qty_label.add_theme_constant_override("shadow_offset_y", 1)
+		qty_label.add_theme_font_size_override("font_size", 13)
+		qty_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		button.add_child(qty_label)
+
+
+## Talentos (4º slot de Suprimentos) lê `CaptainAttributes.available_points`
+## direto -- sem isto, gastar/ganhar pontos na Ficha do Capitão não
+## atualizava o número aqui até o painel fechar e reabrir.
+func _on_attributes_changed() -> void:
+	if visible:
+		_refresh_supply_slots()
+
+
+func _refresh_supply_slots() -> void:
+	for i in SUPPLY_SLOTS.size():
+		var data: Dictionary = SUPPLY_SLOTS[i]
+		var button: Button = _supply_buttons[i]
+		var qty_label: Label = button.get_node("Qty")
+		var qty: int
+		if data["key"] == "talentos":
+			qty = CaptainAttributes.available_points
+		else:
+			qty = int(ShipInventory.materials.get(data["material"], 0))
+		qty_label.text = str(qty)
+
+
+## "INVENTÁRIO DO NAVIO"/"SUPRIMENTOS"/"OFICIAIS" são texto puro desenhado
+## na arte -- sem botão nenhum debaixo deles originalmente. Pedido NÃO pediu
+## isso, mas os 3 modais de rodapé antigos (Carga/Munição/Diário) perderam o
+## botão circular dedicado que tinham na arte anterior (a nova não desenha
+## mais aqueles 4 círculos) -- em vez de deixar os 3 inacessíveis desta
+## tela, um clique na respectiva área de texto abre o modal correspondente,
+## mesma lógica de sempre, só um novo gatilho.
+func _wire_text_links() -> void:
+	_add_text_link(Vector2(514.8, 68.0), Vector2(325.2, 20.0), _cargo_modal.open, "Porão de Carga")
+	_add_text_link(Vector2(768.0, 497.0), Vector2(160.0, 24.0), _ammo_modal.open, "Munição")
+	_add_text_link(Vector2(90.0, 462.0), Vector2(90.0, 16.0), func():
+		_crew_submodal.open(), "Diário/Tripulação")
+
+
+func _add_text_link(pos: Vector2, size: Vector2, action: Callable, label: String) -> void:
+	var button := Button.new()
+	button.flat = true
+	button.position = pos
+	button.size = size
+	button.custom_minimum_size = size
+	button.tooltip_text = label
+	button.pressed.connect(func(): _close_footer_submodals(); action.call())
+	_slots_root.add_child(button)
+
+
+func _close_footer_submodals() -> void:
+	_cargo_modal.close()
+	_ammo_modal.close()
+	_log_modal.close()
+
+
+## Fração de Marinheiros/Operários ATIVOS sobre o total contratado -- ver
+## nota de classe. Sem tripulação nenhuma contratada ainda, mostra cheia
+## (nada puxando o moral pra baixo porque não tem ninguém pra avaliar).
+func _update_morale_bar() -> void:
+	if TavernHireSystem.hired.is_empty():
+		_morale_bar.value = 1.0
+		return
+	var active: int = 0
+	for entry in TavernHireSystem.hired:
+		if TavernHireSystem.is_contributing(entry):
+			active += 1
+	_morale_bar.value = float(active) / float(TavernHireSystem.hired.size())
 
 
 ## Zoom de alta resolução no item equipado -- pedido explícito ("ao passar o
@@ -219,20 +477,45 @@ func _on_slot_hover(button: Button, get_instance_id: Callable) -> void:
 ## Fase inicial do pulso de cada slot, pra uma grade de 20 canhões não piscar
 ## toda em uníssono -- 0.37 é só um passo irracional-o-bastante pra não
 ## alinhar período nenhum dentro de 25 slots.
-var _glow_phase_counter: int = 0
 func _next_glow_phase() -> float:
 	_glow_phase_counter += 1
 	return fmod(float(_glow_phase_counter) * 0.37, TAU)
 
 
-func _make_slot_button(cx: float, cy: float, size: float, label: String) -> Button:
+func _make_slot_button(cx: float, cy: float, w: float, h: float, label: String) -> Button:
+	return _make_slot_button_in(_slots_root, cx, cy, w, h, label)
+
+
+## Fundo/borda simples pra um slot que não tem caixilho pintado por trás
+## (só `CannonManagePanel` precisa disso -- todo o resto do painel principal
+## já senta em cima da arte nova, que já desenha a moldura de cada nicho).
+func _apply_plain_slot_frame(button: Button) -> void:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.08, 0.07, 0.06, 0.9)
+	style.border_width_left = 2
+	style.border_width_top = 2
+	style.border_width_right = 2
+	style.border_width_bottom = 2
+	style.border_color = Color(0.5, 0.4, 0.22, 1.0)
+	style.corner_radius_top_left = 4
+	style.corner_radius_top_right = 4
+	style.corner_radius_bottom_left = 4
+	style.corner_radius_bottom_right = 4
+	button.flat = false
+	button.add_theme_stylebox_override("normal", style)
+	button.add_theme_stylebox_override("hover", style)
+	button.add_theme_stylebox_override("pressed", style)
+	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+
+
+func _make_slot_button_in(parent: Control, cx: float, cy: float, w: float, h: float, label: String) -> Button:
 	var button := Button.new()
 	button.flat = true
-	button.custom_minimum_size = Vector2(size, size)
-	button.position = Vector2(cx - size / 2.0, cy - size / 2.0)
-	button.size = Vector2(size, size)
+	button.custom_minimum_size = Vector2(w, h)
+	button.position = Vector2(cx - w / 2.0, cy - h / 2.0)
+	button.size = Vector2(w, h)
 	button.tooltip_text = label
-	_slots_root.add_child(button)
+	parent.add_child(button)
 	UIManager.add_hover_pop(button, label)
 	return button
 
@@ -253,52 +536,6 @@ func _make_rarity_glow(button: Button, phase: float) -> ColorRect:
 	glow.material = mat
 	button.add_child(glow)
 	return glow
-
-
-## Os 4 destinos na mesma ordem de `FOOTER_BUTTONS` -- "destravamento dos
-## botões" pedido explicitamente: até esta rodada só o de Tripulação (índice
-## 2) abria algo, os outros 3 só pulsavam sem acontecer nada ao clicar.
-func _footer_destination(index: int, button: Button) -> Callable:
-	match index:
-		0:
-			return _cargo_modal.open
-		1:
-			return _ammo_modal.open
-		2:
-			return _crew_submodal.open
-		_:
-			return _log_modal.open
-
-
-func _build_footer_buttons() -> void:
-	for i in FOOTER_BUTTONS.size():
-		var data: Dictionary = FOOTER_BUTTONS[i]
-		var size: float = FOOTER_BUTTON_SIZE
-		var button := Button.new()
-		button.flat = true
-		button.custom_minimum_size = Vector2(size, size)
-		button.position = Vector2(data["cx"] - size / 2.0, data["cy"] - size / 2.0)
-		button.size = Vector2(size, size)
-		button.tooltip_text = data["label"]
-		button.pressed.connect(_on_footer_pressed.bind(button, i))
-		_footer_root.add_child(button)
-
-
-## Os 4 submodais de rodapé são independentes um do outro (não passam pelo
-## `UIManager`, que é só pros modais do Town Hub) -- sem isso, clicar Carga
-## depois Munição depois Log deixava os 3 abertos ao mesmo tempo, empilhados
-## por cima um do outro (achado rodando o jogo de verdade nesta rodada).
-func _close_footer_submodals() -> void:
-	_cargo_modal.close()
-	_ammo_modal.close()
-	_crew_submodal.close()
-	_log_modal.close()
-
-
-func _on_footer_pressed(button: Button, index: int) -> void:
-	_pulse(button)
-	_close_footer_submodals()
-	_footer_destination(index, button).call()
 
 
 func _on_slot_pressed(button: Button, category: String, label: String) -> void:
@@ -332,9 +569,17 @@ func _refresh_slot_labels() -> void:
 		var instance_id: String = ShipInventory.equipped.get(category, "")
 		_refresh_one_slot(_slot_buttons[category], _slot_glows[category], instance_id, data["label"])
 
+	var master_id: String = ShipInventory.equipped_cannons[0]
+	_refresh_one_slot(_master_cannon_small, _master_cannon_small_glow, master_id, "Canhão Principal")
+	_refresh_one_slot(_master_cannon_big, _master_cannon_big_glow, master_id, "Canhão Principal")
+
 	for i in _cannon_buttons.size():
 		var instance_id: String = ShipInventory.equipped_cannons[i]
 		_refresh_one_slot(_cannon_buttons[i], _cannon_glows[i], instance_id, "Armamento (slot %d)" % (i + 1))
+
+	if visible:
+		_refresh_inventory_grid()
+		_refresh_supply_slots()
 
 
 func _refresh_one_slot(button: Button, glow: ColorRect, instance_id: String, empty_label: String) -> void:

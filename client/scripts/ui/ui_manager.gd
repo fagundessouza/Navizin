@@ -61,8 +61,13 @@ func animate_modal_open(control: Control) -> void:
 ## flutuante -- mesma chamada que já liga o hover em todo slot/card do jogo,
 ## só com um id a mais, em vez de marcar os Controls em dois lugares.
 func add_hover_pop(control: Control, debug_id: String = "") -> void:
-	control.mouse_entered.connect(_on_hover_enter.bind(control))
-	control.mouse_exited.connect(_on_hover_exit.bind(control))
+	# Guardado contra chamada repetida no MESMO Control (slots reconstruídos
+	# a cada refresh, como a grade de Inventário do Navio, podiam chamar
+	# isto de novo em cima de um Control já conectado -- Godot lança erro ao
+	# conectar o mesmo par sinal+callable duas vezes).
+	if not control.mouse_entered.is_connected(_on_hover_enter):
+		control.mouse_entered.connect(_on_hover_enter.bind(control))
+		control.mouse_exited.connect(_on_hover_exit.bind(control))
 	if debug_id != "":
 		control.set_meta(AdminManager.DEBUG_ID_META, debug_id)
 
