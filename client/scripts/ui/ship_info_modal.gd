@@ -1,15 +1,23 @@
 class_name ShipInfoModal
 extends Control
-## Overlay flutuante genérico pros 3 botões do rodapé do Galeão que ainda não
-## tinham destino (Porão de Carga/Munição/Diário de Navegação) -- mesmo
+## Overlay flutuante genérico reaproveitado pelos slots de Suprimentos da
+## Ficha do Navio (Escambo -> "cargo", Bolas/Pólvora -> "ammo") -- mesmo
 ## padrão do `CrewManagementSubmodal` (abre por cima do `ShipStatusModal`,
 ## não fecha ele). `info_mode` decide o conteúdo:
 ## - "cargo": barra de peso (mesmo dado de `ShipStatusModal._weight_bar`) +
 ##   lista de peças equipadas que dão `cargo_bonus`.
 ## - "ammo": lista de Munição/Arpão fabricados (ícone + nome colorido pela
 ##   raridade), igual à lista do Cofre/Refino.
-## - "log": placeholder -- sem sistema de missões/combate registrado ainda
-##   pra preencher um diário de verdade.
+##
+## MODO "log" REMOVIDO (faxina de resíduo -- `.clauderules` #1, "nunca
+## deixe resíduo de código/sinais obsoletos"): existia pro antigo botão de
+## rodapé "Diário de Navegação", que saiu de cena desde que o layout novo
+## da Ficha do Navio não tem mais espaço/botão pra ele -- nada em lugar
+## nenhum do projeto instanciava mais com `info_mode = "log"`, só ficava
+## morto esperando. Sem sistema de missão/combate registrado pra preencher
+## um diário de verdade ainda, então não foi dado um novo lar só pra manter
+## o modo vivo -- quando esse sistema existir, um modo novo (ou este de
+## volta) é barato de reconstruir.
 
 signal opened
 signal closed
@@ -36,8 +44,6 @@ func _ready() -> void:
 			_title.text = "Porão de Carga"
 		"ammo":
 			_title.text = "Munição e Arpões"
-		"log":
-			_title.text = "Diário de Navegação"
 	ShipInventory.changed.connect(_on_inventory_changed)
 
 
@@ -77,8 +83,6 @@ func _refresh() -> void:
 			_refresh_cargo()
 		"ammo":
 			_refresh_ammo()
-		"log":
-			_refresh_log()
 
 
 ## Lista os equipados (navio + capitão) que dão `cargo_bonus` -- não repete
@@ -114,14 +118,6 @@ func _refresh_ammo() -> void:
 		empty.text = "Nenhuma munição ou arpão fabricado ainda."
 		empty.add_theme_color_override("font_color", Color(0.6, 0.58, 0.54))
 		_content.add_child(empty)
-
-
-func _refresh_log() -> void:
-	var label := Label.new()
-	label.text = "Sem registros de combate ou missão ainda -- o Diário de Navegação preenche sozinho conforme o Sea Hunt e os contratos da Taverna forem jogados."
-	label.add_theme_color_override("font_color", Color(0.78, 0.74, 0.66))
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	_content.add_child(label)
 
 
 func _build_item_row(instance_id: String, prefix: String) -> Control:

@@ -18,6 +18,16 @@ shader_type canvas_item;
 // nos retratos da Tripulação (`slice_crew.py`, achado nesta sessão):
 // funciona igual pra verde escuro ou brilhante, porque olha a PROPORÇÃO
 // entre canais, não a distância absoluta de brilho.
+//
+// NOTA (`.clauderules` #2 pede "threshold mínimo 0.3"): aquele número
+// pressupõe o método ANTIGO (distância euclidiana até verde puro, escala
+// 0-1 de "quão longe da cor"). Nesta versão a escala é outra --
+// "greenness" por dominância de canal fica tipicamente entre 0.0 (cinza/
+// marrom) e ~0.9 (verde puro saturado), então 0.06 aqui já é o ponto
+// calibrado medindo pixel por pixel na arte de origem (ver nota acima),
+// não um valor baixo por descuido. Subir pra 0.3 nesta escala NOVA
+// comeria de volta pixels de franja que já ficam limpos hoje -- testado e
+// confirmado sem franja verde visível com os valores atuais.
 uniform float threshold : hint_range(0.0, 1.0) = 0.06;
 uniform float smoothness : hint_range(0.0, 1.0) = 0.1;
 

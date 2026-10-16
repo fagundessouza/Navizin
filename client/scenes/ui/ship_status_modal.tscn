@@ -243,9 +243,5 @@ info_mode = "cargo"
 layout_mode = 1
 info_mode = "ammo"
 
-[node name="LogModal" parent="." instance=ExtResource("7_info")]
-layout_mode = 1
-info_mode = "log"
-
 [node name="ItemTooltipZoom" parent="." instance=ExtResource("8_tooltipzoom")]
 layout_mode = 1

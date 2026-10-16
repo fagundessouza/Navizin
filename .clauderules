@@ -1,0 +1,42 @@
+# Diretrizes de Arquitetura e UI - Projeto Navizin (Godot 4)
+
+## 1. Regras Estritas de UI (Control & Modais)
+- NUNCA instancies modais filhas (ex: CargoModal, AmmoModal, TalentsModal, CannonModal) diretamente dentro da cena principal no Editor (`.tscn`).
+- As sub-janelas/modais DEVEM ser geridas dinamicamente via script (`PackedScene.instantiate()`) ou mantidas num container isolado (`ModalOverlay`) com `visible = false` por padrão.
+- Quando uma modal estiver invisível, garante que `mouse_filter = MOUSE_FILTER_IGNORE` para não capturar nem bloquear cliques na UI principal.
+- NUNCA reaproveites nós de UI antigos ou deixes resíduos de código/sinais obsoletos. Se uma funcionalidade for substituída, remove os nós e desconecta os sinais legados.
+
+## 2. Padrões de Estilo Visual (Dark Fantasy / AAA)
+- Janelas pop-up e tooltips NUNCA devem usar o estilo padrão/genérico do Godot (retângulos amarelos/pretos simples).
+- Usa sempre bordas metálicas/góticas arredondadas (`StyleBoxFlat` com `corner_radius`), fundos translúcidos e tipografia gótica vetorial nítida com contorno (`draw_outline`).
+- Shaders de Chroma Key (#00FF00) devem ter o parâmetro `threshold` ajustado (mínimo `0.3`) para eliminar completamente bordas verdes sem deformar a imagem interna.
+- Imagens em Viewports e Containers de UI devem respeitar o modo de expansão responsivo (`expand_mode = EXPAND_IGNORE_SIZE` e `stretch_mode = STRETCH_KEEP_ASPECT_COVERED`).
+
+## 3. Regras de Negócio e Mecânicas
+- **Canhões:** A quantidade de slots na modal de gerenciamento de canhões DEVE corresponder dinamicamente à capacidade real do navio equipado (ex: Galeão = 30 slots, Escuna = 8 slots).
+- **Suprimentos:** O slot de munição abre a gestão de pacotes/unidades; o cristal azul abre exclusivamente a Árvore de Talentos; o baú abre a modal de Escambo.
+- **Oficiais:** Mantém estrita consistência entre o género do retrato/sprite e o nome gerado.
+
+## 4. Organização do Código GDScript
+- Mantém o princípio de responsabilidade única (SRP).
+- Emite sinais (`signal`) para comunicação entre UI e sistemas do navio em vez de acoplamento direto.
+- Todo o código deve ser limpo, bem documentado e estruturado.
+
+---
+
+## Exceção registrada (2026-10-16)
+
+A regra 1.1 ("nunca instancie modal filha no editor") NÃO está aplicada em
+`ship_status_modal.tscn` nem no resto do projeto hoje -- toda modal do jogo
+(`CraftingModal`, `VaultModal`, `CrewManagementSubmodal`, `ShipInfoModal`
+etc.) é instanciada no `.tscn`, `visible = false` por padrão. Essa decisão
+foi revisitada explicitamente em 2026-10-16: os bugs que motivaram a regra
+(modais empilhadas, sinal errado abrindo) tinham causa raiz diferente --
+falta de fechamento mútuo entre sub-modais (`_close_all_submodals()`) e um
+shader de transparência (`gothic_panel.gdshader`) deixando conteúdo de trás
+vazar -- ambos corrigidos sem precisar mover a instanciação pra runtime.
+Reescrever só `ship_status_modal.tscn` pro padrão `ModalOverlay` destoaria
+do resto do projeto sem corrigir nada a mais; o usuário confirmou manter o
+padrão atual em vez dessa reescrita. Se o projeto decidir adotar
+`ModalOverlay`/instanciação em runtime de verdade no futuro, deveria ser
+uma migração do projeto INTEIRO de uma vez, não cena por cena.

@@ -133,7 +133,6 @@ const GLOWING_RARITIES: Array[String] = ["blue", "gold"]
 @onready var _crew_submodal: CrewManagementSubmodal = $CrewManagementSubmodal
 @onready var _cargo_modal: ShipInfoModal = $CargoModal
 @onready var _ammo_modal: ShipInfoModal = $AmmoModal
-@onready var _log_modal: ShipInfoModal = $LogModal
 @onready var _weight_bar: ProgressBar = $WeightBar
 @onready var _weight_label: Label = $WeightLabel
 @onready var _morale_bar: ProgressBar = $MoraleBar
@@ -488,7 +487,6 @@ func _supply_slot_action(key: String) -> Callable:
 func _close_all_submodals() -> void:
 	_cargo_modal.close()
 	_ammo_modal.close()
-	_log_modal.close()
 	_crew_submodal.close()
 	_close_cannon_panel()
 	var captain_modal: Node = get_tree().get_first_node_in_group("captain_profile_modal")
