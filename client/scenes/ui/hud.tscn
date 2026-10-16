@@ -7,10 +7,6 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/hotbar.tscn" id="6_hotbar"]
 [ext_resource type="PackedScene" path="res://scenes/ui/system_menu_bar.tscn" id="7_menu"]
 [ext_resource type="PackedScene" path="res://scenes/ui/dialog_panel.tscn" id="8_dialog"]
-[ext_resource type="PackedScene" path="res://scenes/ui/modals/captain_panel.tscn" id="9_captainpanel"]
-[ext_resource type="PackedScene" path="res://scenes/ui/modals/life_skills_panel.tscn" id="10_lifeskills"]
-[ext_resource type="PackedScene" path="res://scenes/ui/ship_status_modal.tscn" id="11_shipstatus"]
-[ext_resource type="PackedScene" path="res://scenes/ui/modals/captain_profile_modal.tscn" id="12_captainprofile"]
 
 [node name="HUD" type="Control"]
 layout_mode = 3
@@ -70,17 +66,11 @@ offset_top = -264.0
 offset_right = 180.0
 offset_bottom = 56.0
 
-[node name="ShipPanel" parent="." instance=ExtResource("11_shipstatus")]
+[node name="ModalOverlay" type="Control" parent="."]
 layout_mode = 1
-
-[node name="MissionsPanel" parent="." instance=ExtResource("9_captainpanel")]
-layout_mode = 1
-panel_title = "Diário de Bordo"
-tabs = PackedStringArray("Diário de Bordo", "Histórico de Combate")
-tab_bodies = PackedStringArray("Missões ativas e concluídas, ilha a ilha. Em construção.", "Abalroamentos vencidos, navios afundados e avisos de casco baixo. Em construção.")
-
-[node name="AccessoriesPanel" parent="." instance=ExtResource("12_captainprofile")]
-layout_mode = 1
-
-[node name="LifeSkillsPanel" parent="." instance=ExtResource("10_lifeskills")]
-layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2

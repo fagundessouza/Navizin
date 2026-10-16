@@ -91,6 +91,7 @@ func _register_modal_scenes() -> void:
 	_modal_scenes["captain_profile"] = preload("res://scenes/ui/modals/captain_profile_modal.tscn")
 	_modal_scenes["life_skills"] = preload("res://scenes/ui/modals/life_skills_panel.tscn")
 	_modal_scenes["captain_panel"] = preload("res://scenes/ui/modals/captain_panel.tscn")
+	_modal_scenes["ship_status"] = preload("res://scenes/ui/ship_status_modal.tscn")
 
 
 ## Retorna a instância do modal `modal_id` dentro de `overlay`, criando na

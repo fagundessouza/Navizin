@@ -56,16 +56,39 @@ var _dedicated_panels: Dictionary = {}
 @onready var _cooldown_1: TextureProgressBar = $Hotbar/Slot1/Cooldown1
 @onready var _dialog: NinePatchRect = $DialogPanel
 @onready var _click: AudioStreamPlayer = $SystemMenuBar/ClickSound
+@onready var _modal_overlay: Control = $ModalOverlay
 
 
+## Painéis dedicados migrados pra instanciação em runtime via `UIManager`
+## (pedido explícito, reverte a decisão anterior desta sessão de manter tudo
+## no editor -- ver `.clauderules`/checkpoint). `MissionsPanel` configura
+## `panel_title`/`tabs`/`tab_bodies` ANTES de entrar na árvore (mesmo motivo
+## documentado em `UIManager.get_modal()`: `_ready()` do painel lê esses
+## valores na hora).
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_dedicated_panels = {
-		"MenuShip": $ShipPanel,
-		"MenuMissions": $MissionsPanel,
-		"MenuAccessories": $AccessoriesPanel,
-		"MenuLifeSkills": $LifeSkillsPanel,
+		"MenuShip": UIManager.get_modal("ship_status", _modal_overlay),
+		"MenuMissions": UIManager.get_modal("captain_panel", _modal_overlay, func(m):
+			m.panel_title = "Diário de Bordo"
+			m.tabs = PackedStringArray(["Diário de Bordo", "Histórico de Combate"])
+			m.tab_bodies = PackedStringArray([
+				"Missões ativas e concluídas, ilha a ilha. Em construção.",
+				"Abalroamentos vencidos, navios afundados e avisos de casco baixo. Em construção.",
+			])),
+		"MenuAccessories": UIManager.get_modal("captain_profile", _modal_overlay),
+		"MenuLifeSkills": UIManager.get_modal("life_skills", _modal_overlay),
 	}
+	# Achado testando de verdade via MCP: fechar um painel por FORA deste
+	# script (ESC, que passa por `UIManager.close_modal()` direto, não por
+	# `_close_panel()`) deixava `_open_menu` desatualizado -- o painel fechava
+	# na tela mas `_open_menu` continuava com o nome dele, então o PRÓXIMO
+	# clique no MESMO botão caía no ramo "já aberto, fecha" e não reabria
+	# nada. Cada painel já emite `closed` no próprio `close()`; ouvir aqui
+	# garante que `_open_menu` sincroniza com a visibilidade real seja qual
+	# for o caminho que fechou.
+	for menu_name in _dedicated_panels:
+		_dedicated_panels[menu_name].closed.connect(_on_panel_closed.bind(menu_name))
 	for k in range(1, SLOT_COUNT + 1):
 		var highlight: ColorRect = get_node("Hotbar/Slot%d/Highlight%d" % [k, k])
 		highlight.visible = false
@@ -173,7 +196,7 @@ func _on_menu_pressed(menu_name: String) -> void:
 		_close_panel()
 	_open_menu = menu_name
 	if _dedicated_panels.has(menu_name):
-		_dedicated_panels[menu_name].open()
+		UIManager.open_modal(_dedicated_panels[menu_name])
 		return
 	var info: Dictionary = SIMPLE_MENUS[menu_name]
 	_dialog.get_node("Title").text = info["title"]
@@ -183,10 +206,17 @@ func _on_menu_pressed(menu_name: String) -> void:
 
 func _close_panel() -> void:
 	if _dedicated_panels.has(_open_menu):
-		_dedicated_panels[_open_menu].close()
+		UIManager.close_modal(_dedicated_panels[_open_menu])
 	else:
 		_dialog.visible = false
 	_open_menu = ""
+
+
+## Ver nota em `_ready()` -- resincroniza `_open_menu` quando o painel fecha
+## por um caminho que não passou por `_close_panel()` (ESC via `UIManager`).
+func _on_panel_closed(menu_name: String) -> void:
+	if _open_menu == menu_name:
+		_open_menu = ""
 
 
 ## Botão em hover cresce um pouco; sai ao tirar o mouse.
