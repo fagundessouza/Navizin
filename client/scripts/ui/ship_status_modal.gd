@@ -203,11 +203,7 @@ func open() -> void:
 
 func close() -> void:
 	_picker.close()
-	_crew_submodal.close()
-	_cargo_modal.close()
-	_ammo_modal.close()
-	_log_modal.close()
-	_close_cannon_panel()
+	_close_all_submodals()
 	visible = false
 	closed.emit()
 
@@ -261,8 +257,10 @@ func _build_master_cannon_shortcuts() -> void:
 
 
 func _open_cannon_panel() -> void:
+	_close_all_submodals()
 	_update_cannon_slot_capacity()
 	_cannon_panel.visible = true
+	_cannon_panel.move_to_front()
 	UIManager.animate_modal_open(_cannon_panel.get_node("Panel"))
 
 
@@ -332,7 +330,7 @@ func _build_officer_slots() -> void:
 		var row_data: Dictionary = OFFICER_ROW[row]
 		var role: String = OfficerRoster.ROLES[i]
 		var button := _make_slot_button(cx, row_data["cy"], OFFICER_SLOT_W, row_data["h"], OfficerRoster.ROLE_NAMES[role])
-		button.pressed.connect(func(): _crew_submodal.open())
+		button.pressed.connect(func(): _close_all_submodals(); _crew_submodal.move_to_front(); _crew_submodal.open())
 		UIManager.add_hover_pop(button, "officer_%s" % role)
 		var portrait := TextureRect.new()
 		portrait.name = "Portrait"
@@ -426,27 +424,70 @@ func _on_inventory_cell_hover(cell: Button) -> void:
 	_tooltip_zoom.show_for_instance(cell.get_meta("instance_id"), cell.position + Vector2(cell.size.x, 0), PANEL_SIZE)
 
 
-## Destino de cada ícone de Suprimentos ao clicar (pedido explícito --
-## "configurar o sinal pra abrir..."). Nenhum sistema de barganha/árvore de
-## talentos existe no jogo ainda (`TradeModal` nos distritos que ainda a
-## usam é 100% placeholder, `CaptainAttributes` é 3 atributos soltos, sem
-## grafo de nós) -- em vez de inventar as 2 telas do zero, Escambo e
-## Talentos abrem a UI real mais próxima que já existe (Porão de Carga e a
-## Ficha do Capitão, onde os pontos de atributo já são gastos de verdade),
-## documentado aqui em vez de fingido.
+## BUG REAL achado e corrigido nesta rodada ("Porão de Carga abrindo no
+## lugar de Talentos" relatado): nenhum destes 4 handlers fechava os OUTROS
+## sub-modais antes de abrir o seu -- clicar Escambo (abre Carga) e depois
+## Talentos (abre a Ficha do Capitão) sem fechar o primeiro deixava os DOIS
+## com `visible = true` ao mesmo tempo, empilhados; o que aparecia por cima
+## dependia só de ordem de nó, então "cliquei em Talentos" podia continuar
+## mostrando o Porão de Carga que nunca tinha sido fechado. Mesmo bug (e
+## mesmo tipo de correção) já resolvido uma vez pros 4 botões de rodapé
+## antigos (`_close_footer_submodals()`) -- agora `_close_all_submodals()`
+## cobre TODOS os sub-modais que este painel pode abrir (incluindo
+## `CannonManagePanel` e a Ficha do Capitão), chamado no INÍCIO de cada
+## handler, não só os 3 antigos.
+##
+## Nomes de função explícitos por botão (pedido explícito), não mais um
+## `match` genérico -- cada ícone de Suprimentos chama o handler com o nome
+## certo. Nenhum sistema de barganha/árvore de talentos existe no jogo ainda
+## (`TradeModal` nos distritos que ainda a usam é 100% placeholder,
+## `CaptainAttributes` é 3 atributos soltos, sem grafo de nós) -- em vez de
+## inventar as 2 telas do zero, Escambo e Talentos abrem a UI real mais
+## próxima que já existe (Porão de Carga e a Ficha do Capitão, onde os
+## pontos de atributo já são gastos de verdade), documentado aqui em vez de
+## fingido.
+func _on_ammo_button_pressed() -> void:
+	_close_all_submodals()
+	_ammo_modal.open()
+
+
+func _on_trade_button_pressed() -> void:
+	_close_all_submodals()
+	_cargo_modal.open()
+
+
+func _on_talents_button_pressed() -> void:
+	_close_all_submodals()
+	var captain_modal: Node = get_tree().get_first_node_in_group("captain_profile_modal")
+	if captain_modal != null:
+		captain_modal.move_to_front()
+		captain_modal.open()
+
+
 func _supply_slot_action(key: String) -> Callable:
 	match key:
 		"bolas", "polvora":
-			return _ammo_modal.open
+			return _on_ammo_button_pressed
 		"escambo":
-			return _cargo_modal.open
+			return _on_trade_button_pressed
 		"talentos":
-			return func():
-				var captain_modal: Node = get_tree().get_first_node_in_group("captain_profile_modal")
-				if captain_modal != null:
-					captain_modal.open()
+			return _on_talents_button_pressed
 		_:
 			return func(): pass
+
+
+## Fecha TODO sub-modal que este painel pode abrir -- chamado no início de
+## cada handler de abertura (ver nota acima), pra nunca ter 2 empilhados ao
+## mesmo tempo.
+func _close_all_submodals() -> void:
+	_cargo_modal.close()
+	_ammo_modal.close()
+	_log_modal.close()
+	_crew_submodal.close()
+	_close_cannon_panel()
+	var captain_modal: Node = get_tree().get_first_node_in_group("captain_profile_modal")
+	if captain_modal != null:
+		captain_modal.close()
 
 
 ## 4 slots de Suprimentos -- a arte já desenha o ícone de cada um, só soma
@@ -498,12 +539,6 @@ func _refresh_supply_slots() -> void:
 		else:
 			qty = int(ShipInventory.materials.get(data["material"], 0))
 		qty_label.text = str(qty)
-
-
-func _close_footer_submodals() -> void:
-	_cargo_modal.close()
-	_ammo_modal.close()
-	_log_modal.close()
 
 
 ## Fração de Marinheiros/Operários ATIVOS sobre o total contratado -- ver
