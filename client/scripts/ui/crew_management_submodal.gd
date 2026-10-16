@@ -19,6 +19,23 @@ extends Control
 ## painéis (`modal_frame_iron.png` + `gothic_panel.gdshader`) como visual
 ## provisório. Trocar o `Frame`/fundo aqui assim que a arte certa aparecer,
 ## sem precisar mexer na lógica.
+##
+## `CrewCardModal` FICA de fora da migração pra instanciação em runtime
+## (rodada da migração completa do projeto pro `UIManager`, ver
+## `.clauderules`): aqui dentro ele não é um modal empilhável por cima
+## deste painel -- é filho de `Margin/VBox` (`layout_mode = 2`,
+## `size_flags_vertical = 3`, `show_own_chrome = false`), um WIDGET de
+## layout que ocupa o espaço reservado da seção "Marinheiros e Operários",
+## igual a qualquer outro nó da VBox. Isso é categoricamente diferente dos
+## modais migrados (`RefinementModal` dentro de `CraftingModal`, os 3
+## sub-modais da Ficha do Navio, etc.), que são overlays flutuantes
+## independentes posicionados por cima -- `UIManager.get_modal()` pressupõe
+## esse 2º caso (`anchors_preset = 8`, auto-centralizado), forçar o widget
+## de layout nesse molde quebraria o posicionamento dele na VBox. Quando
+## `CrewCardModal` é usado como OVERLAY de verdade (ex. `tavern_district.tscn`,
+## `show_own_chrome` default), essa instância SIM passa por `UIManager` --
+## são duas instâncias/usos diferentes da mesma cena, cada um no padrão
+## certo pro papel que exerce.
 
 signal opened
 signal closed

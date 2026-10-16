@@ -6,7 +6,6 @@
 [ext_resource type="Texture2D" path="res://assets/ui/processed/nine_patch_skull_banner.png" id="4_skullbanner"]
 [ext_resource type="Texture2D" path="res://assets/ui/processed/nine_patch_anchor_seal.png" id="5_anchorseal"]
 [ext_resource type="PackedScene" path="res://scenes/ui/item_tooltip_zoom.tscn" id="6_tooltipzoom"]
-[ext_resource type="PackedScene" path="res://scenes/ui/modals/refinement_modal.tscn" id="7_refinement"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_gothic"]
 shader = ExtResource("3_gothic")
@@ -110,5 +109,11 @@ size_flags_vertical = 3
 [node name="ItemTooltipZoom" parent="." instance=ExtResource("6_tooltipzoom")]
 layout_mode = 1
 
-[node name="RefinementModal" parent="." instance=ExtResource("7_refinement")]
+[node name="ModalOverlay" type="Control" parent="."]
 layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2

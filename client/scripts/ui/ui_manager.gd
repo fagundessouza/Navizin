@@ -39,7 +39,16 @@ const MODAL_OPEN_FROM_SCALE: Vector2 = Vector2(0.9, 0.9)
 const READABLE_FONT_PATH: String = "res://assets/fonts/Cinzel-Variable.ttf"
 var _readable_font: FontVariation = null
 
-var _current_modal: Control = null
+## Pilha de verdade (não um único "modal atual"), em ordem de abertura --
+## achado rodando de verdade via MCP, não suposto lendo o código: um único
+## `_current_modal` global não representa aninhamento. Abrir Munição
+## (dentro da Ficha do Navio) fechava a PRÓPRIA Ficha do Navio, e abrir
+## Refino (dentro de Fabricação) fechava a PRÓPRIA Fabricação -- os dois
+## ficavam marcados como "o modal atual", concorrendo entre si, mesmo sendo
+## pai e filho, não irmãos. `open_modal()` agora só fecha IRMÃOS de verdade
+## (mesmo `get_parent()`, ou seja, mesmo `ModalOverlay`) em vez de fechar
+## QUALQUER coisa que estivesse marcada como "atual" em qualquer nível.
+var _modal_stack: Array[Control] = []
 var _hover_sfx: AudioStreamPlayer = null
 
 ## REGISTRO/PILHA DE MODAIS EM RUNTIME (pedido explícito -- migração completa
@@ -129,15 +138,22 @@ func open_modal_id(modal_id: String, overlay: Node, configure: Callable = Callab
 	return instance
 
 
-## ESC fecha o modal no topo da pilha (pedido explícito -- "fechamento via
-## tecla ESC"). `_current_modal` já rastreia qual é (a mesma variável que
-## `open_modal()`/`close_modal()` usam pra exclusão mútua), então não precisa
-## de uma pilha separada -- só um modal de cada vez é "o atual" por design
-## (ver nota de `open_modal()`).
+## ESC fecha o modal no TOPO da pilha (pedido explícito -- "fechamento via
+## tecla ESC") -- o último aberto, que é o mais aninhado/mais por cima
+## visualmente, não necessariamente o último item do array se algum tiver
+## sido invalidado sem passar por `close_modal()` (daí o loop de trás pra
+## frente descartando instâncias mortas).
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_cancel") and _current_modal != null and is_instance_valid(_current_modal):
-		close_modal(_current_modal)
+	if not event.is_action_pressed("ui_cancel"):
+		return
+	while not _modal_stack.is_empty():
+		var top: Control = _modal_stack[-1]
+		if not is_instance_valid(top):
+			_modal_stack.pop_back()
+			continue
+		close_modal(top)
 		get_viewport().set_input_as_handled()
+		return
 
 
 ## Aplica a fonte gótica legível + contorno escuro num Label/Button
@@ -203,20 +219,33 @@ func _on_hover_exit(control: Control) -> void:
 	tw.tween_property(control, "scale", Vector2.ONE, 0.3)
 
 
-## Fecha o modal atual (se houver um diferente do pedido) e abre o novo,
-## trazendo-o pra frente. Chamado tanto por clique de botão quanto pelo
-## auto-abrir de entrada no distrito (`city_district_base.gd`).
+## Fecha qualquer IRMÃO do modal pedido (mesmo `get_parent()` -- ou seja,
+## mesmo `ModalOverlay`/mesmo nível de aninhamento) e abre o novo, trazendo-o
+## pra frente. Chamado tanto por clique de botão quanto pelo auto-abrir de
+## entrada no distrito (`city_district_base.gd`).
+##
+## Só fecha IRMÃOS, não qualquer coisa aberta em QUALQUER lugar -- achado
+## rodando de verdade via MCP: a versão antiga rastreava um `_current_modal`
+## único pro jogo inteiro, então abrir um sub-modal (Munição dentro da Ficha
+## do Navio, Refino dentro de Fabricação) fechava o PRÓPRIO modal pai, já
+## que os dois disputavam o mesmo "atual" apesar de serem pai e filho, não
+## concorrentes de verdade. Dois modais só competem entre si quando
+## morariam no MESMO overlay (duas abas de distrito, os 4 painéis do HUD,
+## os 3 sub-modais da Ficha do Navio entre si) -- nunca entre um modal e o
+## que o abriga.
 func open_modal(modal: Control) -> void:
-	if _current_modal != null and _current_modal != modal and is_instance_valid(_current_modal):
-		_current_modal.close()
-	_current_modal = modal
+	var parent: Node = modal.get_parent()
+	for existing in _modal_stack.duplicate():
+		if existing != modal and is_instance_valid(existing) and existing.get_parent() == parent:
+			close_modal(existing)
+	_modal_stack.erase(modal)
+	_modal_stack.append(modal)
 	modal.move_to_front()
 	modal.open()
 
 
 ## Pra quando algo precisa fechar explicitamente em vez de abrir outro --
-## fecha e esquece, pra não achar que ele ainda é "o modal atual" depois.
+## fecha e tira da pilha.
 func close_modal(modal: Control) -> void:
 	modal.close()
-	if _current_modal == modal:
-		_current_modal = null
+	_modal_stack.erase(modal)

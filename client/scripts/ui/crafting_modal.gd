@@ -41,7 +41,11 @@ signal closed
 ## existe pra não forçar o botão em toda instância).
 @export var show_refine_button: bool = true
 
-@onready var _refinement_modal: RefinementModal = $RefinementModal
+## Instanciado em runtime via `UIManager` (migração completa do projeto,
+## pedido explícito -- ver `.clauderules`/checkpoint) em vez de filho fixo
+## do `.tscn`.
+@onready var _modal_overlay: Control = $ModalOverlay
+var _refinement_modal: RefinementModal
 
 const OUTLINE_COLOR: Color = Color(0.03, 0.03, 0.04, 1.0)
 const HOVER_COLOR: Color = Color(1.0, 0.92, 0.65, 1.0)
@@ -71,6 +75,7 @@ var _page_index: Array[int] = []
 
 func _ready() -> void:
 	visible = false
+	_refinement_modal = UIManager.get_modal("refinement", _modal_overlay) as RefinementModal
 	$Margin/VBox/Header/Title.text = panel_title
 	_style_button($Margin/VBox/Header/CloseButton)
 	$Margin/VBox/Header/CloseButton.pressed.connect(close)
@@ -78,7 +83,7 @@ func _ready() -> void:
 	refine_button.visible = show_refine_button
 	if show_refine_button:
 		_style_button(refine_button)
-		refine_button.pressed.connect(_refinement_modal.open)
+		refine_button.pressed.connect(UIManager.open_modal.bind(_refinement_modal))
 	_build_tabs()
 	if categories.size() > 0:
 		_select_tab(0)
@@ -97,7 +102,7 @@ func open() -> void:
 
 
 func close() -> void:
-	_refinement_modal.close()
+	UIManager.close_modal(_refinement_modal)
 	visible = false
 	closed.emit()
 
