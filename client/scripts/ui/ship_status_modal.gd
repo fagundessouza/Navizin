@@ -112,12 +112,14 @@ const OFFICER_SLOT_W: float = 73.2
 ## (`ShipInventory.crafted_items` categoria "municao"), zero até fabricar
 ## alguma de verdade na Forja.
 ##
-## Tooltips alinhados ao texto pedido nesta rodada ("CORREÇÃO CRÍTICA DE
-## HITBOX & TOOLTIPS"). Pólvora continua abrindo a MESMA tela que Bolas
-## (Munição/Arpões) -- não existe um sistema de Comida/Reparos separado em
-## lugar nenhum do projeto (nenhum dado de fome/durabilidade de casco
-## jogável ainda), então o tooltip descreve o que a tela de verdade mostra
-## em vez de prometer uma 3ª tela que não existe.
+## Suprimentos da Tripulação (rodada "sistemas reais de verdade", não mais
+## um atalho pra Munição): o slot de barris agora abre uma tela PRÓPRIA
+## (`ShipInfoModal.info_mode = "supplies"`) mostrando a Ração de Bordo --
+## achado que `TavernHireSystem` já consumia esse material de verdade a
+## cada ciclo (`_consume_food_tick()`, suspende o bônus do marinheiro sem
+## ração, afeta a Moral) desde antes, só sem UI nenhuma pra ver. Não foi
+## inventado sistema novo nenhum, só exposta a tela que faltava pro que já
+## existia.
 ##
 ## RECALIBRADO (rodada seguinte, achado investigando o relato "número '5'
 ## vazando pra fora" via MCP -- não suposto): os `cx` abaixo eram da
@@ -136,7 +138,7 @@ const OFFICER_SLOT_W: float = 73.2
 ## rede de segurança, agora operando sobre dados corretos.
 const SUPPLY_SLOTS: Array[Dictionary] = [
 	{"key": "bolas", "cx": 646.5, "cy": 378.7, "material": "", "label": "Munições de Canhão"},
-	{"key": "polvora", "cx": 708.0, "cy": 378.7, "material": "Pólvora", "label": "Suprimentos (Pólvora)"},
+	{"key": "racao", "cx": 708.0, "cy": 378.7, "material": "Ração de Bordo", "label": "Suprimentos da Tripulação"},
 	{"key": "escambo", "cx": 768.0, "cy": 378.7, "material": "Ouro", "label": "Mercadorias de Escambo"},
 	{"key": "talentos", "cx": 825.9, "cy": 378.7, "material": "", "label": "Árvore de Talentos"},
 ]
@@ -171,6 +173,7 @@ const GLOWING_RARITIES: Array[String] = ["blue", "gold"]
 var _crew_submodal: CrewManagementSubmodal
 var _cargo_modal: ShipInfoModal
 var _ammo_modal: ShipInfoModal
+var _supplies_modal: ShipInfoModal
 @onready var _weight_bar: ProgressBar = $WeightBar
 @onready var _weight_label: Label = $WeightLabel
 @onready var _morale_bar: ProgressBar = $MoraleBar
@@ -207,6 +210,7 @@ func _ready() -> void:
 	_crew_submodal = UIManager.get_modal("crew_management", _modal_overlay, func(m): m.read_only = true) as CrewManagementSubmodal
 	_cargo_modal = UIManager.get_modal("cargo", _modal_overlay) as ShipInfoModal
 	_ammo_modal = UIManager.get_modal("ammo", _modal_overlay, func(m): m.info_mode = "ammo") as ShipInfoModal
+	_supplies_modal = UIManager.get_modal("supplies", _modal_overlay, func(m): m.info_mode = "supplies") as ShipInfoModal
 	$CloseButton.pressed.connect(close)
 	$CannonManagePanel/Panel/Margin/VBox/Header/CloseButton.pressed.connect(_close_cannon_panel)
 	_build_craft_slots()
@@ -492,16 +496,27 @@ func _on_inventory_cell_hover(cell: Button) -> void:
 ##
 ## Nomes de função explícitos por botão (pedido explícito), não mais um
 ## `match` genérico -- cada ícone de Suprimentos chama o handler com o nome
-## certo. Nenhum sistema de barganha/árvore de talentos existe no jogo ainda
-## (`TradeModal` nos distritos que ainda a usam é 100% placeholder,
-## `CaptainAttributes` é 3 atributos soltos, sem grafo de nós) -- em vez de
-## inventar as 2 telas do zero, Escambo e Talentos abrem a UI real mais
-## próxima que já existe (Porão de Carga e a Ficha do Capitão, onde os
-## pontos de atributo já são gastos de verdade), documentado aqui em vez de
-## fingido.
+## certo.
+##
+## Pólvora -> `_supplies_modal` (rodada "Suprimentos da Tripulação"):
+## expõe a Ração de Bordo que `TavernHireSystem` já consome de verdade (ver
+## nota de classe em `ship_info_modal.gd`) -- não é mais um atalho pra tela
+## de Munição.
+##
+## Escambo e Talentos CONTINUAM nas telas reais mais próximas (Porão de
+## Carga, Ficha do Capitão): nenhum sistema de Árvore de Talentos existe
+## ainda, e Escambo está no meio de virar um sistema de Permuta de verdade
+## (rodada em andamento, ver `TradeManager`/`.project/STATE.md`) -- fica
+## apontando pro Porão de Carga só até essa tela ficar pronta, não um stub
+## fingido no lugar.
 func _on_ammo_button_pressed() -> void:
 	_close_all_submodals()
 	UIManager.open_modal(_ammo_modal)
+
+
+func _on_supplies_button_pressed() -> void:
+	_close_all_submodals()
+	UIManager.open_modal(_supplies_modal)
 
 
 func _on_trade_button_pressed() -> void:
@@ -518,8 +533,10 @@ func _on_talents_button_pressed() -> void:
 
 func _supply_slot_action(key: String) -> Callable:
 	match key:
-		"bolas", "polvora":
+		"bolas":
 			return _on_ammo_button_pressed
+		"racao":
+			return _on_supplies_button_pressed
 		"escambo":
 			return _on_trade_button_pressed
 		"talentos":
@@ -534,6 +551,7 @@ func _supply_slot_action(key: String) -> Callable:
 func _close_all_submodals() -> void:
 	UIManager.close_modal(_cargo_modal)
 	UIManager.close_modal(_ammo_modal)
+	UIManager.close_modal(_supplies_modal)
 	UIManager.close_modal(_crew_submodal)
 	_close_cannon_panel()
 	var captain_modal: Control = get_tree().get_first_node_in_group("captain_profile_modal")

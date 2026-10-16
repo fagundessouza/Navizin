@@ -1,13 +1,22 @@
 class_name ShipInfoModal
 extends Control
 ## Overlay flutuante genérico reaproveitado pelos slots de Suprimentos da
-## Ficha do Navio (Escambo -> "cargo", Bolas/Pólvora -> "ammo") -- mesmo
-## padrão do `CrewManagementSubmodal` (abre por cima do `ShipStatusModal`,
-## não fecha ele). `info_mode` decide o conteúdo:
+## Ficha do Navio (Escambo -> "cargo", Bolas -> "ammo", Pólvora -> "supplies")
+## -- mesmo padrão do `CrewManagementSubmodal` (abre por cima do
+## `ShipStatusModal`, não fecha ele). `info_mode` decide o conteúdo:
 ## - "cargo": barra de peso (mesmo dado de `ShipStatusModal._weight_bar`) +
 ##   lista de peças equipadas que dão `cargo_bonus`.
 ## - "ammo": lista de Munição/Arpão fabricados (ícone + nome colorido pela
 ##   raridade), igual à lista do Cofre/Refino.
+## - "supplies": Ração de Bordo -- NÃO é um sistema novo inventado pra essa
+##   tela (pedido explícito, rodada "Suprimentos da Tripulação"); expõe dado
+##   que `TavernHireSystem` já consome de verdade a cada
+##   `FOOD_TICK_INTERVAL` (`_consume_food_tick()`), só que até agora sem
+##   nenhuma UI pra ver o estoque/consumo. Mostra o estoque real, o consumo
+##   por ciclo (soma do upkeep por Raça de cada Marinheiro contratado) e
+##   quem está INATIVO agora por falta de ração -- mesmo `entry["active"]`
+##   que já reduz a Moral (`ship_status_modal.gd._update_morale_bar()`), só
+##   explicando o PORQUÊ em vez de um número sem contexto.
 ##
 ## MODO "log" REMOVIDO (faxina de resíduo -- `.clauderules` #1, "nunca
 ## deixe resíduo de código/sinais obsoletos"): existia pro antigo botão de
@@ -44,7 +53,10 @@ func _ready() -> void:
 			_title.text = "Porão de Carga"
 		"ammo":
 			_title.text = "Munição e Arpões"
+		"supplies":
+			_title.text = "Suprimentos da Tripulação"
 	ShipInventory.changed.connect(_on_inventory_changed)
+	TavernHireSystem.changed.connect(_on_inventory_changed)
 
 
 func _process(_delta: float) -> void:
@@ -83,6 +95,8 @@ func _refresh() -> void:
 			_refresh_cargo()
 		"ammo":
 			_refresh_ammo()
+		"supplies":
+			_refresh_supplies()
 
 
 ## Lista os equipados (navio + capitão) que dão `cargo_bonus` -- não repete
@@ -118,6 +132,75 @@ func _refresh_ammo() -> void:
 		empty.text = "Nenhuma munição ou arpão fabricado ainda."
 		empty.add_theme_color_override("font_color", Color(0.6, 0.58, 0.54))
 		_content.add_child(empty)
+
+
+## Ver nota de classe -- expõe o consumo de Ração de Bordo que
+## `TavernHireSystem._consume_food_tick()` já roda de verdade a cada
+## `FOOD_TICK_INTERVAL`, sem nenhuma UI pra ver o estoque/consumo até agora.
+func _refresh_supplies() -> void:
+	var stock: float = ShipInventory.materials.get(TavernHireSystem.FOOD_MATERIAL, 0)
+	var stock_label := Label.new()
+	stock_label.text = "%s: %d" % [TavernHireSystem.FOOD_MATERIAL, int(stock)]
+	stock_label.add_theme_color_override("font_color", Color(0.95, 0.88, 0.6))
+	_content.add_child(stock_label)
+
+	var upkeep_total: float = 0.0
+	for entry in TavernHireSystem.hired:
+		upkeep_total += TavernHireSystem.food_upkeep_for(entry)
+	var upkeep_label := Label.new()
+	upkeep_label.text = "Consumo da tripulação atual: %.1f a cada %ds" % [upkeep_total, int(TavernHireSystem.FOOD_TICK_INTERVAL)]
+	upkeep_label.add_theme_color_override("font_color", Color(0.78, 0.74, 0.66))
+	_content.add_child(upkeep_label)
+
+	var spacer := Control.new()
+	spacer.custom_minimum_size = Vector2(0, 8)
+	_content.add_child(spacer)
+
+	# Mesmo `entry["active"]` que já reduz `TavernHireSystem.is_contributing()`
+	# (e portanto a barra de Moral) -- aqui só explica o PORQUÊ em vez de
+	# deixar o jogador adivinhar por que a Moral caiu.
+	var inactive: Array = []
+	for entry in TavernHireSystem.hired:
+		if not entry.get("active", true):
+			inactive.append(entry)
+	if TavernHireSystem.hired.is_empty():
+		var none_label := Label.new()
+		none_label.text = "Nenhum Marinheiro/Operário contratado ainda."
+		none_label.add_theme_color_override("font_color", Color(0.6, 0.58, 0.54))
+		_content.add_child(none_label)
+	elif inactive.is_empty():
+		var ok_label := Label.new()
+		ok_label.text = "Toda a tripulação está abastecida."
+		ok_label.add_theme_color_override("font_color", Color(0.6, 0.82, 0.5))
+		_content.add_child(ok_label)
+	else:
+		var warn_label := Label.new()
+		warn_label.text = "Sem ração -- bônus suspenso de %d marinheiro(s):" % inactive.size()
+		warn_label.add_theme_color_override("font_color", Color(0.85, 0.4, 0.35))
+		_content.add_child(warn_label)
+		for entry in inactive:
+			var row := Label.new()
+			row.text = "- %s (%s)" % [entry["name"], TavernHireSystem.RACE_NAMES[entry["race"]]]
+			row.add_theme_color_override("font_color", Color(0.78, 0.74, 0.66))
+			_content.add_child(row)
+
+	# GAP REAL, documentado em vez de fingido: `Ração de Bordo` não tem
+	# receita de fabricação em lugar nenhum do projeto (só seedada uma vez,
+	# `TavernHireSystem.FOOD_STARTER_QTY`) -- "Culinária" em
+	# `life_skills_panel.gd` é só um valor de demonstração, sem estação nem
+	# receita de verdade por trás ainda. Sem fabricar uma estação de
+	# Culinária inteira só pra esta tela, o jogador precisa saber que o
+	# estoque é finito até esse sistema existir, em vez de pensar que sumiu
+	# por bug.
+	if stock <= 0:
+		var gap_spacer := Control.new()
+		gap_spacer.custom_minimum_size = Vector2(0, 8)
+		_content.add_child(gap_spacer)
+		var gap_label := Label.new()
+		gap_label.text = "Sem receita de fabricação pra Ração de Bordo ainda -- o estoque inicial é finito até existir uma estação de Culinária de verdade."
+		gap_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+		gap_label.add_theme_color_override("font_color", Color(0.55, 0.52, 0.46))
+		_content.add_child(gap_label)
 
 
 func _build_item_row(instance_id: String, prefix: String) -> Control:

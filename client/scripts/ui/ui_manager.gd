@@ -91,6 +91,7 @@ func _ready() -> void:
 func _register_modal_scenes() -> void:
 	_modal_scenes["cargo"] = preload("res://scenes/ui/modals/ship_info_modal.tscn")
 	_modal_scenes["ammo"] = preload("res://scenes/ui/modals/ship_info_modal.tscn")
+	_modal_scenes["supplies"] = preload("res://scenes/ui/modals/ship_info_modal.tscn")
 	_modal_scenes["crew_management"] = preload("res://scenes/ui/modals/crew_management_submodal.tscn")
 	_modal_scenes["crew_card"] = preload("res://scenes/ui/modals/crew_card_modal.tscn")
 	_modal_scenes["vault"] = preload("res://scenes/ui/modals/vault_modal.tscn")
