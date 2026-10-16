@@ -14,7 +14,18 @@ shader_type canvas_item;
 // escura assim (~0.11 pra cima). Um corte de brilho simples separa os dois
 // de forma confiável, pixel a pixel, sem depender do mapeamento de UV.
 
-uniform float fill_alpha : hint_range(0.0, 1.0) = 0.85;
+// AUMENTADO de 0.85 pra 0.98 (pedido explícito -- "borda transparente
+// bugada, aspecto feio de textura" nas modais abertas por cima da Ficha do
+// Navio): com a arte de fundo antiga (mais escura/uniforme), deixar o
+// miolo do quadro 15% translúcido passava quase despercebido; com a nova
+// arte `inventory_background.jpeg` (grade de inventário, números,
+// suprimentos, bem mais clara e detalhada), aquele mesmo 15% deixava o
+// conteúdo de TRÁS sangrar através de forma bem visível e feia em
+// TODA modal construída com este shader (Gerenciar Canhões, Tripulação,
+// Munição/Carga...), não só uma. Corrigido na origem (o shader, não
+// remendado modal por modal) -- quase opaco agora, a textura "de madeira"
+// ainda aparece (não é 1.0 cheio), só não deixa mais nada atravessar.
+uniform float fill_alpha : hint_range(0.0, 1.0) = 0.98;
 uniform float fill_threshold : hint_range(0.0, 1.0) = 0.09;
 uniform float frame_softness : hint_range(0.01, 0.3) = 0.1;
 uniform vec3 glow_color : source_color = vec3(1.0, 0.82, 0.42);

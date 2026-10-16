@@ -23,6 +23,21 @@ extends Control
 signal opened
 signal closed
 
+## `false` quando aberto a partir da Ficha do Navio (pedido explícito --
+## "não deveria permitir contratar direto sem ir na Taverna") -- aquela
+## instância vira só CONSULTA (vê quem tá contratado, o bônus, ainda dá pra
+## Dispensar). A instância de verdade que contrata (`read_only = false`)
+## agora mora em `tavern_district.tscn`, lado a lado com a roleta de
+## Marinheiros/Operários -- contratar Oficial e Marinheiro ficam na MESMA
+## estação, só que em painéis distintos.
+@export var read_only: bool = false
+## `false` na instância da Taverna (pedido explícito): aquela cena já tem o
+## PRÓPRIO `CrewCardModal` de Marinheiros/Operários no nível do distrito --
+## embutir um 2º aqui dentro duplicaria a roleta inteira lado a lado com
+## ela mesma. A instância da Ficha do Navio continua `true` (mostra os dois,
+## Oficiais E a prévia de Marinheiros, como já era).
+@export var show_sailors_section: bool = true
+
 const NORMAL_FONT_COLOR: Color = Color(0.93, 0.9, 0.84, 1.0)
 const OK_COLOR: Color = Color(0.6, 0.82, 0.5, 1.0)
 const MISSING_COLOR: Color = Color(0.85, 0.4, 0.35, 1.0)
@@ -37,6 +52,14 @@ func _ready() -> void:
 	visible = false
 	$Margin/VBox/Header/CloseButton.pressed.connect(close)
 	OfficerRoster.changed.connect(_on_officer_changed)
+	if not show_sailors_section:
+		$Margin/VBox/HSeparator.visible = false
+		$Margin/VBox/CrewCardModal.visible = false
+		# Sem a seção de Marinheiros, o painel fixo de 800x640 (dimensionado
+		# pras duas seções) sobra um vão vazio enorme embaixo dos 8 Oficiais
+		# -- encolhe pra caber só o que esta instância mostra de verdade.
+		offset_bottom = -320.0 + 420.0
+		pivot_offset = Vector2(400.0, 210.0)
 
 
 func open() -> void:
@@ -147,17 +170,32 @@ func _build_officer_row(role: String) -> Control:
 	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hbox.add_child(status_label)
 
-	var action_button := Button.new()
 	if hired:
+		var action_button := Button.new()
 		action_button.text = "Dispensar"
 		action_button.pressed.connect(func(): OfficerRoster.dismiss(role))
+		action_button.custom_minimum_size = Vector2(150, 0)
+		_style_button(action_button)
+		hbox.add_child(action_button)
+	elif read_only:
+		# Pedido explícito -- contratar Oficial só na Taverna, não mais daqui
+		# ("tá permitindo contratar direto sem ir na taberna"). Vaga vazia
+		# some com o botão, só avisa onde ir.
+		var hint_label := Label.new()
+		hint_label.text = "Contrate na Taverna"
+		hint_label.custom_minimum_size = Vector2(150, 0)
+		hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		UIManager.apply_readable_font(hint_label, 11)
+		hint_label.add_theme_color_override("font_color", Color(0.55, 0.52, 0.46))
+		hbox.add_child(hint_label)
 	else:
+		var action_button := Button.new()
 		action_button.text = "Contratar (%dx %s)" % [OfficerRoster.HIRE_COST_QTY, OfficerRoster.HIRE_COST_MATERIAL]
 		action_button.disabled = not OfficerRoster.can_hire(role)
 		action_button.pressed.connect(func(): OfficerRoster.hire(role))
-	action_button.custom_minimum_size = Vector2(150, 0)
-	_style_button(action_button)
-	hbox.add_child(action_button)
+		action_button.custom_minimum_size = Vector2(150, 0)
+		_style_button(action_button)
+		hbox.add_child(action_button)
 
 	return row
 

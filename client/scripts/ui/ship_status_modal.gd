@@ -104,9 +104,15 @@ const OFFICER_ROW: Array[Dictionary] = [
 ]
 const OFFICER_SLOT_W: float = 73.2
 
-## 4 slots de Suprimentos (Bolas/Pólvora/Escambo/Talentos).
+## 4 slots de Suprimentos (Bolas/Pólvora/Escambo/Talentos). "Bolas de Canhão"
+## CORRIGIDO nesta rodada -- mostrava a contagem do material bruto "Esfera
+## de Ferro" (ingrediente de receita, sempre tem 15 de estoque inicial
+## mesmo sem ter fabricado munição nenhuma -- o "15 fixo sem sentido"
+## relatado). Trocado pra contar MUNIÇÃO DE VERDADE já fabricada
+## (`ShipInventory.crafted_items` categoria "municao"), zero até fabricar
+## alguma de verdade na Forja.
 const SUPPLY_SLOTS: Array[Dictionary] = [
-	{"key": "bolas", "cx": 684.9, "cy": 372.9, "material": "Esfera de Ferro", "label": "Bolas de Canhão"},
+	{"key": "bolas", "cx": 684.9, "cy": 372.9, "material": "", "label": "Munição de Canhão"},
 	{"key": "polvora", "cx": 768.5, "cy": 372.9, "material": "Pólvora", "label": "Pólvora"},
 	{"key": "escambo", "cx": 852.0, "cy": 372.9, "material": "Ouro", "label": "Escambo (Ouro)"},
 	{"key": "talentos", "cx": 927.5, "cy": 372.9, "material": "", "label": "Pontos de Talento"},
@@ -534,11 +540,23 @@ func _refresh_supply_slots() -> void:
 		var button: Button = _supply_buttons[i]
 		var qty_label: Label = button.get_node("Qty")
 		var qty: int
-		if data["key"] == "talentos":
-			qty = CaptainAttributes.available_points
-		else:
-			qty = int(ShipInventory.materials.get(data["material"], 0))
+		match data["key"]:
+			"talentos":
+				qty = CaptainAttributes.available_points
+			"bolas":
+				qty = _count_crafted_by_category("municao")
+			_:
+				qty = int(ShipInventory.materials.get(data["material"], 0))
 		qty_label.text = str(qty)
+
+
+func _count_crafted_by_category(category: String) -> int:
+	var count: int = 0
+	for instance_id in ShipInventory.crafted_items:
+		var item_id: String = ShipInventory.crafted_items[instance_id]["item_id"]
+		if ItemDatabase.get_item(item_id).get("category", "") == category:
+			count += 1
+	return count
 
 
 ## Fração de Marinheiros/Operários ATIVOS sobre o total contratado -- ver

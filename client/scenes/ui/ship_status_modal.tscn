@@ -158,19 +158,20 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="Backdrop" type="ColorRect" parent="CannonManagePanel"]
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-color = Color(0, 0, 0, 0.6)
-
 [node name="Panel" type="Control" parent="CannonManagePanel"]
 offset_left = 140.0
 offset_top = 40.0
 offset_right = 820.0
 offset_bottom = 500.0
+
+[node name="ContentBg" type="ColorRect" parent="CannonManagePanel/Panel"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.035, 0.028, 0.02, 0.97)
 
 [node name="Frame" type="NinePatchRect" parent="CannonManagePanel/Panel"]
 anchors_preset = 15
@@ -232,6 +233,7 @@ layout_mode = 1
 
 [node name="CrewManagementSubmodal" parent="." instance=ExtResource("6_crew")]
 layout_mode = 1
+read_only = true
 
 [node name="CargoModal" parent="." instance=ExtResource("7_info")]
 layout_mode = 1

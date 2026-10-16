@@ -21,9 +21,13 @@ extends Control
 ## mais, e o Refino passou a morar DENTRO do `CraftingModal`
 ## (`RefineButton` no cabeçalho dele), não mais um botão separado aqui. Só
 ## sobrou `OpenCraftingButton`/`OpenVaultButton`, um por distrito -- mais
-## `OpenCrewButton`/`CrewCardModal` na Taverna (rodada seguinte, roleta de
-## Marinheiros), que `_wire_modal()` também tenta em todo distrito mas só
-## encontra onde o par de nós existe de verdade.
+## `OpenCrewButton`/`CrewCardModal` e `OpenOfficersButton`/`OfficersModal`
+## na Taverna (roleta de Marinheiros/Operários + contratação de Oficiais,
+## que `_wire_modal()` também tenta em todo distrito mas só encontra onde o
+## par de nós existe de verdade). Oficial só se contrata aqui agora -- a
+## instância de `CrewManagementSubmodal` que a Ficha do Navio abre é
+## `read_only = true` (pedido explícito, "não deveria permitir contratar
+## sem ir na Taverna").
 ##
 ## BRILHO DE ESTAÇÃO REMOVIDO (pedido explícito -- "elimine a iluminação
 ## amarela borrada"): a rodada anterior botava um `ColorRect` com
@@ -55,6 +59,7 @@ func _ready() -> void:
 	_wire_modal("OpenCraftingButton", "CraftingModal")
 	_wire_modal("OpenVaultButton", "VaultModal")
 	_wire_modal("OpenCrewButton", "CrewCardModal")
+	_wire_modal("OpenOfficersButton", "OfficersModal")
 
 
 ## Liga o botão "Abrir X" (um só por distrito agora) ao modal filho, se os
