@@ -125,18 +125,19 @@ func _build_officer_row(role: String) -> Control:
 	var name_label := Label.new()
 	name_label.text = OfficerRoster.ROLE_NAMES[role]
 	name_label.add_theme_color_override("font_color", HIRED_COLOR if hired else EMPTY_COLOR)
+	UIManager.apply_readable_font(name_label, 15)
 	name_box.add_child(name_label)
 
 	if hired:
 		var race_label := Label.new()
 		race_label.text = OfficerRoster.race_label(role)
-		race_label.add_theme_font_size_override("font_size", 11)
 		race_label.add_theme_color_override("font_color", Color(0.72, 0.68, 0.6))
+		UIManager.apply_readable_font(race_label, 11)
 		name_box.add_child(race_label)
 
 	var status_label := Label.new()
 	status_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	status_label.add_theme_font_size_override("font_size", 11)
+	UIManager.apply_readable_font(status_label, 11)
 	if hired:
 		status_label.text = _bonus_summary(role)
 		status_label.add_theme_color_override("font_color", Color(0.78, 0.82, 0.7))

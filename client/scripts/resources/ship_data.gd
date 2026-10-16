@@ -38,8 +38,20 @@ extends Resource
 @export var charge_time: float = 1.5
 
 @export_group("Canhões")
-## Projéteis por bordada (um por canhão).
+## Projéteis por bordada (um por canhão) -- balanço de combate, NÃO é
+## quantos slots de equipar canhão o navio tem (ver `cannon_slot_capacity`
+## logo abaixo, campo separado de propósito pra não misturar as duas
+## contas).
 @export var cannon_count: int = 6
+## Quantos slots de bateria o Painel "Gerenciar Canhões" mostra pra este
+## navio (pedido explícito -- "a quantidade de slots deve corresponder à
+## capacidade total do navio atual"). Separado de `cannon_count` (dano de
+## combate) de propósito. 20 é o valor real já usado pelo único navio que
+## existe no jogo (Galeão) desde a grade original calibrada na arte -- sem
+## outro tipo de navio (Escuna etc.) registrado no projeto ainda, não dava
+## pra inventar um segundo número (ex: "8 pra Escuna") sem um 2º `ShipData`
+## de verdade pra validar contra.
+@export var cannon_slot_capacity: int = 20
 ## Intervalo entre projéteis da mesma bordada, em segundos.
 @export var volley_interval: float = 0.05
 ## Tempo até a bateria poder disparar de novo, em segundos. Vale para cada bordo.

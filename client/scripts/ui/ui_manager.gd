@@ -27,6 +27,18 @@ extends Node
 const HOVER_POP_SCALE: Vector2 = Vector2(1.08, 1.08)
 const MODAL_OPEN_FROM_SCALE: Vector2 = Vector2(0.9, 0.9)
 
+## LEGIBILIDADE (pedido explícito -- "fonte atual embaçada/pixelada"): o tema
+## padrão do projeto (`theme_navizin.tres`) usa `PirataOne-Regular.ttf` pra
+## TUDO, inclusive rótulo pequeno -- é uma fonte decorativa/blackletter,
+## ótima pra título grande, ilegível em 10-13px (letras grudam, contorno
+## sem definição). `Cinzel-Variable.ttf` já era usado pra título em
+## `captain_status.tscn`; isto generaliza o mesmo tratamento (peso 700 +
+## contorno escuro) pra texto pequeno de corpo em qualquer Label/Button
+## construído por código, sem precisar duplicar o `FontVariation` em cada
+## cena.
+const READABLE_FONT_PATH: String = "res://assets/fonts/Cinzel-Variable.ttf"
+var _readable_font: FontVariation = null
+
 var _current_modal: Control = null
 var _hover_sfx: AudioStreamPlayer = null
 
@@ -36,6 +48,21 @@ func _ready() -> void:
 	_hover_sfx.stream = preload("res://assets/audio/sfx_hover.wav")
 	_hover_sfx.volume_db = -8.0
 	add_child(_hover_sfx)
+	var base_font: FontFile = load(READABLE_FONT_PATH)
+	_readable_font = FontVariation.new()
+	_readable_font.base_font = base_font
+	_readable_font.variation_opentype = {2003265652: 700}  # 'wght' = 700 (negrito)
+
+
+## Aplica a fonte gótica legível + contorno escuro num Label/Button
+## construído por código (o tema padrão já cobre o resto da UI). `size`
+## opcional só quando o padrão do tema (15px) não serve.
+func apply_readable_font(control: Control, size: int = 0) -> void:
+	control.add_theme_font_override("font", _readable_font)
+	if size > 0:
+		control.add_theme_font_size_override("font_size", size)
+	control.add_theme_color_override("font_outline_color", Color(0.05, 0.03, 0.02, 1.0))
+	control.add_theme_constant_override("outline_size", 3)
 
 
 ## Abertura de modal "pop" (escala 0.9 -> 1.0 + transparência 0 -> 1,

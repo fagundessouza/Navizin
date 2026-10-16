@@ -64,6 +64,11 @@ var _slot_glows: Dictionary = {}
 
 func _ready() -> void:
 	visible = false
+	# Grupo (não caminho de nó) pra quem precisa abrir a Ficha do Capitão de
+	# fora da `SystemMenuBar` -- `ShipStatusModal` é irmã desta modal sob o
+	# mesmo HUD, não filha dela, então um `get_node()` relativo seria frágil
+	# a qualquer reorganização da árvore de cena.
+	add_to_group("captain_profile_modal")
 	$CloseButton.pressed.connect(close)
 	_picker.instance_selected.connect(_on_instance_selected)
 	CaptainAttributes.changed.connect(_refresh_attributes)

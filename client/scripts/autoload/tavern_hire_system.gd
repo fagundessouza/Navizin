@@ -107,8 +107,18 @@ const QUALITIES: Array[Dictionary] = [
 ## `CraftingManager` já usa pra nome de item (prefixo/sufixo) -- nomes
 ## gerados pra uma entidade de jogo NOVA (marinheiro), não uma contagem de
 ## asset de arte real sendo inventada por cima do que o usuário forneceu.
+##
+## SÓ NOMES MASCULINOS (pedido explícito -- "sem atribuir nomes femininos a
+## retratos masculinos"): os 32 retratos processados em
+## `~/Downloads/Tortuga/Tripulação/` (Humano/Goblin/Anão/Morto-Vivo, 8
+## profissões cada) são todos de personagens masculinos -- nenhuma arte de
+## retrato feminino foi entregue em lote nenhum. O pool de Humano tinha
+## "Rosário"/"Isadora"/"Catarina" (femininos) sorteando pra esses mesmos
+## retratos masculinos; trocados por nomes masculinos de tema naval/pirata.
+## Os outros pools (Goblin/Anão/Morto-Vivo) já eram nomes de fantasia sem
+## marcação clara de gênero em português, não precisaram de ajuste.
 const FIRST_NAMES: Dictionary = {
-	Race.HUMAN: ["Joaquim", "Bento", "Tomé", "Vicente", "Rosário", "Isadora", "Belmiro", "Catarina"],
+	Race.HUMAN: ["Joaquim", "Bento", "Tomé", "Vicente", "Belmiro", "Nunes", "Afonso", "Baltazar"],
 	Race.GOBLIN: ["Grix", "Snagg", "Korr", "Mizzik", "Ruddle", "Ferrik", "Globb", "Yark"],
 	Race.GOBLIN_PURE: ["Grix", "Snagg", "Korr", "Mizzik", "Ruddle", "Ferrik", "Globb", "Yark"],
 	Race.DWARF: ["Thrak", "Gorn", "Borrim", "Haldor", "Ossian", "Kratz", "Dunmar", "Vrogar"],

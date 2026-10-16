@@ -8,9 +8,14 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/crew_management_submodal.tscn" id="6_crew"]
 [ext_resource type="PackedScene" path="res://scenes/ui/ship_info_modal.tscn" id="7_info"]
 [ext_resource type="PackedScene" path="res://scenes/ui/item_tooltip_zoom.tscn" id="8_tooltipzoom"]
+[ext_resource type="Texture2D" path="res://assets/ui/processed/modal_frame_iron.png" id="9_frame"]
+[ext_resource type="Shader" path="res://assets/shaders/gothic_panel.gdshader" id="10_gothic"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_chroma"]
 shader = ExtResource("4_chroma")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_gothic"]
+shader = ExtResource("10_gothic")
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_weight_fill"]
 bg_color = Color(0.78, 0.68, 0.42, 0.92)
@@ -40,17 +45,12 @@ corner_radius_top_right = 4
 corner_radius_bottom_left = 4
 corner_radius_bottom_right = 4
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_cannon_panel"]
-bg_color = Color(0.03, 0.025, 0.02, 0.96)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.6, 0.48, 0.25, 1.0)
-corner_radius_top_left = 6
-corner_radius_top_right = 6
-corner_radius_bottom_left = 6
-corner_radius_bottom_right = 6
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_cannon_content_bg"]
+bg_color = Color(0.03, 0.025, 0.02, 0.85)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_left = 4
+corner_radius_bottom_right = 4
 
 [node name="ShipStatusModal" type="Control"]
 anchors_preset = 8
@@ -72,7 +72,7 @@ offset_bottom = 246.0
 mouse_filter = 2
 texture = ExtResource("3_blueprint")
 expand_mode = 1
-stretch_mode = 5
+stretch_mode = 6
 
 [node name="Background" type="TextureRect" parent="."]
 anchors_preset = 15
@@ -166,19 +166,36 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0, 0, 0, 0.6)
 
-[node name="Panel" type="PanelContainer" parent="CannonManagePanel"]
-offset_left = 160.0
-offset_top = 60.0
-offset_right = 800.0
-offset_bottom = 480.0
-theme_override_styles/panel = SubResource("StyleBoxFlat_cannon_panel")
+[node name="Panel" type="Control" parent="CannonManagePanel"]
+offset_left = 140.0
+offset_top = 40.0
+offset_right = 820.0
+offset_bottom = 500.0
+
+[node name="Frame" type="NinePatchRect" parent="CannonManagePanel/Panel"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("9_frame")
+patch_margin_left = 85
+patch_margin_top = 85
+patch_margin_right = 85
+patch_margin_bottom = 85
+material = SubResource("ShaderMaterial_gothic")
 
 [node name="Margin" type="MarginContainer" parent="CannonManagePanel/Panel"]
-layout_mode = 2
-theme_override_constants/margin_left = 16
-theme_override_constants/margin_top = 16
-theme_override_constants/margin_right = 16
-theme_override_constants/margin_bottom = 16
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 30
+theme_override_constants/margin_top = 26
+theme_override_constants/margin_right = 30
+theme_override_constants/margin_bottom = 26
 
 [node name="VBox" type="VBoxContainer" parent="CannonManagePanel/Panel/Margin"]
 layout_mode = 2
@@ -198,10 +215,17 @@ text = "Gerenciar Canhões"
 layout_mode = 2
 text = "X"
 
-[node name="GridRoot" type="Control" parent="CannonManagePanel/Panel/Margin/VBox"]
+[node name="GridScroll" type="ScrollContainer" parent="CannonManagePanel/Panel/Margin/VBox"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 320)
 size_flags_vertical = 3
+custom_minimum_size = Vector2(0, 340)
+
+[node name="GridBg" type="PanelContainer" parent="CannonManagePanel/Panel/Margin/VBox/GridScroll"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_cannon_content_bg")
+
+[node name="GridRoot" type="Control" parent="CannonManagePanel/Panel/Margin/VBox/GridScroll/GridBg"]
+custom_minimum_size = Vector2(0, 320)
 
 [node name="Picker" parent="." instance=ExtResource("5_picker")]
 layout_mode = 1
