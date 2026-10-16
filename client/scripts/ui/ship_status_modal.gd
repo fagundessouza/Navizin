@@ -118,15 +118,33 @@ const OFFICER_SLOT_W: float = 73.2
 ## lugar nenhum do projeto (nenhum dado de fome/durabilidade de casco
 ## jogável ainda), então o tooltip descreve o que a tela de verdade mostra
 ## em vez de prometer uma 3ª tela que não existe.
+##
+## RECALIBRADO (rodada seguinte, achado investigando o relato "número '5'
+## vazando pra fora" via MCP -- não suposto): os `cx` abaixo eram da
+## calibração ORIGINAL da arte, feita rodadas atrás, nunca reconferida pixel
+## a pixel contra a fonte de verdade. Sampleando `inventory_background.jpeg`
+## por cor (o brilho azul do cristal, a madeira do baú) achei que os 4
+## ícones de verdade ficam bem mais JUNTOS do que a calibração antiga
+## assumia -- centros reais a ~60px local de distância um do outro, não os
+## ~76-84px que o código antigo usava. Com o espaçamento antigo largo
+## demais, o 4º slot (Talentos) ficava ~100px à direita de onde o cristal
+## está desenhado de verdade, caindo na moldura decorativa vazia ao lado --
+## por isso o número "5" aparecia fora de qualquer caixa pintada. A correção
+## de hitbox de 2 rodadas atrás (`_safe_supply_half_width()`) tratou o
+## SINTOMA (encolheu a largura pra não encostar no vizinho) sem corrigir a
+## causa (os centros já estavam errados desde o início) -- mantida aqui como
+## rede de segurança, agora operando sobre dados corretos.
 const SUPPLY_SLOTS: Array[Dictionary] = [
-	{"key": "bolas", "cx": 684.9, "cy": 372.9, "material": "", "label": "Munições de Canhão"},
-	{"key": "polvora", "cx": 768.5, "cy": 372.9, "material": "Pólvora", "label": "Suprimentos (Pólvora)"},
-	{"key": "escambo", "cx": 852.0, "cy": 372.9, "material": "Ouro", "label": "Mercadorias de Escambo"},
-	{"key": "talentos", "cx": 927.5, "cy": 372.9, "material": "", "label": "Árvore de Talentos"},
+	{"key": "bolas", "cx": 646.5, "cy": 378.7, "material": "", "label": "Munições de Canhão"},
+	{"key": "polvora", "cx": 708.0, "cy": 378.7, "material": "Pólvora", "label": "Suprimentos (Pólvora)"},
+	{"key": "escambo", "cx": 768.0, "cy": 378.7, "material": "Ouro", "label": "Mercadorias de Escambo"},
+	{"key": "talentos", "cx": 825.9, "cy": 378.7, "material": "", "label": "Árvore de Talentos"},
 ]
-## Largura/altura "ideal" medida na arte -- `_safe_supply_width()` encolhe
-## isto quando o vizinho tá perto demais (ver nota em `_build_supply_slots()`).
-const SUPPLY_SLOT_SIZE: Vector2 = Vector2(78.0, 73.8)
+## Largura/altura "ideal" medida na arte (recalibrado junto com os `cx`
+## acima -- caixas reais têm ~59px de largura, não 78) -- `_safe_supply_half_width()`
+## ainda encolhe isto quando o vizinho tá perto demais (ver nota em
+## `_build_supply_slots()`), agora só como rede de segurança extra.
+const SUPPLY_SLOT_SIZE: Vector2 = Vector2(58.0, 65.0)
 ## Folga mínima entre hitboxes vizinhas, pros botões nunca encostarem.
 const SUPPLY_SLOT_GUTTER: float = 4.0
 
@@ -223,6 +241,13 @@ func _process(_delta: float) -> void:
 
 func open() -> void:
 	visible = true
+	# Rede de segurança (não a causa raiz -- ver nota em `_build_supply_slots()`):
+	# se QUALQUER slot reusado ficar preso numa escala de hover de uma sessão
+	# anterior por algum motivo que escapou da correção acima, reabrir o
+	# painel sempre garante estado limpo em vez de carregar a distorção
+	# adiante.
+	for button in _supply_buttons:
+		button.scale = Vector2.ONE
 	UIManager.animate_modal_open(self)
 	_refresh_inventory_grid()
 	_refresh_supply_slots()
@@ -572,7 +597,19 @@ func _build_supply_slots() -> void:
 		button.tooltip_text = data["label"]
 		button.pressed.connect(_supply_slot_action(data["key"]))
 		container.add_child(button)
-		UIManager.add_hover_pop(button, "supply_%s" % data["key"])
+		# SEM `UIManager.add_hover_pop()` aqui de propósito (causa raiz real de
+		# dois bugs relatados -- "número vazando pra fora do quadro" e "mouse
+		# pula o 2º slot"): escala no Godot também aumenta a HITBOX de clique
+		# do Control, não só o visual. Nesta fileira especificamente os slots
+		# têm só 4-8px de folga entre vizinhos (`_safe_supply_half_width()`)
+		# -- um pop de 1.08x nessa margem apertada é o bastante pra invadir o
+		# vizinho, e se o `mouse_exited` não disparar a tempo (achado restando
+		# preso em escala 1.08 num teste ao vivo via MCP, bem depois do mouse
+		# ter saído) o botão fica permanentemente maior, empurrando o próprio
+		# Label de quantidade pra fora da caixa pintada na arte -- exatamente
+		# o "5 flutuando" relatado. Mantém só a etiqueta de debug (F3) sem o
+		# `mouse_entered`/`mouse_exited` que causa o resto.
+		button.set_meta(AdminManager.DEBUG_ID_META, "supply_%s" % data["key"])
 		_supply_buttons.append(button)
 
 		var qty_label := Label.new()
