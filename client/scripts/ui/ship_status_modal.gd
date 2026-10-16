@@ -105,19 +105,30 @@ const OFFICER_ROW: Array[Dictionary] = [
 const OFFICER_SLOT_W: float = 73.2
 
 ## 4 slots de Suprimentos (Bolas/Pólvora/Escambo/Talentos). "Bolas de Canhão"
-## CORRIGIDO nesta rodada -- mostrava a contagem do material bruto "Esfera
+## CORRIGIDO rodada anterior -- mostrava a contagem do material bruto "Esfera
 ## de Ferro" (ingrediente de receita, sempre tem 15 de estoque inicial
 ## mesmo sem ter fabricado munição nenhuma -- o "15 fixo sem sentido"
 ## relatado). Trocado pra contar MUNIÇÃO DE VERDADE já fabricada
 ## (`ShipInventory.crafted_items` categoria "municao"), zero até fabricar
 ## alguma de verdade na Forja.
+##
+## Tooltips alinhados ao texto pedido nesta rodada ("CORREÇÃO CRÍTICA DE
+## HITBOX & TOOLTIPS"). Pólvora continua abrindo a MESMA tela que Bolas
+## (Munição/Arpões) -- não existe um sistema de Comida/Reparos separado em
+## lugar nenhum do projeto (nenhum dado de fome/durabilidade de casco
+## jogável ainda), então o tooltip descreve o que a tela de verdade mostra
+## em vez de prometer uma 3ª tela que não existe.
 const SUPPLY_SLOTS: Array[Dictionary] = [
-	{"key": "bolas", "cx": 684.9, "cy": 372.9, "material": "", "label": "Munição de Canhão"},
-	{"key": "polvora", "cx": 768.5, "cy": 372.9, "material": "Pólvora", "label": "Pólvora"},
-	{"key": "escambo", "cx": 852.0, "cy": 372.9, "material": "Ouro", "label": "Escambo (Ouro)"},
-	{"key": "talentos", "cx": 927.5, "cy": 372.9, "material": "", "label": "Pontos de Talento"},
+	{"key": "bolas", "cx": 684.9, "cy": 372.9, "material": "", "label": "Munições de Canhão"},
+	{"key": "polvora", "cx": 768.5, "cy": 372.9, "material": "Pólvora", "label": "Suprimentos (Pólvora)"},
+	{"key": "escambo", "cx": 852.0, "cy": 372.9, "material": "Ouro", "label": "Mercadorias de Escambo"},
+	{"key": "talentos", "cx": 927.5, "cy": 372.9, "material": "", "label": "Árvore de Talentos"},
 ]
+## Largura/altura "ideal" medida na arte -- `_safe_supply_width()` encolhe
+## isto quando o vizinho tá perto demais (ver nota em `_build_supply_slots()`).
 const SUPPLY_SLOT_SIZE: Vector2 = Vector2(78.0, 73.8)
+## Folga mínima entre hitboxes vizinhas, pros botões nunca encostarem.
+const SUPPLY_SLOT_GUTTER: float = 4.0
 
 const PULSE_SCALE: Vector2 = Vector2(1.3, 1.3)
 const GLOW_COLOR: Color = Color(1.4, 1.25, 0.8, 1.0)
@@ -494,19 +505,62 @@ func _close_all_submodals() -> void:
 		captain_modal.close()
 
 
+## Encolhe a hitbox de um slot de Suprimentos se o vizinho estiver perto
+## demais pra caber a largura "ideal" (`SUPPLY_SLOT_SIZE.x`) + a folga
+## mínima dos dois lados. CAUSA RAIZ do bug relatado nesta rodada ("hover no
+## 2º slot mostra tooltip do 1º/4º, parecem colidir"): a arte tem os 4
+## ícones com espaçamento IRREGULAR entre centros (83.6/83.5/75.5px, não uma
+## grade uniforme), e a largura fixa de 78px cabia nos 2 primeiros vãos mas
+## invadia a do vizinho em ~2.5px no vão Escambo-Talentos (só 75.5px) --
+## naquela faixa invadida, QUALQUER clique/hover ficava ambíguo entre os
+## dois botões (o de cima na ordem de inserção dos nós ganhava, por isso o
+## sintoma relatado troca os dois). Calculado por vão em vez de um número
+## fixo pra nunca mais depender de recalibrar à mão se a arte mudar nos
+## próximos ícones.
+func _safe_supply_half_width(index: int) -> float:
+	var half: float = SUPPLY_SLOT_SIZE.x / 2.0
+	var cx: float = SUPPLY_SLOTS[index]["cx"]
+	if index > 0:
+		var left_gap: float = cx - SUPPLY_SLOTS[index - 1]["cx"]
+		half = minf(half, left_gap / 2.0 - SUPPLY_SLOT_GUTTER / 2.0)
+	if index < SUPPLY_SLOTS.size() - 1:
+		var right_gap: float = SUPPLY_SLOTS[index + 1]["cx"] - cx
+		half = minf(half, right_gap / 2.0 - SUPPLY_SLOT_GUTTER / 2.0)
+	return half
+
+
 ## 4 slots de Suprimentos -- a arte já desenha o ícone de cada um, só soma
 ## um Label de quantidade por cima + tooltip (ver nota de classe pro
-## mapeamento de cada um a um dado real).
+## mapeamento de cada um a um dado real). Isolados dentro de um `SupplySlots`
+## Control dedicado (pedido explícito -- "insira os 4 slots dentro de um
+## container"), cada botão com hitbox calculada por `_safe_supply_half_width()`
+## pra NUNCA encostar na do vizinho, e `mouse_filter = MOUSE_FILTER_STOP`
+## explícito (já era o padrão de `Button`, mas declarado aqui sem depender
+## de default implícito).
 func _build_supply_slots() -> void:
-	for data in SUPPLY_SLOTS:
+	var container := Control.new()
+	container.name = "SupplySlots"
+	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var left: float = SUPPLY_SLOTS[0]["cx"] - SUPPLY_SLOT_SIZE.x / 2.0
+	var right: float = SUPPLY_SLOTS[-1]["cx"] + SUPPLY_SLOT_SIZE.x / 2.0
+	var top: float = SUPPLY_SLOTS[0]["cy"] - SUPPLY_SLOT_SIZE.y / 2.0
+	container.position = Vector2(left, top)
+	container.size = Vector2(right - left, SUPPLY_SLOT_SIZE.y)
+	_slots_root.add_child(container)
+
+	for i in SUPPLY_SLOTS.size():
+		var data: Dictionary = SUPPLY_SLOTS[i]
+		var half_w: float = _safe_supply_half_width(i)
+		var w: float = half_w * 2.0
 		var button := Button.new()
 		button.flat = true
-		button.custom_minimum_size = SUPPLY_SLOT_SIZE
-		button.position = Vector2(data["cx"] - SUPPLY_SLOT_SIZE.x / 2.0, data["cy"] - SUPPLY_SLOT_SIZE.y / 2.0)
-		button.size = SUPPLY_SLOT_SIZE
+		button.mouse_filter = Control.MOUSE_FILTER_STOP
+		button.custom_minimum_size = Vector2(w, SUPPLY_SLOT_SIZE.y)
+		button.position = Vector2(data["cx"] - half_w - container.position.x, 0.0)
+		button.size = Vector2(w, SUPPLY_SLOT_SIZE.y)
 		button.tooltip_text = data["label"]
 		button.pressed.connect(_supply_slot_action(data["key"]))
-		_slots_root.add_child(button)
+		container.add_child(button)
 		UIManager.add_hover_pop(button, "supply_%s" % data["key"])
 		_supply_buttons.append(button)
 

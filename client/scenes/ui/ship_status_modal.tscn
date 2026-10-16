@@ -1,58 +1,66 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene format=3 uid="uid://1vkn3jef5bdy"]
 
-[ext_resource type="Script" path="res://scripts/ui/ship_status_modal.gd" id="1_script"]
-[ext_resource type="Texture2D" path="res://assets/ui/ship_status/inventory_background.jpeg" id="2_bg"]
-[ext_resource type="Texture2D" path="res://assets/ui/ship_status/galleon_blueprint.png" id="3_blueprint"]
-[ext_resource type="Shader" path="res://assets/shaders/chroma_key.gdshader" id="4_chroma"]
+[ext_resource type="Script" uid="uid://bfd2o8dt8ugcp" path="res://scripts/ui/ship_status_modal.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://ch42mwgs245ty" path="res://assets/ui/ship_status/inventory_background.jpeg" id="2_bg"]
+[ext_resource type="Texture2D" uid="uid://5hxc8sfy6rhg" path="res://assets/ui/ship_status/galleon_blueprint.png" id="3_blueprint"]
+[ext_resource type="Shader" uid="uid://b12xwydrbqogk" path="res://assets/shaders/chroma_key.gdshader" id="4_chroma"]
 [ext_resource type="PackedScene" path="res://scenes/ui/inventory_picker_submodal.tscn" id="5_picker"]
 [ext_resource type="PackedScene" path="res://scenes/ui/crew_management_submodal.tscn" id="6_crew"]
 [ext_resource type="PackedScene" path="res://scenes/ui/ship_info_modal.tscn" id="7_info"]
 [ext_resource type="PackedScene" path="res://scenes/ui/item_tooltip_zoom.tscn" id="8_tooltipzoom"]
-[ext_resource type="Texture2D" path="res://assets/ui/processed/modal_frame_iron.png" id="9_frame"]
-[ext_resource type="Shader" path="res://assets/shaders/gothic_panel.gdshader" id="10_gothic"]
+[ext_resource type="Texture2D" uid="uid://c3fsnwtscdbaj" path="res://assets/ui/processed/modal_frame_iron.png" id="9_frame"]
+[ext_resource type="Shader" uid="uid://b7qg6in3rvcl4" path="res://assets/shaders/gothic_panel.gdshader" id="10_gothic"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_chroma"]
 shader = ExtResource("4_chroma")
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_gothic"]
-shader = ExtResource("10_gothic")
+shader_parameter/threshold = 0.06
+shader_parameter/smoothness = 0.1
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_weight_fill"]
 bg_color = Color(0.78, 0.68, 0.42, 0.92)
 corner_radius_top_left = 4
 corner_radius_top_right = 4
-corner_radius_bottom_left = 4
 corner_radius_bottom_right = 4
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_morale_fill"]
-bg_color = Color(0.55, 0.78, 0.35, 0.95)
-corner_radius_top_left = 3
-corner_radius_top_right = 3
-corner_radius_bottom_left = 3
-corner_radius_bottom_right = 3
+corner_radius_bottom_left = 4
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_morale_bg"]
 bg_color = Color(0.1, 0.08, 0.06, 0.85)
 corner_radius_top_left = 3
 corner_radius_top_right = 3
-corner_radius_bottom_left = 3
 corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_morale_fill"]
+bg_color = Color(0.55, 0.78, 0.35, 0.95)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_stats_bg"]
 bg_color = Color(0.04, 0.03, 0.02, 0.72)
 corner_radius_top_left = 4
 corner_radius_top_right = 4
-corner_radius_bottom_left = 4
 corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_gothic"]
+shader = ExtResource("10_gothic")
+shader_parameter/fill_alpha = 0.85
+shader_parameter/fill_threshold = 0.09
+shader_parameter/frame_softness = 0.1
+shader_parameter/glow_color = Color(1, 0.82, 0.42, 1)
+shader_parameter/glow_strength = 0.35
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_cannon_content_bg"]
 bg_color = Color(0.03, 0.025, 0.02, 0.85)
 corner_radius_top_left = 4
 corner_radius_top_right = 4
-corner_radius_bottom_left = 4
 corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
 
-[node name="ShipStatusModal" type="Control"]
+[node name="ShipStatusModal" type="Control" unique_id=193714533]
+layout_mode = 3
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
@@ -64,7 +72,8 @@ offset_right = 480.0
 offset_bottom = 270.0
 script = ExtResource("1_script")
 
-[node name="BlueprintLayer" type="TextureRect" parent="."]
+[node name="BlueprintLayer" type="TextureRect" parent="." unique_id=548606795]
+layout_mode = 0
 offset_left = 130.8
 offset_top = 75.6
 offset_right = 398.4
@@ -74,8 +83,9 @@ texture = ExtResource("3_blueprint")
 expand_mode = 1
 stretch_mode = 6
 
-[node name="Background" type="TextureRect" parent="."]
-anchors_preset = 15
+[node name="Background" type="TextureRect" parent="." unique_id=2022832431]
+material = SubResource("ShaderMaterial_chroma")
+layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
@@ -84,57 +94,59 @@ mouse_filter = 2
 texture = ExtResource("2_bg")
 expand_mode = 1
 stretch_mode = 5
-material = SubResource("ShaderMaterial_chroma")
 
-[node name="CloseButton" type="Button" parent="."]
+[node name="CloseButton" type="Button" parent="." unique_id=341020439]
+layout_mode = 0
 offset_left = 905.0
 offset_top = 8.0
 offset_right = 945.0
 offset_bottom = 38.0
 text = "X"
 
-[node name="Slots" type="Control" parent="."]
-anchors_preset = 15
+[node name="Slots" type="Control" parent="." unique_id=572807940]
+anchors_preset = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="WeightBar" type="ProgressBar" parent="."]
+[node name="WeightBar" type="ProgressBar" parent="." unique_id=543877265]
+layout_mode = 0
 offset_left = 514.8
 offset_top = 240.0
 offset_right = 840.0
 offset_bottom = 251.0
 mouse_filter = 2
 theme_override_styles/fill = SubResource("StyleBoxFlat_weight_fill")
-max_value = 100.0
-value = 0.0
 show_percentage = false
 
-[node name="WeightLabel" type="Label" parent="."]
+[node name="WeightLabel" type="Label" parent="." unique_id=1160961980]
+layout_mode = 0
 offset_left = 514.8
 offset_top = 224.0
 offset_right = 840.0
 offset_bottom = 239.0
 theme_override_colors/font_color = Color(0.88, 0.84, 0.7, 1)
 theme_override_font_sizes/font_size = 11
-horizontal_alignment = 1
 text = "Peso: 0/0"
+horizontal_alignment = 1
 
-[node name="MoraleBar" type="ProgressBar" parent="."]
+[node name="MoraleBar" type="ProgressBar" parent="." unique_id=460410319]
+layout_mode = 0
 offset_left = 200.0
 offset_top = 457.0
 offset_right = 444.0
 offset_bottom = 468.0
 mouse_filter = 2
-theme_override_styles/fill = SubResource("StyleBoxFlat_morale_fill")
 theme_override_styles/background = SubResource("StyleBoxFlat_morale_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_morale_fill")
 max_value = 1.0
 value = 1.0
 show_percentage = false
 
-[node name="StatsPanel" type="PanelContainer" parent="."]
+[node name="StatsPanel" type="PanelContainer" parent="." unique_id=785954444]
+layout_mode = 0
 offset_left = 90.0
 offset_top = 497.0
 offset_right = 870.0
@@ -142,30 +154,31 @@ offset_bottom = 524.0
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_stats_bg")
 
-[node name="StatsLabel" type="Label" parent="StatsPanel"]
+[node name="StatsLabel" type="Label" parent="StatsPanel" unique_id=1516343709]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.9, 0.85, 0.65, 1)
 theme_override_font_sizes/font_size = 14
-horizontal_alignment = 1
 text = "Dano: 1.00x   Velocidade: 0 px/s   Casco Máx: 0   Carga Máx: 0"
+horizontal_alignment = 1
 
-[node name="CannonManagePanel" type="Control" parent="."]
+[node name="CannonManagePanel" type="Control" parent="." unique_id=1569761640]
 visible = false
-anchors_preset = 15
+anchors_preset = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="Panel" type="Control" parent="CannonManagePanel"]
+[node name="Panel" type="Control" parent="CannonManagePanel" unique_id=730637778]
+anchors_preset = 0
 offset_left = 140.0
 offset_top = 40.0
 offset_right = 820.0
 offset_bottom = 500.0
 
-[node name="ContentBg" type="ColorRect" parent="CannonManagePanel/Panel"]
-anchors_preset = 15
+[node name="ContentBg" type="ColorRect" parent="CannonManagePanel/Panel" unique_id=538549069]
+layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
@@ -173,22 +186,21 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(0.035, 0.028, 0.02, 0.97)
 
-[node name="Frame" type="NinePatchRect" parent="CannonManagePanel/Panel"]
-anchors_preset = 15
+[node name="Frame" type="NinePatchRect" parent="CannonManagePanel/Panel" unique_id=935628019]
+material = SubResource("ShaderMaterial_gothic")
+layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 2
 texture = ExtResource("9_frame")
 patch_margin_left = 85
 patch_margin_top = 85
 patch_margin_right = 85
 patch_margin_bottom = 85
-material = SubResource("ShaderMaterial_gothic")
 
-[node name="Margin" type="MarginContainer" parent="CannonManagePanel/Panel"]
-anchors_preset = 15
+[node name="Margin" type="MarginContainer" parent="CannonManagePanel/Panel" unique_id=1602358378]
+layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
@@ -198,50 +210,50 @@ theme_override_constants/margin_top = 26
 theme_override_constants/margin_right = 30
 theme_override_constants/margin_bottom = 26
 
-[node name="VBox" type="VBoxContainer" parent="CannonManagePanel/Panel/Margin"]
+[node name="VBox" type="VBoxContainer" parent="CannonManagePanel/Panel/Margin" unique_id=1283226441]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="Header" type="HBoxContainer" parent="CannonManagePanel/Panel/Margin/VBox"]
+[node name="Header" type="HBoxContainer" parent="CannonManagePanel/Panel/Margin/VBox" unique_id=959051301]
 layout_mode = 2
 
-[node name="Title" type="Label" parent="CannonManagePanel/Panel/Margin/VBox/Header"]
+[node name="Title" type="Label" parent="CannonManagePanel/Panel/Margin/VBox/Header" unique_id=407881019]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.95, 0.85, 0.55, 1)
 theme_override_font_sizes/font_size = 20
 text = "Gerenciar Canhões"
 
-[node name="CloseButton" type="Button" parent="CannonManagePanel/Panel/Margin/VBox/Header"]
+[node name="CloseButton" type="Button" parent="CannonManagePanel/Panel/Margin/VBox/Header" unique_id=1554602376]
 layout_mode = 2
 text = "X"
 
-[node name="GridScroll" type="ScrollContainer" parent="CannonManagePanel/Panel/Margin/VBox"]
+[node name="GridScroll" type="ScrollContainer" parent="CannonManagePanel/Panel/Margin/VBox" unique_id=1064752860]
+custom_minimum_size = Vector2(0, 340)
 layout_mode = 2
 size_flags_vertical = 3
-custom_minimum_size = Vector2(0, 340)
 
-[node name="GridBg" type="PanelContainer" parent="CannonManagePanel/Panel/Margin/VBox/GridScroll"]
+[node name="GridBg" type="PanelContainer" parent="CannonManagePanel/Panel/Margin/VBox/GridScroll" unique_id=2079660651]
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_cannon_content_bg")
 
-[node name="GridRoot" type="Control" parent="CannonManagePanel/Panel/Margin/VBox/GridScroll/GridBg"]
+[node name="GridRoot" type="Control" parent="CannonManagePanel/Panel/Margin/VBox/GridScroll/GridBg" unique_id=1642064301]
 custom_minimum_size = Vector2(0, 320)
+layout_mode = 2
 
-[node name="Picker" parent="." instance=ExtResource("5_picker")]
+[node name="Picker" parent="." unique_id=568502549 instance=ExtResource("5_picker")]
 layout_mode = 1
 
-[node name="CrewManagementSubmodal" parent="." instance=ExtResource("6_crew")]
+[node name="CrewManagementSubmodal" parent="." unique_id=1291400561 instance=ExtResource("6_crew")]
 layout_mode = 1
 read_only = true
 
-[node name="CargoModal" parent="." instance=ExtResource("7_info")]
+[node name="CargoModal" parent="." unique_id=889879362 instance=ExtResource("7_info")]
 layout_mode = 1
-info_mode = "cargo"
 
-[node name="AmmoModal" parent="." instance=ExtResource("7_info")]
+[node name="AmmoModal" parent="." unique_id=2034563576 instance=ExtResource("7_info")]
 layout_mode = 1
 info_mode = "ammo"
 
-[node name="ItemTooltipZoom" parent="." instance=ExtResource("8_tooltipzoom")]
+[node name="ItemTooltipZoom" parent="." unique_id=372170646 instance=ExtResource("8_tooltipzoom")]
 layout_mode = 1
