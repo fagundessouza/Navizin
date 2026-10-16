@@ -24,19 +24,36 @@
 
 ---
 
-## Exceção registrada (2026-10-16)
+## Histórico da regra 1.1 (atualizado 2026-10-16)
 
-A regra 1.1 ("nunca instancie modal filha no editor") NÃO está aplicada em
-`ship_status_modal.tscn` nem no resto do projeto hoje -- toda modal do jogo
-(`CraftingModal`, `VaultModal`, `CrewManagementSubmodal`, `ShipInfoModal`
-etc.) é instanciada no `.tscn`, `visible = false` por padrão. Essa decisão
-foi revisitada explicitamente em 2026-10-16: os bugs que motivaram a regra
-(modais empilhadas, sinal errado abrindo) tinham causa raiz diferente --
-falta de fechamento mútuo entre sub-modais (`_close_all_submodals()`) e um
-shader de transparência (`gothic_panel.gdshader`) deixando conteúdo de trás
-vazar -- ambos corrigidos sem precisar mover a instanciação pra runtime.
-Reescrever só `ship_status_modal.tscn` pro padrão `ModalOverlay` destoaria
-do resto do projeto sem corrigir nada a mais; o usuário confirmou manter o
-padrão atual em vez dessa reescrita. Se o projeto decidir adotar
-`ModalOverlay`/instanciação em runtime de verdade no futuro, deveria ser
-uma migração do projeto INTEIRO de uma vez, não cena por cena.
+A regra 1.1 ("nunca instancie modal filha no editor") foi inicialmente
+revisitada como exceção registrada (2026-10-16, manhã): os bugs que a
+motivaram tinham causa raiz diferente (falta de fechamento mútuo entre
+sub-modais, shader de transparência vazando), corrigidos sem mover a
+instanciação pra runtime, e o usuário confirmou manter o padrão antigo em
+vez de reescrever só `ship_status_modal.tscn`.
+
+Essa decisão foi revertida no mesmo dia (2026-10-16, tarde): o usuário
+pediu explicitamente a migração completa do projeto pro padrão
+`UIManager`/`ModalOverlay`/instanciação em runtime, confirmado via
+`AskUserQuestion` ("Sim, migrar o projeto inteiro agora"). A regra 1.1
+agora SE APLICA de verdade em todo o projeto:
+- `UIManager` (autoload, `scripts/ui/ui_manager.gd`) ganhou um registro
+  `modal_id -> PackedScene` e `get_modal()`/`open_modal_id()` pra
+  instanciar sob demanda, cacheado por `(overlay, modal_id)`.
+- Todo host (`ship_status_modal.tscn`, `hud.tscn`, os 7 distritos,
+  `crafting_modal.tscn`) tem um `ModalOverlay` Control dedicado; nenhum
+  modal filho fica mais fixo no `.tscn` com `visible = false`.
+- `UIManager._modal_stack` (pilha de verdade, não um valor único) suporta
+  aninhamento de verdade -- abrir um modal só fecha IRMÃOS (mesmo
+  `ModalOverlay`), nunca o modal que o contém. ESC fecha o topo da pilha,
+  cascata corretamente por níveis aninhados.
+- ÚNICA exceção que permanece: `CrewCardModal` instanciado dentro de
+  `CrewManagementSubmodal` (`crew_management_submodal.tscn`) continua
+  filho fixo no editor -- ali ele é um WIDGET de layout (filho de
+  `VBoxContainer`, `show_own_chrome = false`), não um overlay empilhável;
+  forçá-lo no molde de `UIManager.get_modal()` (que pressupõe
+  auto-centralização) quebraria o posicionamento dele. A MESMA cena usada
+  como overlay de verdade em outro lugar (`tavern_district.tscn`) passa
+  por `UIManager` normalmente -- a exceção é sobre o PAPEL, não sobre o
+  arquivo `.tscn`.
