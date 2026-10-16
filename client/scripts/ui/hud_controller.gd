@@ -196,6 +196,18 @@ func _on_menu_pressed(menu_name: String) -> void:
 		_close_panel()
 	_open_menu = menu_name
 	if _dedicated_panels.has(menu_name):
+		# Medido no jogo rodando de verdade (pedido explícito -- "hotbar
+		# colidindo com a barra de status do navio"): a borda inferior do
+		# painel (960x540 centralizado, y=90..630 em 720 de tela) e o topo
+		# da Hotbar (ancorada embaixo, y=628) ficam a 2px de distância --
+		# sobreposição geométrica real, não só impressão visual. A Hotbar
+		# não tem espaço pra descer mais (já está a só 16px da borda da
+		# tela) nem o painel pra encolher sem recalibrar toda a grade de
+		# slots internos -- mesmo padrão que os distritos já usam pros
+		# próprios botões (`city_district_base.gd._on_modal_opened()`):
+		# esconde a Hotbar enquanto um painel grande estiver aberto, já que
+		# não faz sentido usar os slots de ação com um menu em cima mesmo.
+		$Hotbar.visible = false
 		UIManager.open_modal(_dedicated_panels[menu_name])
 		return
 	var info: Dictionary = SIMPLE_MENUS[menu_name]
@@ -207,6 +219,7 @@ func _on_menu_pressed(menu_name: String) -> void:
 func _close_panel() -> void:
 	if _dedicated_panels.has(_open_menu):
 		UIManager.close_modal(_dedicated_panels[_open_menu])
+		$Hotbar.visible = true
 	else:
 		_dialog.visible = false
 	_open_menu = ""
@@ -217,6 +230,7 @@ func _close_panel() -> void:
 func _on_panel_closed(menu_name: String) -> void:
 	if _open_menu == menu_name:
 		_open_menu = ""
+		$Hotbar.visible = true
 
 
 ## Botão em hover cresce um pouco; sai ao tirar o mouse.
