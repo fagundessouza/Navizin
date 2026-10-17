@@ -24,6 +24,13 @@
 
 ---
 
+## 5. Disciplina de Verificação e Ambiente (MCP)
+- NUNCA declarar algo "verificado" só por ter lido o código ou rodado um script de teste isolado — rodar o jogo de verdade via Godot MCP Toolkit (`game_start`/`execute_code`/`input_simulate`/`runtime_screenshot`) é obrigatório antes de reportar uma correção como funcionando.
+- NUNCA inventar nomes, contagens ou categorias de itens/assets — sempre escanear a pasta real (`client/assets/...`) ou `item_database.gd`/autoloads equivalentes antes de escrever qualquer lista.
+- Diagnósticos/specs colados pelo usuário podem estar errados (arquivo inexistente, causa raiz equivocada) — sempre confirmar rodando o jogo antes de aceitar como verdade, mesmo que pareçam precisos.
+- Calibração de posição de UI contra arte pintada: nunca estimar por "olhômetro" em screenshot — ler a textura-fonte com detecção de cor por pixel (ex. PIL) pra achar a posição exata.
+- `client/project.godot` tem uma linha de autoload `MCPRuntimeServer` e um bloco `[editor_plugins]` que são SOMENTE LOCAIS: remover os dois antes de qualquer `git commit`, restaurar logo depois do `git push`. Ver `.project/WINDOWS_MIGRATION.md` pro guia completo de reinstalação do addon MCP numa máquina nova.
+
 ## Histórico da regra 1.1 (atualizado 2026-10-16)
 
 A regra 1.1 ("nunca instancie modal filha no editor") foi inicialmente

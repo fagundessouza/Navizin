@@ -40,6 +40,7 @@ scripts/    Automações do GitHub (issues, labels, projeto)
 
 Detalhes da arquitetura em [`.project/ARCHITECTURE.md`](.project/ARCHITECTURE.md).
 Pipeline de sprites em [`.project/SPRITE_PIPELINE.md`](.project/SPRITE_PIPELINE.md).
+Retomando o projeto numa máquina nova (ex. migração pra Windows): [`.project/WINDOWS_MIGRATION.md`](.project/WINDOWS_MIGRATION.md).
 
 ## Testes
 ```bash
