@@ -65,6 +65,22 @@ extends Control
 @export var officers_read_only: bool = false
 @export var officers_show_sailors_section: bool = true
 
+## PONTO DE EXTENSÃO DOCUMENTADO, NÃO IMPLEMENTADO (visão descrita pelo
+## usuário, fora do escopo desta rodada -- só a unificação do fluxo de
+## abertura foi pedida/confirmada aqui): a Taverna deve ganhar no futuro um
+## 3º botão/estação -- um Mural de Contratos -- com (a) contratos de
+## recompensa postados sobre NPCs/alvos, e (b) encomendas jogador-pra-jogador
+## (ex.: "pago X Ouro por unidade de Madeira de Carvalho entregue") que
+## qualquer outro jogador pode aceitar e cumprir. O preço/oferta de cada
+## encomenda é POR CIDADE (estilo Albion Online -- mercados locais, não um
+## preço global entre ilhas), o que also significa que quando as outras
+## ilhas existirem, cada uma terá seu próprio Mural independente. Esse 3º
+## botão se encaixa direto no `_wired`/`_finalize_entry_flow()` acima sem
+## mudar a lógica de menu rápido (ela já lida com N estações, não só 2) --
+## só precisa de um novo modal_id registrado em `UIManager` e um sistema de
+## dados (contratos por cidade, não um dicionário global) quando for a hora
+## de construir isso de verdade.
+
 @onready var _title: Label = $Title
 @onready var _body: Label = $Body
 @onready var _modal_overlay: Control = $ModalOverlay
@@ -72,6 +88,16 @@ extends Control
 ## Quantos modais de distrito estão abertos agora -- os botões de navegação
 ## só reaparecem quando chega a 0.
 var _open_modal_count: int = 0
+
+## Cada `_wire_modal()` bem-sucedido entra aqui -- usado por
+## `_finalize_entry_flow()` pra decidir como entrar na praça (ver abaixo).
+var _wired: Array[Dictionary] = []
+
+## "menu" quando a praça tem 2+ estações (só a Taverna hoje) -- nesse modo o
+## botão isolado original fica escondido pra sempre, substituído por
+## `_quick_menu`. "single"/"none" mantêm o botão original como estava.
+var _entry_mode: String = "none"
+var _quick_menu: Control = null
 
 
 func _ready() -> void:
@@ -90,6 +116,7 @@ func _ready() -> void:
 	_wire_modal("OpenOfficersButton", "crew_management", func(m):
 		m.read_only = officers_read_only
 		m.show_sailors_section = officers_show_sailors_section)
+	_finalize_entry_flow()
 
 
 ## Liga o botão "Abrir X" (um só por distrito agora) ao modal, instanciado
@@ -114,19 +141,78 @@ func _wire_modal(button_name: String, modal_id: String, configure: Callable = Ca
 	button.pressed.connect(UIManager.open_modal.bind(modal))
 	modal.opened.connect(_on_modal_opened.bind(button))
 	modal.closed.connect(_on_modal_closed.bind(button))
+	_wired.append({"button": button, "modal": modal})
+
+
+## ENTRADA DIRETA (pedido explícito -- "o clique na construção deve abrir
+## IMEDIATAMENTE o modal centralizado", sem a etapa de ver um botão isolado
+## primeiro). Decide como entrar na praça de acordo com quantas estações reais
+## ela tem:
+## - 0 (praças "Em construção": Salão das Frotas; ou com botão ainda não
+##   religado a modal nenhum: Mercado Central) -- nada muda, continua só o
+##   cenário + navegação.
+## - 1 (Forja/Estaleiro/Boticário/Feira de Suprimentos/Caverna do Tesouro) --
+##   abre a estação direto, sem clique nenhum. O botão original continua
+##   escondido enquanto ela estiver aberta e volta a aparecer se o jogador
+##   fechar (reentrada manual), exatamente como já funcionava -- só a ESPERA
+##   do primeiro clique que foi embora.
+## - 2+ (só a Taverna hoje: Tripulação + Oficiais) -- os 2 botões isolados no
+##   canto saem de cena pra sempre, substituídos por `_quick_menu`: as mesmas
+##   2 opções reais, centralizadas, pra escolher qual estação abrir.
+func _finalize_entry_flow() -> void:
+	if _wired.is_empty():
+		return
+	if _wired.size() == 1:
+		_entry_mode = "single"
+		UIManager.open_modal(_wired[0]["modal"])
+		return
+	_entry_mode = "menu"
+	for entry in _wired:
+		(entry["button"] as Button).visible = false
+	# `_build_quick_menu()` PRIMEIRO, só depois `close()`: `close()` dispara
+	# `closed` -> `_on_modal_closed()` na hora (síncrono), que já tenta mexer
+	# em `_quick_menu` -- achado rodando de verdade via MCP (`Invalid
+	# assignment... base object of type 'Nil'`), fechar antes de construir o
+	# menu lia `_quick_menu` ainda nulo.
+	_build_quick_menu()
+	for entry in _wired:
+		# Vários modais (ex. `CrewCardModal`) nascem com `visible = true` no
+		# próprio `_ready()` -- sem este `close()`, as 2 estações da Taverna
+		# apareciam abertas por baixo do menu rápido assim que a praça
+		# carregava, nunca escondidas de fato.
+		(entry["modal"] as Control).close()
+
+
+func _build_quick_menu() -> void:
+	_quick_menu = VBoxContainer.new()
+	_quick_menu.add_theme_constant_override("separation", 10)
+	for entry in _wired:
+		var option := Button.new()
+		option.text = (entry["button"] as Button).text
+		option.custom_minimum_size = Vector2(240, 48)
+		option.pressed.connect(UIManager.open_modal.bind(entry["modal"]))
+		_quick_menu.add_child(option)
+	add_child(_quick_menu)
+	_quick_menu.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 
 
 func _on_modal_opened(open_button: Button) -> void:
 	_open_modal_count += 1
 	$Buttons.visible = false
-	open_button.visible = false
+	if _entry_mode == "menu" and _quick_menu != null:
+		_quick_menu.visible = false
+	elif _entry_mode != "menu":
+		open_button.visible = false
 
 
 func _on_modal_closed(open_button: Button) -> void:
 	_open_modal_count = maxi(0, _open_modal_count - 1)
-	open_button.visible = true
 	if _open_modal_count == 0:
 		$Buttons.visible = true
+		if _entry_mode == "menu" and _quick_menu != null:
+			_quick_menu.visible = true
+		else:
+			open_button.visible = true
 
 
 func _unhandled_input(event: InputEvent) -> void:
